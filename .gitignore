@@ -26,5 +26,7 @@ node_modules/
 .env
 .env.local
 
-# Package manager lock files (use yarn.lock when ready)
-package-lock.json
+# Yarn (when migrating)
+.yarn/cache
+.yarn/unplugged
+.pnp.*

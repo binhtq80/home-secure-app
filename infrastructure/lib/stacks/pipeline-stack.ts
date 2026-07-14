@@ -35,18 +35,19 @@ export class PipelineStack extends cdk.Stack {
       synth: new pipelines.ShellStep('Synth', {
         input: source,
         commands: [
-          // Install all workspace dependencies
-          'yarn install --frozen-lockfile',
+          // Install all dependencies
+          'cd infrastructure && npm ci && cd ..',
+          'cd frontend && npm ci && cd ..',
+          'cd backend && npm ci && cd ..',
 
           // Build backend Lambda packages
-          'yarn build:backend',
-          'cd backend && ./scripts/prepare-lambda-packages.sh && cd ..',
+          'cd backend && node scripts/build.js && ./scripts/prepare-lambda-packages.sh && cd ..',
 
           // Build frontend
-          'yarn build:frontend',
+          'cd frontend && npx tsc && npx vite build && cd ..',
 
-          // Synth CDK (from infrastructure workspace)
-          'cd infrastructure && npx cdk synth && cd ..',
+          // Synth CDK
+          'cd infrastructure && npm run build && npx cdk synth && cd ..',
         ],
         primaryOutputDirectory: 'infrastructure/cdk.out',
       }),
