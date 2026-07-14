@@ -6,129 +6,110 @@ When user says: "implement feature ..." or "add feature ..." or "build ..."
 
 ## Configuration
 
-- **MAX_RETRIES:** 3 (pipeline failures before stopping)
+- **MAX_RETRIES:** 3 (total failures before stopping)
 - **POLL_INTERVAL:** 2 minutes (pipeline status check)
 - **PIPELINE_NAME:** myapp-test-pipeline
 - **AWS_PROFILE:** dev-admin
 - **REGION:** ap-southeast-2
 
-## Loop Steps
+## Loop
+
+```
+PLAN → IMPLEMENT → LOCAL VALIDATE → PUSH → MONITOR → [APPROVE|REJECT|FAIL] → EXIT or RETRY
+```
 
 ### Step 1: PLAN
 - Analyze the feature requirements
 - Design: API endpoints, data model, UI components
 - List all files to create/modify
-- Present plan to user for confirmation (unless "just do it" is implied)
 
 ### Step 2: IMPLEMENT
 - Write backend Lambda functions
-- Update infrastructure (CDK stack: DynamoDB, Lambda, API routes, IAM)
+- Update infrastructure (CDK stack)
 - Write frontend pages/components
-- Update routing (App.tsx)
-- Update API service (api.ts)
+- Update routing and API service
 
 ### Step 3: LOCAL VALIDATION
 ```bash
 ./scripts/simulate-pipeline.sh --quick
 ```
-- If FAILS: diagnose error, fix code, re-run (counts as 1 retry)
+- If FAILS: diagnose, fix, re-run (counts as 1 retry)
 - If PASSES: proceed to Step 4
 
 ### Step 4: COMMIT & PUSH
 ```bash
 git add -A
-git commit -m "<descriptive commit message>"
-SKIP_AI_REVIEW=1 git push --no-verify  # skip hook since we just validated
+git commit -m "<descriptive message>"
+SKIP_AI_REVIEW=1 git push --no-verify
 ```
 
 ### Step 5: MONITOR PIPELINE
-```bash
-# Get latest execution ID
-aws codepipeline list-pipeline-executions --pipeline-name myapp-test-pipeline ...
+Poll pipeline status every 2 minutes until terminal state:
 
-# Poll until terminal state
-aws codepipeline get-pipeline-execution --pipeline-execution-id <ID> ...
-```
+**On Build/Deploy/Smoke Test FAILURE:**
+1. Read error from CodeBuild logs or CloudFormation events
+2. Diagnose root cause
+3. Fix code
+4. Increment retry counter
+5. Go to Step 3
 
-**On failure:**
-1. Identify which stage failed (Build, Deploy, SmokeTest)
-2. Fetch error details:
-   - Build: CodeBuild logs (`aws codebuild batch-get-builds` → CloudWatch logs)
-   - Deploy: CloudFormation events (`aws cloudformation describe-stack-events`)
-   - SmokeTest: CodeBuild logs
-3. Diagnose root cause
-4. Fix code → go to Step 3
-5. Increment retry counter
+**On reaching Manual Approval:**
+- Keep polling — wait for user to approve or reject
+- Do NOT stop or report yet
 
-**On success (reaches Manual Approval):**
-- Report to user: "Feature deployed. Pipeline passed. Awaiting your E2E approval."
-- Provide the app URL and what to test
+**On user APPROVES (pipeline execution succeeds):**
+- ✅ EXIT LOOP
+- Report: feature delivered
+
+**On user REJECTS (pipeline execution fails):**
+- User provides feedback (reason for rejection)
+- Use feedback as context for fix
+- Increment retry counter
+- Go to Step 2 (re-implement with feedback)
 
 ### Exit Conditions
 
 | Condition | Action |
 |-----------|--------|
-| Pipeline reaches Manual Approval | ✅ Stop. Report success. |
-| Max retries (3) exhausted | ❌ Stop. Report what's blocking. |
-| User interrupts | ⏸️ Stop. Report current state. |
+| User approves → pipeline succeeds | ✅ Exit. Report success. |
+| Retries >= MAX_RETRIES (3) | ❌ Exit. Report what's blocking. |
+| User interrupts with "stop" | ⏸️ Exit. Report current state. |
 
-## Human Feedback Injection
+## Retry Counting
 
-At any point in the loop, the user can provide feedback:
+| Event | Counts as retry? |
+|-------|:---:|
+| Pipeline build/deploy/smoke failure | ✅ Yes |
+| User rejects at manual approval | ✅ Yes |
+| Local validation failure (simulate-pipeline.sh) | ✅ Yes |
+| User provides additional context/clarification | ❌ No |
 
-### During Manual Approval
-- **Approve:** Loop ends successfully
-- **Reject with feedback:** User provides reason, I fix and push (counts as retry)
+## Reporting
 
-### Feedback formats accepted
-1. **Text description:** "The chart doesn't show the correct months"
-2. **Screenshot + description:** [image] + "This is broken because..."
-3. **API response:** "This endpoint returns X but should return Y"
-4. **Design correction:** "Wrong approach, use X instead of Y"
-5. **Partial accept:** "Backend OK, fix the UI: <specific change>"
-
-### How feedback flows into retry
-```
-User: "Reject: energy chart shows 0 for all months"
-  │
-  ├─ I read get-device-energy Lambda code
-  ├─ I check DynamoDB query logic
-  ├─ I identify the bug (e.g., wrong table name in env var)
-  ├─ I fix → validate locally → push → monitor
-  └─ Report back when pipeline reaches approval again
-```
-
-### Feedback + retry rules
-- User feedback counts as context for the FIX, not as a retry itself
-- The retry counter only increments on pipeline failures
-- If user feedback requires a design change, I re-plan before implementing
-- I always acknowledge what I understood from the feedback before fixing
-
-## Retry Tracking
-
-```
-Attempt 1/3: [local validate] → [push] → [pipeline result]
-Attempt 2/3: [fix] → [local validate] → [push] → [pipeline result]
-Attempt 3/3: [fix] → [local validate] → [push] → [pipeline result]
-```
-
-## Reporting Template
-
-### On Success:
+### On Success (user approved):
 ```
 ✅ Feature: <name>
    Attempts: N/3
-   Pipeline: passed (awaiting manual approval)
+   Status: Delivered (approved)
    URL: https://d2ok3vs29hr98h.cloudfront.net
-   What to test: <description>
 ```
 
-### On Failure:
+### On Failure (max retries):
 ```
 ❌ Feature: <name>
    Attempts: 3/3 (max reached)
    Blocking issue: <description>
-   Stage: <Build|Deploy|SmokeTest>
+   Last failure: <Build|Deploy|SmokeTest|Rejected>
    Error: <details>
-   Suggested fix: <what I'd try next>
+   Suggested next step: <what to try>
 ```
+
+## Human Feedback (on rejection)
+
+When user rejects, they provide feedback in chat:
+- Text: "The cost field doesn't save correctly"
+- Screenshot: [image] + "This looks wrong"
+- API issue: "Returns 500 when I submit"
+- Design change: "Wrong approach, do X instead"
+
+I acknowledge the feedback, diagnose, fix, and retry.
