@@ -72,6 +72,38 @@ aws codepipeline get-pipeline-execution --pipeline-execution-id <ID> ...
 | Max retries (3) exhausted | ❌ Stop. Report what's blocking. |
 | User interrupts | ⏸️ Stop. Report current state. |
 
+## Human Feedback Injection
+
+At any point in the loop, the user can provide feedback:
+
+### During Manual Approval
+- **Approve:** Loop ends successfully
+- **Reject with feedback:** User provides reason, I fix and push (counts as retry)
+
+### Feedback formats accepted
+1. **Text description:** "The chart doesn't show the correct months"
+2. **Screenshot + description:** [image] + "This is broken because..."
+3. **API response:** "This endpoint returns X but should return Y"
+4. **Design correction:** "Wrong approach, use X instead of Y"
+5. **Partial accept:** "Backend OK, fix the UI: <specific change>"
+
+### How feedback flows into retry
+```
+User: "Reject: energy chart shows 0 for all months"
+  │
+  ├─ I read get-device-energy Lambda code
+  ├─ I check DynamoDB query logic
+  ├─ I identify the bug (e.g., wrong table name in env var)
+  ├─ I fix → validate locally → push → monitor
+  └─ Report back when pipeline reaches approval again
+```
+
+### Feedback + retry rules
+- User feedback counts as context for the FIX, not as a retry itself
+- The retry counter only increments on pipeline failures
+- If user feedback requires a design change, I re-plan before implementing
+- I always acknowledge what I understood from the feedback before fixing
+
 ## Retry Tracking
 
 ```
