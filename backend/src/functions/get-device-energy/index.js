@@ -1,29 +1,28 @@
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
-const { DynamoDBDocumentClient, GetCommand } = require('@aws-sdk/lib-dynamodb');
+const { DynamoDBDocumentClient, GetCommand, QueryCommand } = require('@aws-sdk/lib-dynamodb');
 const { withAuth, headers } = require('./common/middleware');
 
 const ddbClient = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 
 const DEVICES_TABLE = process.env.DEVICES_TABLE;
-const COST_PER_KWH = 0.20; // AUD per kWh (Australian average)
+const DEVICE_ENERGY_TABLE = process.env.DEVICE_ENERGY_TABLE;
+const COST_PER_KWH = 0.20; // AUD per kWh
 
-if (!DEVICES_TABLE) {
-  throw new Error('Missing required environment variable: DEVICES_TABLE');
+if (!DEVICES_TABLE || !DEVICE_ENERGY_TABLE) {
+  throw new Error('Missing required environment variables: DEVICES_TABLE, DEVICE_ENERGY_TABLE');
 }
 
-// Simple seeded random number generator (deterministic per device + month)
+// Fallback: generate simulated data if no real data exists
 function seededRandom(seed) {
   let hash = 0;
   for (let i = 0; i < seed.length; i++) {
     const char = seed.charCodeAt(i);
     hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // Convert to 32-bit integer
+    hash = hash & hash;
   }
-  // Convert to 0-1 range
   return Math.abs(Math.sin(hash) * 10000) % 1;
 }
 
-// Base monthly consumption ranges by device type (kWh)
 function getBaseConsumption(deviceType) {
   const type = (deviceType || '').toLowerCase();
   const ranges = {
@@ -42,37 +41,27 @@ function getBaseConsumption(deviceType) {
     'smart speaker': { min: 2, max: 5 },
     'microwave': { min: 10, max: 25 },
     'oven': { min: 40, max: 80 },
-    'cooktop': { min: 30, max: 70 },
-    'cooking machine': { min: 20, max: 50 },
   };
-
-  // Find matching type or use default
   for (const [key, range] of Object.entries(ranges)) {
     if (type.includes(key)) return range;
   }
-  return { min: 10, max: 40 }; // default
+  return { min: 10, max: 40 };
 }
 
-function generateMonthlyData(deviceId, deviceType) {
+function generateSimulatedData(deviceId, deviceType) {
   const baseRange = getBaseConsumption(deviceType);
   const baseKwh = baseRange.min + (seededRandom(deviceId) * (baseRange.max - baseRange.min));
-
   const months = [];
   const now = new Date();
 
   for (let i = 11; i >= 0; i--) {
     const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const monthKey = date.toISOString().slice(0, 7); // YYYY-MM
-
-    // Seasonal variation: higher in summer (Dec-Feb in AU) and winter (Jun-Aug)
+    const monthKey = date.toISOString().slice(0, 7);
     const month = date.getMonth();
     let seasonalFactor = 1.0;
-    if (month === 0 || month === 1 || month === 11) seasonalFactor = 1.2; // summer
-    if (month === 5 || month === 6 || month === 7) seasonalFactor = 1.15; // winter
-
-    // Random noise seeded by deviceId + month
-    const noise = 0.8 + (seededRandom(deviceId + monthKey) * 0.4); // 0.8 to 1.2
-
+    if (month === 0 || month === 1 || month === 11) seasonalFactor = 1.2;
+    if (month === 5 || month === 6 || month === 7) seasonalFactor = 1.15;
+    const noise = 0.8 + (seededRandom(deviceId + monthKey) * 0.4);
     const kwh = Math.round(baseKwh * seasonalFactor * noise * 10) / 10;
 
     months.push({
@@ -82,7 +71,6 @@ function generateMonthlyData(deviceId, deviceType) {
       cost: Math.round(kwh * COST_PER_KWH * 100) / 100,
     });
   }
-
   return months;
 }
 
@@ -99,12 +87,12 @@ exports.handler = withAuth(async (event) => {
     }
 
     // Get device from DynamoDB
-    const result = await ddbClient.send(new GetCommand({
+    const deviceResult = await ddbClient.send(new GetCommand({
       TableName: DEVICES_TABLE,
       Key: { id: deviceId },
     }));
 
-    if (!result.Item) {
+    if (!deviceResult.Item) {
       return {
         statusCode: 404,
         headers,
@@ -112,8 +100,7 @@ exports.handler = withAuth(async (event) => {
       };
     }
 
-    // Verify ownership
-    if (result.Item.userId !== event.user.id) {
+    if (deviceResult.Item.userId !== event.user.id) {
       return {
         statusCode: 403,
         headers,
@@ -121,10 +108,51 @@ exports.handler = withAuth(async (event) => {
       };
     }
 
-    const device = result.Item;
-    const monthly = generateMonthlyData(deviceId, device.deviceType);
+    const device = deviceResult.Item;
+
+    // Query energy data from DynamoDB (last 12 months)
+    const now = new Date();
+    const startMonth = new Date(now.getFullYear(), now.getMonth() - 11, 1).toISOString().slice(0, 7);
+    const endMonth = now.toISOString().slice(0, 7);
+
+    const energyResult = await ddbClient.send(new QueryCommand({
+      TableName: DEVICE_ENERGY_TABLE,
+      KeyConditionExpression: 'deviceId = :deviceId AND #month BETWEEN :start AND :end',
+      ExpressionAttributeNames: { '#month': 'month' },
+      ExpressionAttributeValues: {
+        ':deviceId': deviceId,
+        ':start': startMonth,
+        ':end': endMonth,
+      },
+      ScanIndexForward: true, // oldest first
+    }));
+
+    let monthly;
+    let dataSource;
+
+    if (energyResult.Items && energyResult.Items.length > 0) {
+      // Real data exists — use it
+      dataSource = 'measured';
+      monthly = energyResult.Items.map((item) => {
+        const date = new Date(item.month + '-01');
+        return {
+          month: item.month,
+          label: date.toLocaleDateString('en-AU', { month: 'short', year: '2-digit' }),
+          kwh: item.kwh,
+          cost: item.cost || Math.round(item.kwh * COST_PER_KWH * 100) / 100,
+          readings: item.readings || 0,
+          peakKwh: item.peakKwh || null,
+          lowKwh: item.lowKwh || null,
+        };
+      });
+    } else {
+      // No real data — fall back to simulation
+      dataSource = 'simulated';
+      monthly = generateSimulatedData(deviceId, device.deviceType);
+    }
+
     const totalKwh = Math.round(monthly.reduce((sum, m) => sum + m.kwh, 0) * 10) / 10;
-    const avgMonthlyKwh = Math.round((totalKwh / 12) * 10) / 10;
+    const avgMonthlyKwh = Math.round((totalKwh / monthly.length) * 10) / 10;
 
     return {
       statusCode: 200,
@@ -139,6 +167,7 @@ exports.handler = withAuth(async (event) => {
           condition: device.condition,
         },
         energy: {
+          dataSource,
           totalKwh,
           avgMonthlyKwh,
           estimatedMonthlyCost: Math.round(avgMonthlyKwh * COST_PER_KWH * 100) / 100,

@@ -83,6 +83,15 @@ export class AppStack extends cdk.Stack {
       sortKey: { name: 'createdAt', type: dynamodb.AttributeType.STRING },
     });
 
+    // Device energy consumption table (time-series by month)
+    const deviceEnergyTable = new dynamodb.Table(this, 'DeviceEnergyTable', {
+      tableName: `${prefix}-device-energy`,
+      partitionKey: { name: 'deviceId', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'month', type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: envConfig.isProd ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,
+    });
+
     // ─── Lambda Functions ──────────────────────────────────────────────────────
 
     const lambdaDir = path.join(__dirname, '../../../backend/dist/lambda-packages');
@@ -90,6 +99,7 @@ export class AppStack extends cdk.Stack {
     const lambdaEnv: Record<string, string> = {
       USERS_TABLE: usersTable.tableName,
       DEVICES_TABLE: devicesTable.tableName,
+      DEVICE_ENERGY_TABLE: deviceEnergyTable.tableName,
       USER_POOL_ID: userPool.userPoolId,
       USER_POOL_CLIENT_ID: userPoolClient.userPoolClientId,
       BEDROCK_MODEL_ID: 'au.anthropic.claude-haiku-4-5-20251001-v1:0',
@@ -166,6 +176,7 @@ export class AppStack extends cdk.Stack {
     for (const fn of allFunctions) {
       usersTable.grantReadWriteData(fn);
       devicesTable.grantReadWriteData(fn);
+      deviceEnergyTable.grantReadWriteData(fn);
       fn.addToRolePolicy(new iam.PolicyStatement({
         actions: [
           'cognito-idp:AdminInitiateAuth',
@@ -264,6 +275,7 @@ export class AppStack extends cdk.Stack {
     new cdk.CfnOutput(this, 'UserPoolId', { value: userPool.userPoolId });
     new cdk.CfnOutput(this, 'UserPoolClientId', { value: userPoolClient.userPoolClientId });
     new cdk.CfnOutput(this, 'WebsiteBucketName', { value: websiteBucket.bucketName });
+    new cdk.CfnOutput(this, 'DeviceEnergyTableName', { value: deviceEnergyTable.tableName });
     new cdk.CfnOutput(this, 'DistributionId', { value: distribution.distributionId });
   }
 }
