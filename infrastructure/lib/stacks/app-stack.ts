@@ -170,8 +170,20 @@ export class AppStack extends cdk.Stack {
       code: lambda.Code.fromAsset(path.join(lambdaDir, 'get-device-energy')),
     });
 
+    const getUserSettingsFn = new lambda.Function(this, 'GetUserSettingsFn', {
+      ...commonProps,
+      functionName: `${prefix}-get-user-settings`,
+      code: lambda.Code.fromAsset(path.join(lambdaDir, 'get-user-settings')),
+    });
+
+    const updateUserSettingsFn = new lambda.Function(this, 'UpdateUserSettingsFn', {
+      ...commonProps,
+      functionName: `${prefix}-update-user-settings`,
+      code: lambda.Code.fromAsset(path.join(lambdaDir, 'update-user-settings')),
+    });
+
     // Grant permissions
-    const allFunctions = [signUpFn, confirmSignUpFn, signInFn, getUserFn, recognizeDeviceFn, createDeviceFn, listDevicesFn, deleteDeviceFn, getDeviceEnergyFn];
+    const allFunctions = [signUpFn, confirmSignUpFn, signInFn, getUserFn, recognizeDeviceFn, createDeviceFn, listDevicesFn, deleteDeviceFn, getDeviceEnergyFn, getUserSettingsFn, updateUserSettingsFn];
 
     for (const fn of allFunctions) {
       usersTable.grantReadWriteData(fn);
@@ -228,6 +240,11 @@ export class AppStack extends cdk.Stack {
     const deviceResource = devicesResource.addResource('{deviceId}');
     deviceResource.addMethod('DELETE', new apigateway.LambdaIntegration(deleteDeviceFn));
     deviceResource.addResource('energy').addMethod('GET', new apigateway.LambdaIntegration(getDeviceEnergyFn));
+
+    // Settings routes
+    const settingsResource = apiResource.addResource('settings');
+    settingsResource.addMethod('GET', new apigateway.LambdaIntegration(getUserSettingsFn));
+    settingsResource.addMethod('PUT', new apigateway.LambdaIntegration(updateUserSettingsFn));
 
     // ─── Frontend Hosting ──────────────────────────────────────────────────────
 

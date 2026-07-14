@@ -557,3 +557,61 @@
   box-shadow: var(--shadow-lg);
   border-color: var(--color-primary);
 }
+
+/* Settings Page */
+.settings-subtitle {
+  color: var(--color-text-muted);
+  margin-bottom: 1.5rem;
+}
+
+.settings-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 2rem;
+  max-width: 500px;
+  box-shadow: var(--shadow);
+}
+
+.settings-card .btn-primary {
+  width: auto;
+  padding: 0.625rem 1.5rem;
+  margin-top: 0.5rem;
+}
+
+.input-with-unit {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.input-with-unit input {
+  border-radius: 0;
+  flex: 1;
+}
+
+.input-prefix {
+  padding: 0.625rem 0.75rem;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-right: none;
+  border-radius: var(--radius) 0 0 var(--radius);
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.input-suffix {
+  padding: 0.625rem 0.75rem;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-left: none;
+  border-radius: 0 var(--radius) var(--radius) 0;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.form-help {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  margin-top: 0.5rem;
+}

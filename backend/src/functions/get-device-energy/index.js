@@ -6,10 +6,11 @@ const ddbClient = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 
 const DEVICES_TABLE = process.env.DEVICES_TABLE;
 const DEVICE_ENERGY_TABLE = process.env.DEVICE_ENERGY_TABLE;
-const COST_PER_KWH = 0.20; // AUD per kWh
+const USERS_TABLE = process.env.USERS_TABLE;
+const DEFAULT_COST_PER_KWH = 0.20; // AUD per kWh
 
-if (!DEVICES_TABLE || !DEVICE_ENERGY_TABLE) {
-  throw new Error('Missing required environment variables: DEVICES_TABLE, DEVICE_ENERGY_TABLE');
+if (!DEVICES_TABLE || !DEVICE_ENERGY_TABLE || !USERS_TABLE) {
+  throw new Error('Missing required environment variables: DEVICES_TABLE, DEVICE_ENERGY_TABLE, USERS_TABLE');
 }
 
 // Fallback: generate simulated data if no real data exists
@@ -48,7 +49,7 @@ function getBaseConsumption(deviceType) {
   return { min: 10, max: 40 };
 }
 
-function generateSimulatedData(deviceId, deviceType) {
+function generateSimulatedData(deviceId, deviceType, costPerKwh) {
   const baseRange = getBaseConsumption(deviceType);
   const baseKwh = baseRange.min + (seededRandom(deviceId) * (baseRange.max - baseRange.min));
   const months = [];
@@ -68,7 +69,7 @@ function generateSimulatedData(deviceId, deviceType) {
       month: monthKey,
       label: date.toLocaleDateString('en-AU', { month: 'short', year: '2-digit' }),
       kwh,
-      cost: Math.round(kwh * COST_PER_KWH * 100) / 100,
+      cost: Math.round(kwh * costPerKwh * 100) / 100,
     });
   }
   return months;
@@ -110,6 +111,14 @@ exports.handler = withAuth(async (event) => {
 
     const device = deviceResult.Item;
 
+    // Get user's cost per kWh setting
+    const userResult = await ddbClient.send(new GetCommand({
+      TableName: USERS_TABLE,
+      Key: { id: event.user.id },
+      ProjectionExpression: 'costPerKwh',
+    }));
+    const COST_PER_KWH = userResult.Item?.costPerKwh ?? DEFAULT_COST_PER_KWH;
+
     // Query energy data from DynamoDB (last 12 months)
     const now = new Date();
     const startMonth = new Date(now.getFullYear(), now.getMonth() - 11, 1).toISOString().slice(0, 7);
@@ -148,7 +157,7 @@ exports.handler = withAuth(async (event) => {
     } else {
       // No real data — fall back to simulation
       dataSource = 'simulated';
-      monthly = generateSimulatedData(deviceId, device.deviceType);
+      monthly = generateSimulatedData(deviceId, device.deviceType, COST_PER_KWH);
     }
 
     const totalKwh = Math.round(monthly.reduce((sum, m) => sum + m.kwh, 0) * 10) / 10;

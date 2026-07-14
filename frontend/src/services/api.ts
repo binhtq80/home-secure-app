@@ -52,6 +52,16 @@ export const usersApi = {
   getProfile: (userId: string) => request(`/api/users/${userId}`),
 };
 
+export const settingsApi = {
+  get: () => request('/api/settings'),
+
+  update: (settings: { costPerKwh?: number; currency?: string }) =>
+    request('/api/settings', {
+      method: 'PUT',
+      body: JSON.stringify(settings),
+    }),
+};
+
 export const devicesApi = {
   recognize: (image: string, mimeType: string) =>
     request('/api/devices/recognize', {
