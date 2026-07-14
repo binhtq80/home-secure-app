@@ -59,7 +59,16 @@ export class PipelineStack extends cdk.Stack {
       envConfig,
     });
 
-    pipeline.addStage(testStage);
+    pipeline.addStage(testStage, {
+      post: [
+        new pipelines.ShellStep('SmokeTest', {
+          commands: [
+            'chmod +x scripts/smoke-test.sh',
+            'API_URL=https://d2ok3vs29hr98h.cloudfront.net ./scripts/smoke-test.sh',
+          ],
+        }),
+      ],
+    });
 
     // Future: Add prod stage with manual approval
     // const prodStage = new ProdStage(this, 'DeployProd', {
