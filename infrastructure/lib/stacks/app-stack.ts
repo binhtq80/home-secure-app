@@ -143,13 +143,14 @@ export class AppStack extends cdk.Stack {
     });
 
     // Auth routes
-    const authResource = api.root.addResource('auth');
+    const apiResource = api.root.addResource('api');
+    const authResource = apiResource.addResource('auth');
     authResource.addResource('signup').addMethod('POST', new apigateway.LambdaIntegration(signUpFn));
     authResource.addResource('confirm').addMethod('POST', new apigateway.LambdaIntegration(confirmSignUpFn));
     authResource.addResource('signin').addMethod('POST', new apigateway.LambdaIntegration(signInFn));
 
     // User routes
-    const usersResource = api.root.addResource('users');
+    const usersResource = apiResource.addResource('users');
     usersResource.addResource('{userId}').addMethod('GET', new apigateway.LambdaIntegration(getUserFn));
 
     // ─── Frontend Hosting ──────────────────────────────────────────────────────
@@ -166,6 +167,15 @@ export class AppStack extends cdk.Stack {
         origin: origins.S3BucketOrigin.withOriginAccessControl(websiteBucket),
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
         cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED,
+      },
+      additionalBehaviors: {
+        '/api/*': {
+          origin: new origins.RestApiOrigin(api),
+          viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+          cachePolicy: cloudfront.CachePolicy.CACHING_DISABLED,
+          originRequestPolicy: cloudfront.OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER,
+          allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
+        },
       },
       defaultRootObject: 'index.html',
       errorResponses: [
