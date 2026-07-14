@@ -67,6 +67,9 @@ export class PipelineStack extends cdk.Stack {
             'API_URL=https://d2ok3vs29hr98h.cloudfront.net ./scripts/smoke-test.sh',
           ],
         }),
+        new pipelines.ManualApprovalStep('E2EApproval', {
+          comment: 'Smoke tests passed. Please verify the deployment manually and approve if it meets requirements.',
+        }),
       ],
     });
 
