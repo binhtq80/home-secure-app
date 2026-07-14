@@ -50,194 +50,72 @@ export class AppStack extends cdk.Stack {
       generateSecret: false,
     });
 
-    const identityPool = new cognito.CfnIdentityPool(this, 'IdentityPool', {
-      identityPoolName: `${prefix}-identity-pool`,
-      allowUnauthenticatedIdentities: false,
-      cognitoIdentityProviders: [
-        {
-          clientId: userPoolClient.userPoolClientId,
-          providerName: userPool.userPoolProviderName,
-        },
-      ],
-    });
-
-    // ─── DynamoDB Tables ───────────────────────────────────────────────────────
-
-    const tableProps = {
-      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-      removalPolicy: envConfig.isProd ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,
-    };
+    // ─── DynamoDB ──────────────────────────────────────────────────────────────
 
     const usersTable = new dynamodb.Table(this, 'UsersTable', {
-      ...tableProps,
       tableName: `${prefix}-users`,
       partitionKey: { name: 'id', type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: envConfig.isProd ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,
     });
+
     usersTable.addGlobalSecondaryIndex({
       indexName: 'username-index',
       partitionKey: { name: 'username', type: dynamodb.AttributeType.STRING },
     });
+
     usersTable.addGlobalSecondaryIndex({
       indexName: 'email-index',
       partitionKey: { name: 'email', type: dynamodb.AttributeType.STRING },
     });
 
-    const postsTable = new dynamodb.Table(this, 'PostsTable', {
-      ...tableProps,
-      tableName: `${prefix}-posts`,
-      partitionKey: { name: 'id', type: dynamodb.AttributeType.STRING },
-    });
-    postsTable.addGlobalSecondaryIndex({
-      indexName: 'userId-index',
-      partitionKey: { name: 'userId', type: dynamodb.AttributeType.STRING },
-      sortKey: { name: 'createdAt', type: dynamodb.AttributeType.STRING },
-    });
-
-    const likesTable = new dynamodb.Table(this, 'LikesTable', {
-      ...tableProps,
-      tableName: `${prefix}-likes`,
-      partitionKey: { name: 'userId', type: dynamodb.AttributeType.STRING },
-      sortKey: { name: 'postId', type: dynamodb.AttributeType.STRING },
-    });
-    likesTable.addGlobalSecondaryIndex({
-      indexName: 'postId-index',
-      partitionKey: { name: 'postId', type: dynamodb.AttributeType.STRING },
-    });
-
-    const commentsTable = new dynamodb.Table(this, 'CommentsTable', {
-      ...tableProps,
-      tableName: `${prefix}-comments`,
-      partitionKey: { name: 'id', type: dynamodb.AttributeType.STRING },
-    });
-    commentsTable.addGlobalSecondaryIndex({
-      indexName: 'postId-index',
-      partitionKey: { name: 'postId', type: dynamodb.AttributeType.STRING },
-      sortKey: { name: 'createdAt', type: dynamodb.AttributeType.STRING },
-    });
-
-    const followsTable = new dynamodb.Table(this, 'FollowsTable', {
-      ...tableProps,
-      tableName: `${prefix}-follows`,
-      partitionKey: { name: 'followerId', type: dynamodb.AttributeType.STRING },
-      sortKey: { name: 'followingId', type: dynamodb.AttributeType.STRING },
-    });
-    followsTable.addGlobalSecondaryIndex({
-      indexName: 'followingId-index',
-      partitionKey: { name: 'followingId', type: dynamodb.AttributeType.STRING },
-    });
-
     // ─── Lambda Functions ──────────────────────────────────────────────────────
+
+    const lambdaDir = path.join(__dirname, '../../../backend/dist/lambda-packages');
 
     const lambdaEnv: Record<string, string> = {
       USERS_TABLE: usersTable.tableName,
-      POSTS_TABLE: postsTable.tableName,
-      LIKES_TABLE: likesTable.tableName,
-      COMMENTS_TABLE: commentsTable.tableName,
-      FOLLOWS_TABLE: followsTable.tableName,
       USER_POOL_ID: userPool.userPoolId,
       USER_POOL_CLIENT_ID: userPoolClient.userPoolClientId,
     };
 
-    const lambdaDefaults: lambda.FunctionProps = {
+    const commonProps = {
       runtime: lambda.Runtime.NODEJS_22_X,
       timeout: cdk.Duration.seconds(30),
       memorySize: 256,
       environment: lambdaEnv,
-      code: lambda.Code.fromAsset(path.join(__dirname, '../../../backend/dist/lambda-packages')),
       handler: 'index.handler',
     };
 
-    // Auth functions
     const signUpFn = new lambda.Function(this, 'SignUpFn', {
-      ...lambdaDefaults,
+      ...commonProps,
       functionName: `${prefix}-signup`,
-      code: lambda.Code.fromAsset(path.join(__dirname, '../../../backend/dist/lambda-packages/signup')),
-    });
-
-    const signInFn = new lambda.Function(this, 'SignInFn', {
-      ...lambdaDefaults,
-      functionName: `${prefix}-signin`,
-      code: lambda.Code.fromAsset(path.join(__dirname, '../../../backend/dist/lambda-packages/signin')),
+      code: lambda.Code.fromAsset(path.join(lambdaDir, 'signup')),
     });
 
     const confirmSignUpFn = new lambda.Function(this, 'ConfirmSignUpFn', {
-      ...lambdaDefaults,
+      ...commonProps,
       functionName: `${prefix}-confirm-signup`,
-      code: lambda.Code.fromAsset(path.join(__dirname, '../../../backend/dist/lambda-packages/confirm-signup')),
+      code: lambda.Code.fromAsset(path.join(lambdaDir, 'confirm-signup')),
     });
 
-    // User functions
+    const signInFn = new lambda.Function(this, 'SignInFn', {
+      ...commonProps,
+      functionName: `${prefix}-signin`,
+      code: lambda.Code.fromAsset(path.join(lambdaDir, 'signin')),
+    });
+
     const getUserFn = new lambda.Function(this, 'GetUserFn', {
-      ...lambdaDefaults,
+      ...commonProps,
       functionName: `${prefix}-get-user`,
-      code: lambda.Code.fromAsset(path.join(__dirname, '../../../backend/dist/lambda-packages/get-user')),
+      code: lambda.Code.fromAsset(path.join(lambdaDir, 'get-user')),
     });
 
-    const updateUserFn = new lambda.Function(this, 'UpdateUserFn', {
-      ...lambdaDefaults,
-      functionName: `${prefix}-update-user`,
-      code: lambda.Code.fromAsset(path.join(__dirname, '../../../backend/dist/lambda-packages/update-user')),
-    });
-
-    // Post functions
-    const createPostFn = new lambda.Function(this, 'CreatePostFn', {
-      ...lambdaDefaults,
-      functionName: `${prefix}-create-post`,
-      code: lambda.Code.fromAsset(path.join(__dirname, '../../../backend/dist/lambda-packages/create-post')),
-    });
-
-    const getPostsFn = new lambda.Function(this, 'GetPostsFn', {
-      ...lambdaDefaults,
-      functionName: `${prefix}-get-posts`,
-      code: lambda.Code.fromAsset(path.join(__dirname, '../../../backend/dist/lambda-packages/get-posts')),
-    });
-
-    const getPostFn = new lambda.Function(this, 'GetPostFn', {
-      ...lambdaDefaults,
-      functionName: `${prefix}-get-post`,
-      code: lambda.Code.fromAsset(path.join(__dirname, '../../../backend/dist/lambda-packages/get-post')),
-    });
-
-    const deletePostFn = new lambda.Function(this, 'DeletePostFn', {
-      ...lambdaDefaults,
-      functionName: `${prefix}-delete-post`,
-      code: lambda.Code.fromAsset(path.join(__dirname, '../../../backend/dist/lambda-packages/delete-post')),
-    });
-
-    // Social functions
-    const likeFn = new lambda.Function(this, 'LikeFn', {
-      ...lambdaDefaults,
-      functionName: `${prefix}-like`,
-      code: lambda.Code.fromAsset(path.join(__dirname, '../../../backend/dist/lambda-packages/like')),
-    });
-
-    const commentFn = new lambda.Function(this, 'CommentFn', {
-      ...lambdaDefaults,
-      functionName: `${prefix}-comment`,
-      code: lambda.Code.fromAsset(path.join(__dirname, '../../../backend/dist/lambda-packages/comment')),
-    });
-
-    const followFn = new lambda.Function(this, 'FollowFn', {
-      ...lambdaDefaults,
-      functionName: `${prefix}-follow`,
-      code: lambda.Code.fromAsset(path.join(__dirname, '../../../backend/dist/lambda-packages/follow')),
-    });
-
-    // Grant DynamoDB access to all Lambda functions
-    const allFunctions = [
-      signUpFn, signInFn, confirmSignUpFn,
-      getUserFn, updateUserFn,
-      createPostFn, getPostsFn, getPostFn, deletePostFn,
-      likeFn, commentFn, followFn,
-    ];
-
-    const allTables = [usersTable, postsTable, likesTable, commentsTable, followsTable];
+    // Grant permissions
+    const allFunctions = [signUpFn, confirmSignUpFn, signInFn, getUserFn];
 
     for (const fn of allFunctions) {
-      for (const table of allTables) {
-        table.grantReadWriteData(fn);
-      }
-      // Grant Cognito access for auth functions
+      usersTable.grantReadWriteData(fn);
       fn.addToRolePolicy(new iam.PolicyStatement({
         actions: [
           'cognito-idp:AdminInitiateAuth',
@@ -245,6 +123,8 @@ export class AppStack extends cdk.Stack {
           'cognito-idp:AdminSetUserPassword',
           'cognito-idp:SignUp',
           'cognito-idp:ConfirmSignUp',
+          'cognito-idp:InitiateAuth',
+          'cognito-idp:GetUser',
         ],
         resources: [userPool.userPoolArn],
       }));
@@ -265,29 +145,14 @@ export class AppStack extends cdk.Stack {
     // Auth routes
     const authResource = api.root.addResource('auth');
     authResource.addResource('signup').addMethod('POST', new apigateway.LambdaIntegration(signUpFn));
-    authResource.addResource('signin').addMethod('POST', new apigateway.LambdaIntegration(signInFn));
     authResource.addResource('confirm').addMethod('POST', new apigateway.LambdaIntegration(confirmSignUpFn));
+    authResource.addResource('signin').addMethod('POST', new apigateway.LambdaIntegration(signInFn));
 
     // User routes
     const usersResource = api.root.addResource('users');
-    const userResource = usersResource.addResource('{userId}');
-    userResource.addMethod('GET', new apigateway.LambdaIntegration(getUserFn));
-    userResource.addMethod('PUT', new apigateway.LambdaIntegration(updateUserFn));
+    usersResource.addResource('{userId}').addMethod('GET', new apigateway.LambdaIntegration(getUserFn));
 
-    // Post routes
-    const postsResource = api.root.addResource('posts');
-    postsResource.addMethod('GET', new apigateway.LambdaIntegration(getPostsFn));
-    postsResource.addMethod('POST', new apigateway.LambdaIntegration(createPostFn));
-    const postResource = postsResource.addResource('{postId}');
-    postResource.addMethod('GET', new apigateway.LambdaIntegration(getPostFn));
-    postResource.addMethod('DELETE', new apigateway.LambdaIntegration(deletePostFn));
-
-    // Social routes
-    postResource.addResource('like').addMethod('POST', new apigateway.LambdaIntegration(likeFn));
-    postResource.addResource('comment').addMethod('POST', new apigateway.LambdaIntegration(commentFn));
-    usersResource.addResource('{targetUserId}').addResource('follow').addMethod('POST', new apigateway.LambdaIntegration(followFn));
-
-    // ─── Frontend Hosting (S3 + CloudFront) ────────────────────────────────────
+    // ─── Frontend Hosting ──────────────────────────────────────────────────────
 
     const websiteBucket = new s3.Bucket(this, 'WebsiteBucket', {
       bucketName: `${prefix}-website`,
@@ -302,30 +167,14 @@ export class AppStack extends cdk.Stack {
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
         cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED,
       },
-      additionalBehaviors: {
-        '/api/*': {
-          origin: new origins.RestApiOrigin(api),
-          viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-          cachePolicy: cloudfront.CachePolicy.CACHING_DISABLED,
-          allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
-        },
-      },
       defaultRootObject: 'index.html',
       errorResponses: [
-        {
-          httpStatus: 404,
-          responseHttpStatus: 200,
-          responsePagePath: '/index.html', // SPA routing
-        },
-        {
-          httpStatus: 403,
-          responseHttpStatus: 200,
-          responsePagePath: '/index.html',
-        },
+        { httpStatus: 404, responseHttpStatus: 200, responsePagePath: '/index.html' },
+        { httpStatus: 403, responseHttpStatus: 200, responsePagePath: '/index.html' },
       ],
     });
 
-    // Deploy frontend assets (only if build output exists)
+    // Deploy frontend assets
     new s3deploy.BucketDeployment(this, 'DeployWebsite', {
       sources: [s3deploy.Source.asset(path.join(__dirname, '../../../frontend/dist'))],
       destinationBucket: websiteBucket,
@@ -339,7 +188,6 @@ export class AppStack extends cdk.Stack {
     new cdk.CfnOutput(this, 'WebsiteUrl', { value: `https://${distribution.distributionDomainName}`, description: 'CloudFront URL' });
     new cdk.CfnOutput(this, 'UserPoolId', { value: userPool.userPoolId });
     new cdk.CfnOutput(this, 'UserPoolClientId', { value: userPoolClient.userPoolClientId });
-    new cdk.CfnOutput(this, 'IdentityPoolId', { value: identityPool.ref });
     new cdk.CfnOutput(this, 'WebsiteBucketName', { value: websiteBucket.bucketName });
     new cdk.CfnOutput(this, 'DistributionId', { value: distribution.distributionId });
   }

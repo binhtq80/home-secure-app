@@ -1,15 +1,18 @@
-# Dependencies
-node_modules/
+# Infrastructure build outputs (TypeScript compiled)
+infrastructure/**/*.js
+infrastructure/**/*.d.ts
+!infrastructure/jest.config.js
 
-# Build outputs
-*.js
-*.d.ts
-!backend/scripts/build.js
-!jest.config.js
+# CDK
 cdk.out/
 .cdk.staging/
+
+# Build artifacts
 backend/dist/
 frontend/dist/
+
+# Dependencies
+node_modules/
 
 # IDE
 .idea/
@@ -23,9 +26,5 @@ frontend/dist/
 .env
 .env.local
 
-# Package manager
+# Package manager lock files (use yarn.lock when ready)
 package-lock.json
-yarn.lock
-.yarn/cache
-.yarn/unplugged
-.pnp.*
