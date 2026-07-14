@@ -10,6 +10,7 @@
     "@aws-sdk/client-dynamodb": "^3.500.0",
     "@aws-sdk/lib-dynamodb": "^3.500.0",
     "@aws-sdk/client-cognito-identity-provider": "^3.500.0",
+    "@aws-sdk/client-bedrock-runtime": "^3.500.0",
     "uuid": "^9.0.0"
   },
   "devDependencies": {

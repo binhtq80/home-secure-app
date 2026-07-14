@@ -42,3 +42,30 @@ export const authApi = {
 export const usersApi = {
   getProfile: (userId: string) => request(`/api/users/${userId}`),
 };
+
+export const devicesApi = {
+  recognize: (image: string, mimeType: string) =>
+    request('/api/devices/recognize', {
+      method: 'POST',
+      body: JSON.stringify({ image, mimeType }),
+    }),
+
+  create: (device: {
+    deviceType: string;
+    brand: string;
+    model?: string;
+    color?: string;
+    condition?: string;
+    description?: string;
+    features?: string[];
+  }) =>
+    request('/api/devices', {
+      method: 'POST',
+      body: JSON.stringify(device),
+    }),
+
+  list: () => request('/api/devices'),
+
+  delete: (deviceId: string) =>
+    request(`/api/devices/${deviceId}`, { method: 'DELETE' }),
+};

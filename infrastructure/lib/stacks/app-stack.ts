@@ -69,14 +69,30 @@ export class AppStack extends cdk.Stack {
       partitionKey: { name: 'email', type: dynamodb.AttributeType.STRING },
     });
 
+    // Devices table
+    const devicesTable = new dynamodb.Table(this, 'DevicesTable', {
+      tableName: `${prefix}-devices`,
+      partitionKey: { name: 'id', type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: envConfig.isProd ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,
+    });
+
+    devicesTable.addGlobalSecondaryIndex({
+      indexName: 'userId-index',
+      partitionKey: { name: 'userId', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'createdAt', type: dynamodb.AttributeType.STRING },
+    });
+
     // ─── Lambda Functions ──────────────────────────────────────────────────────
 
     const lambdaDir = path.join(__dirname, '../../../backend/dist/lambda-packages');
 
     const lambdaEnv: Record<string, string> = {
       USERS_TABLE: usersTable.tableName,
+      DEVICES_TABLE: devicesTable.tableName,
       USER_POOL_ID: userPool.userPoolId,
       USER_POOL_CLIENT_ID: userPoolClient.userPoolClientId,
+      BEDROCK_MODEL_ID: 'anthropic.claude-3-sonnet-20240229-v1:0',
     };
 
     const commonProps = {
@@ -111,11 +127,39 @@ export class AppStack extends cdk.Stack {
       code: lambda.Code.fromAsset(path.join(lambdaDir, 'get-user')),
     });
 
+    // Device functions
+    const recognizeDeviceFn = new lambda.Function(this, 'RecognizeDeviceFn', {
+      ...commonProps,
+      functionName: `${prefix}-recognize-device`,
+      timeout: cdk.Duration.seconds(60), // Bedrock calls can be slow
+      memorySize: 512,
+      code: lambda.Code.fromAsset(path.join(lambdaDir, 'recognize-device')),
+    });
+
+    const createDeviceFn = new lambda.Function(this, 'CreateDeviceFn', {
+      ...commonProps,
+      functionName: `${prefix}-create-device`,
+      code: lambda.Code.fromAsset(path.join(lambdaDir, 'create-device')),
+    });
+
+    const listDevicesFn = new lambda.Function(this, 'ListDevicesFn', {
+      ...commonProps,
+      functionName: `${prefix}-list-devices`,
+      code: lambda.Code.fromAsset(path.join(lambdaDir, 'list-devices')),
+    });
+
+    const deleteDeviceFn = new lambda.Function(this, 'DeleteDeviceFn', {
+      ...commonProps,
+      functionName: `${prefix}-delete-device`,
+      code: lambda.Code.fromAsset(path.join(lambdaDir, 'delete-device')),
+    });
+
     // Grant permissions
-    const allFunctions = [signUpFn, confirmSignUpFn, signInFn, getUserFn];
+    const allFunctions = [signUpFn, confirmSignUpFn, signInFn, getUserFn, recognizeDeviceFn, createDeviceFn, listDevicesFn, deleteDeviceFn];
 
     for (const fn of allFunctions) {
       usersTable.grantReadWriteData(fn);
+      devicesTable.grantReadWriteData(fn);
       fn.addToRolePolicy(new iam.PolicyStatement({
         actions: [
           'cognito-idp:AdminInitiateAuth',
@@ -129,6 +173,12 @@ export class AppStack extends cdk.Stack {
         resources: [userPool.userPoolArn],
       }));
     }
+
+    // Bedrock access for device recognition
+    recognizeDeviceFn.addToRolePolicy(new iam.PolicyStatement({
+      actions: ['bedrock:InvokeModel'],
+      resources: [`arn:aws:bedrock:${this.region}::foundation-model/*`],
+    }));
 
     // ─── API Gateway ───────────────────────────────────────────────────────────
 
@@ -152,6 +202,13 @@ export class AppStack extends cdk.Stack {
     // User routes
     const usersResource = apiResource.addResource('users');
     usersResource.addResource('{userId}').addMethod('GET', new apigateway.LambdaIntegration(getUserFn));
+
+    // Device routes
+    const devicesResource = apiResource.addResource('devices');
+    devicesResource.addMethod('GET', new apigateway.LambdaIntegration(listDevicesFn));
+    devicesResource.addMethod('POST', new apigateway.LambdaIntegration(createDeviceFn));
+    devicesResource.addResource('recognize').addMethod('POST', new apigateway.LambdaIntegration(recognizeDeviceFn));
+    devicesResource.addResource('{deviceId}').addMethod('DELETE', new apigateway.LambdaIntegration(deleteDeviceFn));
 
     // ─── Frontend Hosting ──────────────────────────────────────────────────────
 

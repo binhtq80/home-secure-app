@@ -53,9 +53,11 @@ export function DashboardPage() {
     <div className="dashboard-container">
       <header className="dashboard-header">
         <h1>MyApp</h1>
-        <button onClick={handleLogout} className="btn-logout">
-          Sign Out
-        </button>
+        <nav className="header-nav">
+          <button onClick={() => navigate('/dashboard')} className="btn-nav active">Dashboard</button>
+          <button onClick={() => navigate('/devices')} className="btn-nav">Devices</button>
+          <button onClick={handleLogout} className="btn-logout">Sign Out</button>
+        </nav>
       </header>
 
       <main className="dashboard-main">

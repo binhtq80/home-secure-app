@@ -4,6 +4,7 @@ import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { ConfirmPage } from './pages/ConfirmPage';
 import { DashboardPage } from './pages/DashboardPage';
+import { DevicesPage } from './pages/DevicesPage';
 import './App.css';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -23,6 +24,7 @@ function AppRoutes() {
       <Route path="/register" element={<PublicRoute><RegisterPage /></PublicRoute>} />
       <Route path="/confirm" element={<PublicRoute><ConfirmPage /></PublicRoute>} />
       <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+      <Route path="/devices" element={<ProtectedRoute><DevicesPage /></ProtectedRoute>} />
       <Route path="*" element={<Navigate to="/dashboard" />} />
     </Routes>
   );
