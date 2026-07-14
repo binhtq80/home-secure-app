@@ -1,0 +1,43 @@
+name: Bootstrap CDK Pipeline
+
+# This workflow is for the INITIAL pipeline deployment only.
+# Once the pipeline is running, it self-mutates and you won't need this anymore.
+# You can also run it manually to recover if the pipeline breaks.
+
+on:
+  workflow_dispatch: # Manual trigger only
+
+permissions:
+  id-token: write   # Required for OIDC
+  contents: read
+
+env:
+  AWS_REGION: ap-southeast-2
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::626963115365:role/myapp-github-actions-role
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: CDK Diff
+        run: npx cdk diff MyappPipelineStack
+
+      - name: CDK Deploy Pipeline
+        run: npx cdk deploy MyappPipelineStack --require-approval never
