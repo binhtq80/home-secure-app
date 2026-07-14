@@ -177,10 +177,7 @@ export class AppStack extends cdk.Stack {
     // Bedrock access for device recognition
     recognizeDeviceFn.addToRolePolicy(new iam.PolicyStatement({
       actions: ['bedrock:InvokeModel'],
-      resources: [
-        `arn:aws:bedrock:${this.region}::foundation-model/*`,
-        `arn:aws:bedrock:${this.region}:*:inference-profile/*`,
-      ],
+      resources: ['*'],
     }));
 
     // ─── API Gateway ───────────────────────────────────────────────────────────
