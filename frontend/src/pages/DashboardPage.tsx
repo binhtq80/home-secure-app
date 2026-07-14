@@ -56,6 +56,7 @@ export function DashboardPage() {
         <nav className="header-nav">
           <button onClick={() => navigate('/dashboard')} className="btn-nav active">Dashboard</button>
           <button onClick={() => navigate('/devices')} className="btn-nav">Devices</button>
+          <button onClick={() => navigate('/reports')} className="btn-nav">Reports</button>
           <button onClick={() => navigate('/settings')} className="btn-nav">Settings</button>
           <button onClick={handleLogout} className="btn-logout">Sign Out</button>
         </nav>

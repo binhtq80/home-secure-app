@@ -182,8 +182,15 @@ export class AppStack extends cdk.Stack {
       code: lambda.Code.fromAsset(path.join(lambdaDir, 'update-user-settings')),
     });
 
+    const getEnergyReportFn = new lambda.Function(this, 'GetEnergyReportFn', {
+      ...commonProps,
+      functionName: `${prefix}-get-energy-report`,
+      timeout: cdk.Duration.seconds(30),
+      code: lambda.Code.fromAsset(path.join(lambdaDir, 'get-energy-report')),
+    });
+
     // Grant permissions
-    const allFunctions = [signUpFn, confirmSignUpFn, signInFn, getUserFn, recognizeDeviceFn, createDeviceFn, listDevicesFn, deleteDeviceFn, getDeviceEnergyFn, getUserSettingsFn, updateUserSettingsFn];
+    const allFunctions = [signUpFn, confirmSignUpFn, signInFn, getUserFn, recognizeDeviceFn, createDeviceFn, listDevicesFn, deleteDeviceFn, getDeviceEnergyFn, getUserSettingsFn, updateUserSettingsFn, getEnergyReportFn];
 
     for (const fn of allFunctions) {
       usersTable.grantReadWriteData(fn);
@@ -245,6 +252,10 @@ export class AppStack extends cdk.Stack {
     const settingsResource = apiResource.addResource('settings');
     settingsResource.addMethod('GET', new apigateway.LambdaIntegration(getUserSettingsFn));
     settingsResource.addMethod('PUT', new apigateway.LambdaIntegration(updateUserSettingsFn));
+
+    // Reports routes
+    const reportsResource = apiResource.addResource('reports');
+    reportsResource.addResource('energy').addMethod('GET', new apigateway.LambdaIntegration(getEnergyReportFn));
 
     // ─── Frontend Hosting ──────────────────────────────────────────────────────
 

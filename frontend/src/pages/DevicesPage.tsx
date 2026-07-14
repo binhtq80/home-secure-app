@@ -165,6 +165,7 @@ export function DevicesPage() {
         <nav className="header-nav">
           <button onClick={() => navigate('/dashboard')} className="btn-nav">Dashboard</button>
           <button onClick={() => navigate('/devices')} className="btn-nav active">Devices</button>
+          <button onClick={() => navigate('/reports')} className="btn-nav">Reports</button>
           <button onClick={() => navigate('/settings')} className="btn-nav">Settings</button>
           <button onClick={handleLogout} className="btn-logout">Sign Out</button>
         </nav>

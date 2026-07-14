@@ -615,3 +615,161 @@
   color: var(--color-text-muted);
   margin-top: 0.5rem;
 }
+
+/* Reports Page */
+.report-subtitle {
+  color: var(--color-text-muted);
+  margin-bottom: 1.5rem;
+}
+
+.report-section {
+  margin-top: 2rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  box-shadow: var(--shadow);
+}
+
+.report-section h3 {
+  font-size: 1rem;
+  margin-bottom: 1rem;
+}
+
+/* Top Devices List */
+.top-devices-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.top-device-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.top-device-item:hover {
+  border-color: var(--color-primary);
+  background: rgba(79, 70, 229, 0.02);
+}
+
+.top-device-rank {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  min-width: 2rem;
+}
+
+.top-device-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.top-device-name {
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.top-device-type {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  text-transform: capitalize;
+}
+
+.top-device-stats {
+  text-align: right;
+}
+
+.top-device-kwh {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.top-device-cost {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+/* Chart Legend */
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.legend-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+.legend-label {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+/* Stacked Bar Chart */
+.stacked-chart-container {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+  height: 250px;
+  padding-top: 1.5rem;
+}
+
+.stacked-bar-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+}
+
+.stacked-bar-value {
+  font-size: 0.6rem;
+  color: var(--color-text-muted);
+  margin-bottom: 0.25rem;
+  min-height: 1rem;
+}
+
+.stacked-bar-track {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.stacked-bar-segment {
+  width: 70%;
+  min-width: 16px;
+  transition: height 0.3s ease;
+}
+
+.stacked-bar-segment:last-child {
+  border-radius: 4px 4px 0 0;
+}
+
+.stacked-bar-label {
+  font-size: 0.6rem;
+  color: var(--color-text-muted);
+  margin-top: 0.5rem;
+  white-space: nowrap;
+}

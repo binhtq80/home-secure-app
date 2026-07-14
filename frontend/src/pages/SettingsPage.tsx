@@ -71,6 +71,7 @@ export function SettingsPage() {
         <nav className="header-nav">
           <button onClick={() => navigate('/dashboard')} className="btn-nav">Dashboard</button>
           <button onClick={() => navigate('/devices')} className="btn-nav">Devices</button>
+          <button onClick={() => navigate('/reports')} className="btn-nav">Reports</button>
           <button onClick={() => navigate('/settings')} className="btn-nav active">Settings</button>
           <button onClick={handleLogout} className="btn-logout">Sign Out</button>
         </nav>

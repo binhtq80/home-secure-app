@@ -62,6 +62,10 @@ export const settingsApi = {
     }),
 };
 
+export const reportsApi = {
+  getEnergyReport: () => request('/api/reports/energy'),
+};
+
 export const devicesApi = {
   recognize: (image: string, mimeType: string) =>
     request('/api/devices/recognize', {
