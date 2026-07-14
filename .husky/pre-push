@@ -1,0 +1,19 @@
+#!/bin/bash
+# Pre-push hook: runs quick pipeline simulation before pushing.
+# Prevents broken builds from reaching the pipeline.
+#
+# To skip (emergency): git push --no-verify
+#
+# Install: cp .husky/pre-push .git/hooks/pre-push && chmod +x .git/hooks/pre-push
+
+echo "🔒 Pre-push: Running quick pipeline validation..."
+echo ""
+
+ROOT_DIR="$(git rev-parse --show-toplevel)"
+
+# Use --quick if node_modules already exist (fast path)
+if [ -d "$ROOT_DIR/frontend/node_modules" ] && [ -d "$ROOT_DIR/infrastructure/node_modules" ]; then
+  "$ROOT_DIR/scripts/simulate-pipeline.sh" --quick
+else
+  "$ROOT_DIR/scripts/simulate-pipeline.sh"
+fi
