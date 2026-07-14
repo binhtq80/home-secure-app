@@ -43,8 +43,8 @@ export class PipelineStack extends cdk.Stack {
           // Build backend Lambda packages
           'cd backend && node scripts/build.js && ./scripts/prepare-lambda-packages.sh && cd ..',
 
-          // Build frontend
-          'cd frontend && npx tsc && npx vite build && cd ..',
+          // Build frontend (uses package.json build script: tsc && vite build)
+          'cd frontend && npm run build && cd ..',
 
           // Synth CDK
           'cd infrastructure && npm run build && npx cdk synth && cd ..',
