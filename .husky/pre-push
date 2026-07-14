@@ -35,7 +35,13 @@ if [ "${SKIP_AI_REVIEW:-0}" = "1" ]; then
 fi
 
 # Check if kiro-cli is available
-if ! command -v kiro-cli &> /dev/null; then
+KIRO_CLI="/agentspaces/kiro-cli.latest/kiro-cli"
+if [ ! -x "$KIRO_CLI" ]; then
+  # Try PATH as fallback
+  KIRO_CLI=$(command -v kiro-cli 2>/dev/null || echo "")
+fi
+
+if [ -z "$KIRO_CLI" ]; then
   echo ""
   echo "⏭️  AI review skipped (kiro-cli not found)"
   echo "   Install kiro-cli to enable agentic pre-push review"
@@ -63,31 +69,10 @@ CHANGED_FILES=$(git diff --name-only origin/main..HEAD 2>/dev/null || git diff -
 DIFF_FILE=$(mktemp)
 echo "$DIFF" > "$DIFF_FILE"
 
-# Compose the review prompt
-REVIEW_PROMPT="You are a pre-push code reviewer for a monorepo with frontend (React/TypeScript), backend (Node.js Lambda), and infrastructure (AWS CDK).
-
-Review this git diff and check for BLOCKING issues only:
-
-1. SECURITY: Missing auth middleware on protected routes, exposed secrets, overly permissive IAM
-2. BREAKING CHANGES: Renamed API routes without updating frontend, removed fields the UI depends on
-3. INFRA-CODE MISMATCH: New Lambda not wired in CDK stack, environment variables referenced but not defined
-4. RUNTIME ERRORS: Obvious null pointer risks, missing required env vars, unhandled promise rejections
-5. DATA LOSS: DynamoDB table removal without retain policy in prod, S3 bucket deletion
-
-DO NOT flag: style issues, minor optimizations, missing tests, documentation, naming preferences.
-
-Changed files:
-$CHANGED_FILES
-
-Respond with EXACTLY one of:
-- PASS: <one-line summary of what looks good>
-- WARN: <issue description> (push proceeds but developer should know)
-- BLOCK: <critical issue that should prevent shipping>
-
-Be concise. Only BLOCK for issues that would cause outages, security vulnerabilities, or data loss."
-
 # Run kiro-cli review
-REVIEW_RESULT=$(kiro-cli chat --message "$REVIEW_PROMPT" --file "$DIFF_FILE" 2>/dev/null || echo "PASS: AI review unavailable")
+REVIEW_RESULT=$("$KIRO_CLI" chat --no-interactive "Review this git diff for a monorepo (React frontend, Node.js Lambda backend, AWS CDK infrastructure). Check ONLY for: 1) Security issues (missing auth, exposed secrets) 2) Breaking changes (API/frontend mismatch) 3) Infra-code mismatch (unwired Lambda, missing env vars) 4) Runtime errors (null refs, unhandled exceptions) 5) Data loss risks. DO NOT flag style, tests, or docs. Changed files: $CHANGED_FILES. Respond starting with PASS, WARN, or BLOCK followed by a brief explanation.
+
+$(cat "$DIFF_FILE")" 2>&1 | sed 's/\x1B\[[0-9;]*[a-zA-Z]//g' | sed 's/\x1B\[[?][0-9]*[a-zA-Z]//g' | grep -v "mcp server" | grep -v "Credits:" | grep -v "^------" | grep -v "^[[:space:]]*▸" | grep -v "^[[:space:]]*$" | head -10 || echo "PASS: AI review unavailable")
 
 # Clean up
 rm -f "$DIFF_FILE"
