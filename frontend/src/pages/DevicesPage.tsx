@@ -312,7 +312,11 @@ export function DevicesPage() {
         ) : (
           <div className="devices-grid">
             {devices.map((device) => (
-              <div key={device.id} className="device-card">
+              <div
+                key={device.id}
+                className="device-card clickable"
+                onClick={() => navigate(`/devices/${device.id}`)}
+              >
                 <div className="device-card-header">
                   <span className="device-type-badge">{device.deviceType}</span>
                   <button

@@ -66,6 +66,8 @@ export const devicesApi = {
 
   list: () => request('/api/devices'),
 
+  getEnergy: (deviceId: string) => request(`/api/devices/${deviceId}/energy`),
+
   delete: (deviceId: string) =>
     request(`/api/devices/${deviceId}`, { method: 'DELETE' }),
 };

@@ -154,8 +154,14 @@ export class AppStack extends cdk.Stack {
       code: lambda.Code.fromAsset(path.join(lambdaDir, 'delete-device')),
     });
 
+    const getDeviceEnergyFn = new lambda.Function(this, 'GetDeviceEnergyFn', {
+      ...commonProps,
+      functionName: `${prefix}-get-device-energy`,
+      code: lambda.Code.fromAsset(path.join(lambdaDir, 'get-device-energy')),
+    });
+
     // Grant permissions
-    const allFunctions = [signUpFn, confirmSignUpFn, signInFn, getUserFn, recognizeDeviceFn, createDeviceFn, listDevicesFn, deleteDeviceFn];
+    const allFunctions = [signUpFn, confirmSignUpFn, signInFn, getUserFn, recognizeDeviceFn, createDeviceFn, listDevicesFn, deleteDeviceFn, getDeviceEnergyFn];
 
     for (const fn of allFunctions) {
       usersTable.grantReadWriteData(fn);
@@ -208,7 +214,9 @@ export class AppStack extends cdk.Stack {
     devicesResource.addMethod('GET', new apigateway.LambdaIntegration(listDevicesFn));
     devicesResource.addMethod('POST', new apigateway.LambdaIntegration(createDeviceFn));
     devicesResource.addResource('recognize').addMethod('POST', new apigateway.LambdaIntegration(recognizeDeviceFn));
-    devicesResource.addResource('{deviceId}').addMethod('DELETE', new apigateway.LambdaIntegration(deleteDeviceFn));
+    const deviceResource = devicesResource.addResource('{deviceId}');
+    deviceResource.addMethod('DELETE', new apigateway.LambdaIntegration(deleteDeviceFn));
+    deviceResource.addResource('energy').addMethod('GET', new apigateway.LambdaIntegration(getDeviceEnergyFn));
 
     // ─── Frontend Hosting ──────────────────────────────────────────────────────
 
