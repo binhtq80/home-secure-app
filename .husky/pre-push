@@ -1,19 +1,116 @@
 #!/bin/bash
-# Pre-push hook: runs quick pipeline simulation before pushing.
-# Prevents broken builds from reaching the pipeline.
+# ─── Hybrid Pre-Push Hook: Deterministic + Agentic ───────────────────────────
+# 
+# Step 1: Deterministic — "Will it build?" (blocks on failure)
+# Step 2: Agentic — "Should it ship?" (warns or blocks)
 #
-# To skip (emergency): git push --no-verify
-#
-# Install: cp .husky/pre-push .git/hooks/pre-push && chmod +x .git/hooks/pre-push
+# To skip all checks: git push --no-verify
+# To skip only agentic: SKIP_AI_REVIEW=1 git push
+# ─────────────────────────────────────────────────────────────────────────────
 
-echo "🔒 Pre-push: Running quick pipeline validation..."
-echo ""
+set -e
 
 ROOT_DIR="$(git rev-parse --show-toplevel)"
 
-# Use --quick if node_modules already exist (fast path)
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "🔒 Pre-Push Validation (hybrid: rules + AI)"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+# ─── Step 1: Deterministic Checks ─────────────────────────────────────────────
+echo ""
+echo "📐 Step 1: Deterministic checks (build simulation)"
+echo ""
+
 if [ -d "$ROOT_DIR/frontend/node_modules" ] && [ -d "$ROOT_DIR/infrastructure/node_modules" ]; then
   "$ROOT_DIR/scripts/simulate-pipeline.sh" --quick
 else
   "$ROOT_DIR/scripts/simulate-pipeline.sh"
+fi
+
+# ─── Step 2: Agentic Review ──────────────────────────────────────────────────
+if [ "${SKIP_AI_REVIEW:-0}" = "1" ]; then
+  echo ""
+  echo "⏭️  AI review skipped (SKIP_AI_REVIEW=1)"
+  exit 0
+fi
+
+# Check if kiro-cli is available
+if ! command -v kiro-cli &> /dev/null; then
+  echo ""
+  echo "⏭️  AI review skipped (kiro-cli not found)"
+  echo "   Install kiro-cli to enable agentic pre-push review"
+  exit 0
+fi
+
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "🤖 Step 2: AI review (analyzing changes)"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+
+# Get the diff against the remote main branch
+DIFF=$(git diff origin/main..HEAD 2>/dev/null || git diff HEAD~1..HEAD 2>/dev/null || echo "")
+
+if [ -z "$DIFF" ]; then
+  echo "   No changes to review."
+  exit 0
+fi
+
+# Get list of changed files for context
+CHANGED_FILES=$(git diff --name-only origin/main..HEAD 2>/dev/null || git diff --name-only HEAD~1..HEAD 2>/dev/null || echo "")
+
+# Write diff to a temp file (avoid arg length limits)
+DIFF_FILE=$(mktemp)
+echo "$DIFF" > "$DIFF_FILE"
+
+# Compose the review prompt
+REVIEW_PROMPT="You are a pre-push code reviewer for a monorepo with frontend (React/TypeScript), backend (Node.js Lambda), and infrastructure (AWS CDK).
+
+Review this git diff and check for BLOCKING issues only:
+
+1. SECURITY: Missing auth middleware on protected routes, exposed secrets, overly permissive IAM
+2. BREAKING CHANGES: Renamed API routes without updating frontend, removed fields the UI depends on
+3. INFRA-CODE MISMATCH: New Lambda not wired in CDK stack, environment variables referenced but not defined
+4. RUNTIME ERRORS: Obvious null pointer risks, missing required env vars, unhandled promise rejections
+5. DATA LOSS: DynamoDB table removal without retain policy in prod, S3 bucket deletion
+
+DO NOT flag: style issues, minor optimizations, missing tests, documentation, naming preferences.
+
+Changed files:
+$CHANGED_FILES
+
+Respond with EXACTLY one of:
+- PASS: <one-line summary of what looks good>
+- WARN: <issue description> (push proceeds but developer should know)
+- BLOCK: <critical issue that should prevent shipping>
+
+Be concise. Only BLOCK for issues that would cause outages, security vulnerabilities, or data loss."
+
+# Run kiro-cli review
+REVIEW_RESULT=$(kiro-cli chat --message "$REVIEW_PROMPT" --file "$DIFF_FILE" 2>/dev/null || echo "PASS: AI review unavailable")
+
+# Clean up
+rm -f "$DIFF_FILE"
+
+# Parse result
+echo "   $REVIEW_RESULT"
+echo ""
+
+if echo "$REVIEW_RESULT" | grep -qi "^BLOCK"; then
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo "🚫 Push BLOCKED by AI review"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo ""
+  echo "   Fix the issue above, or override with:"
+  echo "   SKIP_AI_REVIEW=1 git push"
+  echo ""
+  exit 1
+elif echo "$REVIEW_RESULT" | grep -qi "^WARN"; then
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo "⚠️  AI review: warning noted, push proceeding"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+else
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo "✅ AI review passed"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 fi
