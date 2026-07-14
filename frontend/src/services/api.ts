@@ -13,6 +13,15 @@ async function request(path: string, options: RequestInit = {}) {
   const data = await res.json();
 
   if (!res.ok) {
+    // Auto-logout on expired/invalid token
+    if (res.status === 401) {
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('idToken');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('user');
+      window.location.href = '/login';
+      throw new Error('Session expired. Please sign in again.');
+    }
     throw new Error(data.message || 'Request failed');
   }
 
