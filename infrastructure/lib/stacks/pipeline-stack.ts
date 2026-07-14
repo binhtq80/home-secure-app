@@ -1,6 +1,5 @@
 import * as cdk from 'aws-cdk-lib';
 import * as pipelines from 'aws-cdk-lib/pipelines';
-import * as codepipeline from 'aws-cdk-lib/aws-codepipeline';
 import { Construct } from 'constructs';
 import { EnvironmentConfig } from '../config/environments';
 import { TestStage } from './stages/test-stage';
@@ -32,14 +31,24 @@ export class PipelineStack extends cdk.Stack {
     // The self-mutating pipeline
     const pipeline = new pipelines.CodePipeline(this, 'Pipeline', {
       pipelineName: `myapp-${envConfig.name}-pipeline`,
-      crossAccountKeys: false, // Single account for now
+      crossAccountKeys: false,
       synth: new pipelines.ShellStep('Synth', {
         input: source,
         commands: [
-          'npm ci',
-          'npm run build',
-          'npx cdk synth',
+          // Install all workspace dependencies
+          'yarn install --frozen-lockfile',
+
+          // Build backend Lambda packages
+          'yarn build:backend',
+          'cd backend && ./scripts/prepare-lambda-packages.sh && cd ..',
+
+          // Build frontend
+          'yarn build:frontend',
+
+          // Synth CDK (from infrastructure workspace)
+          'cd infrastructure && npx cdk synth && cd ..',
         ],
+        primaryOutputDirectory: 'infrastructure/cdk.out',
       }),
     });
 
@@ -52,7 +61,10 @@ export class PipelineStack extends cdk.Stack {
     pipeline.addStage(testStage);
 
     // Future: Add prod stage with manual approval
-    // const prodStage = new ProdStage(this, 'DeployProd', { ... });
+    // const prodStage = new ProdStage(this, 'DeployProd', {
+    //   env: PROD_ENV.env,
+    //   envConfig: PROD_ENV,
+    // });
     // pipeline.addStage(prodStage, {
     //   pre: [new pipelines.ManualApprovalStep('PromoteToProd')],
     // });

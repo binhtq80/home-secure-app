@@ -1,6 +1,31 @@
+# Dependencies
+node_modules/
+
+# Build outputs
 *.js
-!jest.config.js
 *.d.ts
-node_modules
-cdk.out
-.cdk.staging
+!backend/scripts/build.js
+!jest.config.js
+cdk.out/
+.cdk.staging/
+backend/dist/
+frontend/dist/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+
+# Environment
+.env
+.env.local
+
+# Package manager
+package-lock.json
+yarn.lock
+.yarn/cache
+.yarn/unplugged
+.pnp.*

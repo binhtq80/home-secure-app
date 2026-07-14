@@ -2,6 +2,7 @@ import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import { EnvironmentConfig } from '../../config/environments';
 import { FoundationStack } from '../foundation-stack';
+import { AppStack } from '../app-stack';
 
 export interface TestStageProps extends cdk.StageProps {
   readonly envConfig: EnvironmentConfig;
@@ -19,9 +20,10 @@ export class TestStage extends cdk.Stage {
       description: `Foundation stack for myapp ${envConfig.name} environment`,
     });
 
-    // Add more stacks here as your infrastructure grows:
-    // new NetworkingStack(this, 'Networking', { envConfig });
-    // new ComputeStack(this, 'Compute', { envConfig });
-    // new DatabaseStack(this, 'Database', { envConfig });
+    // Application stack - Cognito, DynamoDB, Lambda, API GW, S3, CloudFront
+    new AppStack(this, 'App', {
+      envConfig,
+      description: `Application stack for myapp ${envConfig.name} environment`,
+    });
   }
 }
