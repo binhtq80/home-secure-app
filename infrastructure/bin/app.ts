@@ -12,7 +12,7 @@ const app = new cdk.App();
 const GITHUB_OWNER = app.node.tryGetContext('githubOwner') || 'binhtq80';
 const GITHUB_REPO = app.node.tryGetContext('githubRepo') || 'myapp-infra';
 const GITHUB_BRANCH = app.node.tryGetContext('githubBranch') || 'main';
-const CONNECTION_ARN = app.node.tryGetContext('connectionArn') || 'arn:aws:codeconnections:ap-southeast-2:626963115365:connection/7d7b2206-82ee-4014-94b5-56fe150ad1d0';
+const CONNECTION_ARN = app.node.tryGetContext('connectionArn') || 'arn:aws:codeconnections:ap-southeast-2:626963115365:connection/ca89c75f-0496-4a12-9fdb-6a07362f69a9';
 
 // ─── Apply default tags ──────────────────────────────────────────────────────
 Object.entries(TEST_ENV.tags).forEach(([key, value]) => {
