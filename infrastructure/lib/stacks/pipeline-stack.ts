@@ -35,10 +35,10 @@ export class PipelineStack extends cdk.Stack {
       synth: new pipelines.ShellStep('Synth', {
         input: source,
         commands: [
-          // Install all dependencies
-          'cd infrastructure && npm ci && cd ..',
-          'cd frontend && npm ci && cd ..',
-          'cd backend && npm ci && cd ..',
+          // Install dependencies for each package
+          'cd infrastructure && npm install && cd ..',
+          'cd frontend && npm install && cd ..',
+          'cd backend && npm install && cd ..',
 
           // Build backend Lambda packages
           'cd backend && node scripts/build.js && ./scripts/prepare-lambda-packages.sh && cd ..',
