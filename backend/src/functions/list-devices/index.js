@@ -1,10 +1,11 @@
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
-const { DynamoDBDocumentClient, QueryCommand } = require('@aws-sdk/lib-dynamodb');
+const { DynamoDBDocumentClient, QueryCommand, BatchGetCommand } = require('@aws-sdk/lib-dynamodb');
 const { withAuth, headers } = require('./common/middleware');
 
 const ddbClient = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 
 const DEVICES_TABLE = process.env.DEVICES_TABLE;
+const DEVICE_ENERGY_TABLE = process.env.DEVICE_ENERGY_TABLE;
 
 if (!DEVICES_TABLE) {
   throw new Error('Missing required environment variable: DEVICES_TABLE');
@@ -19,15 +20,58 @@ exports.handler = withAuth(async (event) => {
       IndexName: 'userId-index',
       KeyConditionExpression: 'userId = :userId',
       ExpressionAttributeValues: { ':userId': userId },
-      ScanIndexForward: false, // newest first
+      ScanIndexForward: false,
     }));
+
+    const devices = result.Items || [];
+
+    // If we have the energy table, enrich with current month's usage
+    if (DEVICE_ENERGY_TABLE && devices.length > 0) {
+      const currentMonth = new Date().toISOString().slice(0, 7);
+
+      // Query current month energy for each device
+      const enrichedDevices = await Promise.all(devices.map(async (device) => {
+        try {
+          const energyResult = await ddbClient.send(new QueryCommand({
+            TableName: DEVICE_ENERGY_TABLE,
+            KeyConditionExpression: 'deviceId = :deviceId AND #month = :month',
+            ExpressionAttributeNames: { '#month': 'month' },
+            ExpressionAttributeValues: {
+              ':deviceId': device.id,
+              ':month': currentMonth,
+            },
+          }));
+
+          const currentUsage = energyResult.Items?.[0]?.kwh || 0;
+
+          return {
+            ...device,
+            currentMonthKwh: currentUsage,
+            budgetPercentage: device.monthlyBudgetKwh
+              ? Math.round((currentUsage / device.monthlyBudgetKwh) * 100)
+              : null,
+          };
+        } catch (err) {
+          return { ...device, currentMonthKwh: 0, budgetPercentage: null };
+        }
+      }));
+
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({
+          devices: enrichedDevices,
+          count: enrichedDevices.length,
+        }),
+      };
+    }
 
     return {
       statusCode: 200,
       headers,
       body: JSON.stringify({
-        devices: result.Items || [],
-        count: result.Count || 0,
+        devices,
+        count: devices.length,
       }),
     };
   } catch (error) {

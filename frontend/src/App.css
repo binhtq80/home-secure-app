@@ -773,3 +773,147 @@
   margin-top: 0.5rem;
   white-space: nowrap;
 }
+
+/* Budget Card (Device Detail) */
+.budget-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  margin: 1.5rem 0;
+  box-shadow: var(--shadow);
+}
+
+.budget-card h3 {
+  font-size: 1rem;
+  margin-bottom: 1rem;
+}
+
+.budget-form {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.btn-budget-save {
+  width: auto !important;
+  padding: 0.625rem 1.25rem !important;
+  margin-top: 0 !important;
+}
+
+.budget-success {
+  color: var(--color-success);
+  font-size: 0.8rem;
+  margin-top: 0.5rem;
+}
+
+.budget-progress-section {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.budget-progress-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  margin-bottom: 0.5rem;
+}
+
+.budget-percentage {
+  font-weight: 600;
+}
+
+.budget-percentage.over-budget {
+  color: var(--color-error);
+}
+
+.budget-progress-bar {
+  height: 8px;
+  background: var(--color-bg);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.budget-progress-fill {
+  height: 100%;
+  background: var(--color-primary);
+  border-radius: 4px;
+  transition: width 0.3s;
+}
+
+.budget-progress-fill.warning {
+  background: #f59e0b;
+}
+
+.budget-progress-fill.exceeded {
+  background: var(--color-error);
+}
+
+.budget-warning {
+  color: #f59e0b;
+  font-size: 0.8rem;
+  margin-top: 0.5rem;
+}
+
+.budget-exceeded {
+  color: var(--color-error);
+  font-size: 0.8rem;
+  margin-top: 0.5rem;
+}
+
+/* Device Card Budget (mini progress) */
+.device-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.budget-badge {
+  font-size: 0.7rem;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.budget-badge.warning {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.budget-badge.exceeded {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.device-card-budget {
+  margin: 0.5rem 0;
+}
+
+.mini-progress-bar {
+  height: 4px;
+  background: var(--color-bg);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 0.25rem;
+}
+
+.mini-progress-fill {
+  height: 100%;
+  background: var(--color-primary);
+  border-radius: 2px;
+  transition: width 0.3s;
+}
+
+.mini-progress-fill.warning {
+  background: #f59e0b;
+}
+
+.mini-progress-fill.exceeded {
+  background: var(--color-error);
+}
+
+.mini-progress-label {
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+}

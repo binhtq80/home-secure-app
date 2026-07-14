@@ -13,6 +13,9 @@ interface Device {
   description: string;
   features: string[];
   createdAt: string;
+  monthlyBudgetKwh?: number;
+  currentMonthKwh?: number;
+  budgetPercentage?: number | null;
 }
 
 interface RecognizedDevice {
@@ -321,13 +324,20 @@ export function DevicesPage() {
               >
                 <div className="device-card-header">
                   <span className="device-type-badge">{device.deviceType}</span>
-                  <button
-                    className="btn-delete"
-                    onClick={() => handleDelete(device.id)}
-                    aria-label="Delete device"
-                  >
-                    ✕
-                  </button>
+                  <div className="device-card-actions">
+                    {device.budgetPercentage !== null && device.budgetPercentage !== undefined && device.budgetPercentage >= 80 && (
+                      <span className={`budget-badge ${device.budgetPercentage >= 100 ? 'exceeded' : 'warning'}`}>
+                        {device.budgetPercentage >= 100 ? '🚨' : '⚠️'} {device.budgetPercentage}%
+                      </span>
+                    )}
+                    <button
+                      className="btn-delete"
+                      onClick={(e) => { e.stopPropagation(); handleDelete(device.id); }}
+                      aria-label="Delete device"
+                    >
+                      ✕
+                    </button>
+                  </div>
                 </div>
                 <h4>{device.brand} {device.model !== 'Unknown' ? device.model : ''}</h4>
                 <p className="device-description">{device.description}</p>
@@ -335,6 +345,17 @@ export function DevicesPage() {
                   <span>Color: {device.color}</span>
                   <span>Condition: {device.condition}</span>
                 </div>
+                {device.budgetPercentage !== null && device.budgetPercentage !== undefined && (
+                  <div className="device-card-budget">
+                    <div className="mini-progress-bar">
+                      <div
+                        className={`mini-progress-fill ${device.budgetPercentage >= 100 ? 'exceeded' : device.budgetPercentage >= 80 ? 'warning' : ''}`}
+                        style={{ width: `${Math.min(device.budgetPercentage, 100)}%` }}
+                      />
+                    </div>
+                    <span className="mini-progress-label">{device.currentMonthKwh} / {device.monthlyBudgetKwh} kWh</span>
+                  </div>
+                )}
                 {device.features?.length > 0 && (
                   <div className="device-features">
                     {device.features.map((f, i) => (

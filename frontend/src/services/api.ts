@@ -91,6 +91,12 @@ export const devicesApi = {
 
   getEnergy: (deviceId: string) => request(`/api/devices/${deviceId}/energy`),
 
+  setBudget: (deviceId: string, monthlyBudgetKwh: number) =>
+    request(`/api/devices/${deviceId}/budget`, {
+      method: 'PUT',
+      body: JSON.stringify({ monthlyBudgetKwh }),
+    }),
+
   delete: (deviceId: string) =>
     request(`/api/devices/${deviceId}`, { method: 'DELETE' }),
 };

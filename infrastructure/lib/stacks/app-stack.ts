@@ -189,8 +189,14 @@ export class AppStack extends cdk.Stack {
       code: lambda.Code.fromAsset(path.join(lambdaDir, 'get-energy-report')),
     });
 
+    const updateDeviceBudgetFn = new lambda.Function(this, 'UpdateDeviceBudgetFn', {
+      ...commonProps,
+      functionName: `${prefix}-update-device-budget`,
+      code: lambda.Code.fromAsset(path.join(lambdaDir, 'update-device-budget')),
+    });
+
     // Grant permissions
-    const allFunctions = [signUpFn, confirmSignUpFn, signInFn, getUserFn, recognizeDeviceFn, createDeviceFn, listDevicesFn, deleteDeviceFn, getDeviceEnergyFn, getUserSettingsFn, updateUserSettingsFn, getEnergyReportFn];
+    const allFunctions = [signUpFn, confirmSignUpFn, signInFn, getUserFn, recognizeDeviceFn, createDeviceFn, listDevicesFn, deleteDeviceFn, getDeviceEnergyFn, getUserSettingsFn, updateUserSettingsFn, getEnergyReportFn, updateDeviceBudgetFn];
 
     for (const fn of allFunctions) {
       usersTable.grantReadWriteData(fn);
@@ -247,6 +253,7 @@ export class AppStack extends cdk.Stack {
     const deviceResource = devicesResource.addResource('{deviceId}');
     deviceResource.addMethod('DELETE', new apigateway.LambdaIntegration(deleteDeviceFn));
     deviceResource.addResource('energy').addMethod('GET', new apigateway.LambdaIntegration(getDeviceEnergyFn));
+    deviceResource.addResource('budget').addMethod('PUT', new apigateway.LambdaIntegration(updateDeviceBudgetFn));
 
     // Settings routes
     const settingsResource = apiResource.addResource('settings');

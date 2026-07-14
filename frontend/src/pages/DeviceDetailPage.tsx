@@ -25,6 +25,7 @@ interface DeviceInfo {
   model: string;
   color: string;
   condition: string;
+  monthlyBudgetKwh?: number;
 }
 
 export function DeviceDetailPage() {
@@ -37,6 +38,11 @@ export function DeviceDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  // Budget state
+  const [budgetInput, setBudgetInput] = useState('');
+  const [savingBudget, setSavingBudget] = useState(false);
+  const [budgetSuccess, setBudgetSuccess] = useState('');
+
   useEffect(() => {
     if (deviceId) {
       loadEnergyData(deviceId);
@@ -48,10 +54,39 @@ export function DeviceDetailPage() {
       const data = await devicesApi.getEnergy(id);
       setDevice(data.device);
       setEnergy(data.energy);
+      if (data.device.monthlyBudgetKwh) {
+        setBudgetInput(data.device.monthlyBudgetKwh.toString());
+      }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to load energy data');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSaveBudget = async () => {
+    if (!deviceId) return;
+    const value = parseFloat(budgetInput);
+    if (isNaN(value) || value <= 0) {
+      setError('Budget must be a positive number');
+      return;
+    }
+
+    setSavingBudget(true);
+    setBudgetSuccess('');
+    setError('');
+
+    try {
+      await devicesApi.setBudget(deviceId, value);
+      setBudgetSuccess('Budget saved!');
+      if (device) {
+        setDevice({ ...device, monthlyBudgetKwh: value });
+      }
+      setTimeout(() => setBudgetSuccess(''), 3000);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to save budget');
+    } finally {
+      setSavingBudget(false);
     }
   };
 
@@ -68,7 +103,7 @@ export function DeviceDetailPage() {
     );
   }
 
-  if (error) {
+  if (error && !device) {
     return (
       <div className="dashboard-container">
         <div className="dashboard-main">
@@ -81,6 +116,12 @@ export function DeviceDetailPage() {
 
   const maxKwh = energy ? Math.max(...energy.monthly.map((m) => m.kwh)) : 0;
 
+  // Budget progress for current month
+  const currentMonthKwh = energy?.monthly[energy.monthly.length - 1]?.kwh || 0;
+  const budgetPercentage = device?.monthlyBudgetKwh
+    ? Math.round((currentMonthKwh / device.monthlyBudgetKwh) * 100)
+    : null;
+
   return (
     <div className="dashboard-container">
       <header className="dashboard-header">
@@ -88,12 +129,16 @@ export function DeviceDetailPage() {
         <nav className="header-nav">
           <button onClick={() => navigate('/dashboard')} className="btn-nav">Dashboard</button>
           <button onClick={() => navigate('/devices')} className="btn-nav">Devices</button>
+          <button onClick={() => navigate('/reports')} className="btn-nav">Reports</button>
+          <button onClick={() => navigate('/settings')} className="btn-nav">Settings</button>
           <button onClick={handleLogout} className="btn-logout">Sign Out</button>
         </nav>
       </header>
 
       <main className="dashboard-main">
         <button className="btn-back" onClick={() => navigate('/devices')}>← Back to Devices</button>
+
+        {error && <div className="error-message">{error}</div>}
 
         {/* Device Info */}
         <div className="device-detail-header">
@@ -133,6 +178,55 @@ export function DeviceDetailPage() {
               <p className="stat-subtitle">@ ${energy?.costPerKwh}/kWh</p>
             </div>
           </div>
+        </div>
+
+        {/* Budget Setting */}
+        <div className="budget-card">
+          <h3>⚙️ Monthly Energy Budget</h3>
+          <div className="budget-form">
+            <div className="input-with-unit">
+              <input
+                type="number"
+                step="1"
+                min="1"
+                value={budgetInput}
+                onChange={(e) => setBudgetInput(e.target.value)}
+                placeholder="e.g., 50"
+              />
+              <span className="input-suffix">kWh / month</span>
+            </div>
+            <button
+              className="btn-primary btn-budget-save"
+              onClick={handleSaveBudget}
+              disabled={savingBudget}
+            >
+              {savingBudget ? 'Saving...' : 'Set Budget'}
+            </button>
+          </div>
+          {budgetSuccess && <p className="budget-success">{budgetSuccess}</p>}
+
+          {budgetPercentage !== null && (
+            <div className="budget-progress-section">
+              <div className="budget-progress-header">
+                <span>This month: {currentMonthKwh} / {device?.monthlyBudgetKwh} kWh</span>
+                <span className={`budget-percentage ${budgetPercentage >= 80 ? 'over-budget' : ''}`}>
+                  {budgetPercentage}%
+                </span>
+              </div>
+              <div className="budget-progress-bar">
+                <div
+                  className={`budget-progress-fill ${budgetPercentage >= 100 ? 'exceeded' : budgetPercentage >= 80 ? 'warning' : ''}`}
+                  style={{ width: `${Math.min(budgetPercentage, 100)}%` }}
+                />
+              </div>
+              {budgetPercentage >= 80 && budgetPercentage < 100 && (
+                <p className="budget-warning">⚠️ Approaching budget limit!</p>
+              )}
+              {budgetPercentage >= 100 && (
+                <p className="budget-exceeded">🚨 Budget exceeded!</p>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Bar Chart */}
