@@ -92,7 +92,7 @@ export class AppStack extends cdk.Stack {
       DEVICES_TABLE: devicesTable.tableName,
       USER_POOL_ID: userPool.userPoolId,
       USER_POOL_CLIENT_ID: userPoolClient.userPoolClientId,
-      BEDROCK_MODEL_ID: 'anthropic.claude-3-sonnet-20240229-v1:0',
+      BEDROCK_MODEL_ID: 'au.anthropic.claude-haiku-4-5-20251001-v1:0',
     };
 
     const commonProps = {
@@ -177,7 +177,10 @@ export class AppStack extends cdk.Stack {
     // Bedrock access for device recognition
     recognizeDeviceFn.addToRolePolicy(new iam.PolicyStatement({
       actions: ['bedrock:InvokeModel'],
-      resources: [`arn:aws:bedrock:${this.region}::foundation-model/*`],
+      resources: [
+        `arn:aws:bedrock:${this.region}::foundation-model/*`,
+        `arn:aws:bedrock:${this.region}:*:inference-profile/*`,
+      ],
     }));
 
     // ─── API Gateway ───────────────────────────────────────────────────────────

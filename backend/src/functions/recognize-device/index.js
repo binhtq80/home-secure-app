@@ -3,7 +3,7 @@ const { withAuth, headers } = require('./common/middleware');
 
 const bedrockClient = new BedrockRuntimeClient({});
 
-const BEDROCK_MODEL_ID = process.env.BEDROCK_MODEL_ID || 'anthropic.claude-3-sonnet-20240229-v1:0';
+const BEDROCK_MODEL_ID = process.env.BEDROCK_MODEL_ID || 'au.anthropic.claude-haiku-4-5-20251001-v1:0';
 
 exports.handler = withAuth(async (event) => {
   try {
