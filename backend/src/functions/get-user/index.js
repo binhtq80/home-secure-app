@@ -10,6 +10,22 @@ if (!USERS_TABLE) {
   throw new Error('Missing required environment variables');
 }
 
+function formatLastSeenAgo(dateStr) {
+  if (!dateStr) return null;
+  const last = new Date(dateStr).getTime();
+  const now = Date.now();
+  const diff = now - last;
+
+  const minutes = Math.floor(diff / 60000);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+
+  if (days > 0) return `${days} day${days > 1 ? 's' : ''} ago`;
+  if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+  if (minutes > 0) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+  return 'Just now';
+}
+
 exports.handler = withAuth(async (event) => {
   try {
     const userId = event.pathParameters?.userId || event.user.id;
@@ -31,6 +47,8 @@ exports.handler = withAuth(async (event) => {
       ? Math.floor((Date.now() - new Date(result.Item.createdAt).getTime()) / (1000 * 60 * 60 * 24))
       : 0;
 
+    const lastSeenAgo = formatLastSeenAgo(result.Item.lastLoginAt);
+
     return {
       statusCode: 200,
       headers,
@@ -44,6 +62,7 @@ exports.handler = withAuth(async (event) => {
           previousLoginAt: result.Item.previousLoginAt,
           loginCount: result.Item.loginCount || 0,
           memberDays,
+          lastSeenAgo,
         },
       }),
     };

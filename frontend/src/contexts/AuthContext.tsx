@@ -7,6 +7,7 @@ interface User {
   lastLoginAt: string | null;
   loginCount: number;
   createdAt: string;
+  lastSeenAgo: string | null;
 }
 
 interface AuthContextType {

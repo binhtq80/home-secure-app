@@ -53,19 +53,6 @@ export function DashboardPage() {
     navigate('/login');
   };
 
-  const formatDate = (dateStr: string | null) => {
-    if (!dateStr) return 'This is your first login!';
-    const date = new Date(dateStr);
-    return date.toLocaleString('en-AU', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
-
   const getTimeSinceLastLogin = (dateStr: string | null) => {
     if (!dateStr) return null;
     const last = new Date(dateStr).getTime();
@@ -121,7 +108,7 @@ export function DashboardPage() {
             <div className="stat-icon">🕐</div>
             <div className="stat-content">
               <h3>Last Login</h3>
-              <p className="stat-value">{formatDate(user?.lastLoginAt || null)}</p>
+              <p className="stat-value">{user?.lastSeenAgo || 'This is your first login!'}</p>
             </div>
           </div>
 
