@@ -44,15 +44,20 @@ export class PipelineStack extends cdk.Stack {
       synth: new pipelines.ShellStep('Synth', {
         input: source,
         commands: [
-          // Install dependencies (cached on subsequent runs)
-          'cd infrastructure && npm install && cd ..',
-          'cd frontend && npm install && cd ..',
-          'cd backend && npm install && cd ..',
+          // Fetch enough history for diff detection
+          'git fetch --depth=2 origin main 2>/dev/null || true',
+          'CHANGED=$(git diff --name-only HEAD~1 2>/dev/null || echo "all")',
+          'echo "Changed: $CHANGED"',
 
-          // Build backend Lambda packages
+          // Install all dependencies (npm cache speeds up subsequent runs)
+          'cd infrastructure && npm install --prefer-offline && cd ..',
+          'cd frontend && npm install --prefer-offline && cd ..',
+          'cd backend && npm install --prefer-offline && cd ..',
+
+          // Build backend (always needed for CDK synth asset paths)
           'cd backend && node scripts/build.js && ./scripts/prepare-lambda-packages.sh && cd ..',
 
-          // Build frontend
+          // Build frontend (always needed for CDK synth asset paths)
           'cd frontend && npm run build && cd ..',
 
           // Synth CDK
