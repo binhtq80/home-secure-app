@@ -13,6 +13,22 @@ if (!USERS_TABLE || !DEVICES_TABLE || !USER_POOL_CLIENT_ID) {
   throw new Error('Missing required environment variables');
 }
 
+function formatLastSeenAgo(dateStr) {
+  if (!dateStr) return null;
+  const last = new Date(dateStr).getTime();
+  const now = Date.now();
+  const diff = now - last;
+
+  const minutes = Math.floor(diff / 60000);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+
+  if (days > 0) return `${days} day${days > 1 ? 's' : ''} ago`;
+  if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+  if (minutes > 0) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+  return 'Just now';
+}
+
 const headers = {
   'Content-Type': 'application/json',
   'Access-Control-Allow-Origin': '*',
@@ -103,6 +119,7 @@ exports.handler = async (event) => {
           loginCount: (user?.loginCount || 0) + 1,
           createdAt: user?.createdAt,
           deviceCount,
+          lastSeenAgo: formatLastSeenAgo(previousLoginAt),
         },
       }),
     };
