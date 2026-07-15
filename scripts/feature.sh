@@ -73,6 +73,9 @@ case "$1" in
     ;;
 
   start)
+    # Kill any existing orchestrator processes
+    pkill -f "scripts/orchestrator.sh" 2>/dev/null || true
+    sleep 1
     echo "🚀 Starting orchestrator in background..."
     ( cd "$ROOT_DIR" && setsid nohup ./scripts/orchestrator.sh > /dev/null 2>&1 < /dev/null & )
     sleep 1
