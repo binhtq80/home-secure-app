@@ -1141,3 +1141,184 @@
 .lightbox-close:hover {
   background: rgba(255, 255, 255, 0.3);
 }
+
+/* ─── Device Edit Form ─────────────────────────────────────────────────────── */
+
+.device-detail-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.btn-edit-device {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+}
+
+.edit-device-card {
+  background: var(--color-surface);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  border: 2px solid var(--color-primary);
+}
+
+.edit-device-card h3 {
+  margin: 0 0 1rem 0;
+  color: var(--color-primary);
+}
+
+.edit-device-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.edit-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.edit-field label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.edit-field input,
+.edit-field select,
+.edit-field textarea {
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-background);
+  color: var(--color-text);
+  font-size: 0.9rem;
+}
+
+.edit-field textarea {
+  resize: vertical;
+}
+
+.edit-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.success-message {
+  background: #d4edda;
+  color: #155724;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+[data-theme="dark"] .success-message {
+  background: #1a3d2a;
+  color: #a3e4b8;
+}
+
+/* ─── Change History ───────────────────────────────────────────────────────── */
+
+.history-card {
+  background: var(--color-surface);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.history-card h3 {
+  margin: 0 0 1rem 0;
+}
+
+.history-empty {
+  color: var(--color-text-secondary);
+  font-style: italic;
+}
+
+.history-timeline {
+  position: relative;
+  padding-left: 1.5rem;
+  border-left: 2px solid var(--color-border);
+}
+
+.history-entry {
+  position: relative;
+  padding-bottom: 1.25rem;
+}
+
+.history-entry:last-child {
+  padding-bottom: 0;
+}
+
+.history-entry-dot {
+  position: absolute;
+  left: -1.75rem;
+  top: 0.25rem;
+  width: 12px;
+  height: 12px;
+  background: var(--color-primary);
+  border-radius: 50%;
+  border: 2px solid var(--color-surface);
+}
+
+.history-entry-content {
+  padding-left: 0.5rem;
+}
+
+.history-entry-time {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  margin-bottom: 0.4rem;
+  font-weight: 500;
+}
+
+.history-entry-changes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.history-change-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  flex-wrap: wrap;
+}
+
+.history-field-name {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.history-old-value {
+  color: #dc3545;
+  text-decoration: line-through;
+}
+
+.history-arrow {
+  color: var(--color-text-secondary);
+}
+
+.history-new-value {
+  color: #28a745;
+  font-weight: 500;
+}
+
+@media (max-width: 768px) {
+  .edit-device-form {
+    grid-template-columns: 1fr;
+  }
+
+  .device-detail-title-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

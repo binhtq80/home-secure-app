@@ -102,4 +102,20 @@ export const devicesApi = {
 
   delete: (deviceId: string) =>
     request(`/api/devices/${deviceId}`, { method: 'DELETE' }),
+
+  update: (deviceId: string, fields: {
+    deviceType?: string;
+    brand?: string;
+    model?: string;
+    color?: string;
+    condition?: string;
+    description?: string;
+  }) =>
+    request(`/api/devices/${deviceId}`, {
+      method: 'PUT',
+      body: JSON.stringify(fields),
+    }),
+
+  getHistory: (deviceId: string) =>
+    request(`/api/devices/${deviceId}/history`),
 };

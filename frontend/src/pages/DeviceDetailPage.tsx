@@ -26,7 +26,18 @@ interface DeviceInfo {
   model: string;
   color: string;
   condition: string;
+  description?: string;
   monthlyBudgetKwh?: number;
+}
+
+interface HistoryEntry {
+  deviceId: string;
+  timestamp: string;
+  oldValues: Record<string, string | null>;
+  newValues: Record<string, string>;
+  changedFields: string[];
+  changedBy: string;
+  changedAt: string;
 }
 
 export function DeviceDetailPage() {
@@ -44,9 +55,27 @@ export function DeviceDetailPage() {
   const [savingBudget, setSavingBudget] = useState(false);
   const [budgetSuccess, setBudgetSuccess] = useState('');
 
+  // Edit state
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({
+    deviceType: '',
+    brand: '',
+    model: '',
+    color: '',
+    condition: '',
+    description: '',
+  });
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [editSuccess, setEditSuccess] = useState('');
+
+  // History state
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+
   useEffect(() => {
     if (deviceId) {
       loadEnergyData(deviceId);
+      loadHistory(deviceId);
     }
   }, [deviceId]);
 
@@ -62,6 +91,60 @@ export function DeviceDetailPage() {
       setError(err instanceof Error ? err.message : 'Failed to load energy data');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadHistory = async (id: string) => {
+    setHistoryLoading(true);
+    try {
+      const data = await devicesApi.getHistory(id);
+      setHistory(data.history || []);
+    } catch {
+      // History may not exist yet, that's fine
+      setHistory([]);
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  const handleStartEdit = () => {
+    if (device) {
+      setEditForm({
+        deviceType: device.deviceType || '',
+        brand: device.brand || '',
+        model: device.model || '',
+        color: device.color || '',
+        condition: device.condition || '',
+        description: device.description || '',
+      });
+      setIsEditing(true);
+      setEditSuccess('');
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setEditSuccess('');
+  };
+
+  const handleSaveEdit = async () => {
+    if (!deviceId) return;
+    setSavingEdit(true);
+    setError('');
+    setEditSuccess('');
+
+    try {
+      const result = await devicesApi.update(deviceId, editForm);
+      setDevice(result.device);
+      setIsEditing(false);
+      setEditSuccess('Device updated successfully!');
+      setTimeout(() => setEditSuccess(''), 3000);
+      // Reload history
+      loadHistory(deviceId);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to update device');
+    } finally {
+      setSavingEdit(false);
     }
   };
 
@@ -141,16 +224,103 @@ export function DeviceDetailPage() {
         <button className="btn-back" onClick={() => navigate('/devices')}>← Back to Devices</button>
 
         {error && <div className="error-message">{error}</div>}
+        {editSuccess && <div className="success-message">{editSuccess}</div>}
 
         {/* Device Info */}
         <div className="device-detail-header">
-          <h2>{device?.brand} {device?.model !== 'Unknown' ? device?.model : device?.deviceType}</h2>
+          <div className="device-detail-title-row">
+            <h2>{device?.brand} {device?.model !== 'Unknown' ? device?.model : device?.deviceType}</h2>
+            {!isEditing && (
+              <button className="btn-primary btn-edit-device" onClick={handleStartEdit}>
+                ✏️ Edit
+              </button>
+            )}
+          </div>
           <p className="device-detail-meta">
             <span className="device-type-badge">{device?.deviceType}</span>
             <span>Color: {device?.color}</span>
             <span>Condition: {device?.condition}</span>
           </p>
         </div>
+
+        {/* Edit Form */}
+        {isEditing && (
+          <div className="edit-device-card">
+            <h3>Edit Device</h3>
+            <div className="edit-device-form">
+              <div className="edit-field">
+                <label htmlFor="edit-deviceType">Device Type</label>
+                <input
+                  id="edit-deviceType"
+                  type="text"
+                  value={editForm.deviceType}
+                  onChange={(e) => setEditForm({ ...editForm, deviceType: e.target.value })}
+                />
+              </div>
+              <div className="edit-field">
+                <label htmlFor="edit-brand">Brand</label>
+                <input
+                  id="edit-brand"
+                  type="text"
+                  value={editForm.brand}
+                  onChange={(e) => setEditForm({ ...editForm, brand: e.target.value })}
+                />
+              </div>
+              <div className="edit-field">
+                <label htmlFor="edit-model">Model</label>
+                <input
+                  id="edit-model"
+                  type="text"
+                  value={editForm.model}
+                  onChange={(e) => setEditForm({ ...editForm, model: e.target.value })}
+                />
+              </div>
+              <div className="edit-field">
+                <label htmlFor="edit-color">Color</label>
+                <input
+                  id="edit-color"
+                  type="text"
+                  value={editForm.color}
+                  onChange={(e) => setEditForm({ ...editForm, color: e.target.value })}
+                />
+              </div>
+              <div className="edit-field">
+                <label htmlFor="edit-condition">Condition</label>
+                <select
+                  id="edit-condition"
+                  value={editForm.condition}
+                  onChange={(e) => setEditForm({ ...editForm, condition: e.target.value })}
+                >
+                  <option value="new">New</option>
+                  <option value="good">Good</option>
+                  <option value="fair">Fair</option>
+                  <option value="poor">Poor</option>
+                </select>
+              </div>
+              <div className="edit-field">
+                <label htmlFor="edit-description">Description</label>
+                <textarea
+                  id="edit-description"
+                  value={editForm.description}
+                  onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                  rows={3}
+                />
+              </div>
+              <div className="edit-actions">
+                <button
+                  className="btn-primary"
+                  onClick={handleSaveEdit}
+                  disabled={savingEdit}
+                >
+                  {savingEdit ? 'Saving...' : 'Save Changes'}
+                </button>
+                <button className="btn-secondary" onClick={handleCancelEdit}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Energy Stats */}
         <div className="energy-stats-grid">
@@ -248,6 +418,39 @@ export function DeviceDetailPage() {
               </div>
             ))}
           </div>
+        </div>
+
+        {/* Change History */}
+        <div className="history-card">
+          <h3>📋 Change History</h3>
+          {historyLoading ? (
+            <p className="loading-text">Loading history...</p>
+          ) : history.length === 0 ? (
+            <p className="history-empty">No changes recorded yet.</p>
+          ) : (
+            <div className="history-timeline">
+              {history.map((entry) => (
+                <div key={entry.timestamp} className="history-entry">
+                  <div className="history-entry-dot" />
+                  <div className="history-entry-content">
+                    <div className="history-entry-time">
+                      {new Date(entry.changedAt).toLocaleString()}
+                    </div>
+                    <div className="history-entry-changes">
+                      {entry.changedFields.map((field) => (
+                        <div key={field} className="history-change-item">
+                          <span className="history-field-name">{field}:</span>
+                          <span className="history-old-value">{entry.oldValues[field] || '(empty)'}</span>
+                          <span className="history-arrow">→</span>
+                          <span className="history-new-value">{entry.newValues[field]}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </main>
     </div>

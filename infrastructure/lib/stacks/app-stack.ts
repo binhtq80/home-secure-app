@@ -92,6 +92,15 @@ export class AppStack extends cdk.Stack {
       removalPolicy: envConfig.isProd ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,
     });
 
+    // Device history (audit trail) table
+    const deviceHistoryTable = new dynamodb.Table(this, 'DeviceHistoryTable', {
+      tableName: `${prefix}-device-history`,
+      partitionKey: { name: 'deviceId', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'timestamp', type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: envConfig.isProd ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,
+    });
+
     // ─── S3 Bucket for Device Images ──────────────────────────────────────────
 
     const deviceImagesBucket = new s3.Bucket(this, 'DeviceImagesBucket', {
@@ -110,6 +119,7 @@ export class AppStack extends cdk.Stack {
       USERS_TABLE: usersTable.tableName,
       DEVICES_TABLE: devicesTable.tableName,
       DEVICE_ENERGY_TABLE: deviceEnergyTable.tableName,
+      DEVICE_HISTORY_TABLE: deviceHistoryTable.tableName,
       USER_POOL_ID: userPool.userPoolId,
       USER_POOL_CLIENT_ID: userPoolClient.userPoolClientId,
       BEDROCK_MODEL_ID: 'au.anthropic.claude-haiku-4-5-20251001-v1:0',
@@ -218,13 +228,26 @@ export class AppStack extends cdk.Stack {
       code: lambda.Code.fromAsset(path.join(lambdaDir, 'get-device-image')),
     });
 
+    const updateDeviceFn = new lambda.Function(this, 'UpdateDeviceFn', {
+      ...commonProps,
+      functionName: `${prefix}-update-device`,
+      code: lambda.Code.fromAsset(path.join(lambdaDir, 'update-device')),
+    });
+
+    const getDeviceHistoryFn = new lambda.Function(this, 'GetDeviceHistoryFn', {
+      ...commonProps,
+      functionName: `${prefix}-get-device-history`,
+      code: lambda.Code.fromAsset(path.join(lambdaDir, 'get-device-history')),
+    });
+
     // Grant permissions
-    const allFunctions = [signUpFn, confirmSignUpFn, signInFn, getUserFn, recognizeDeviceFn, createDeviceFn, listDevicesFn, deleteDeviceFn, getDeviceEnergyFn, getUserSettingsFn, updateUserSettingsFn, getEnergyReportFn, updateDeviceBudgetFn, getDeviceStatsFn, getDeviceImageFn];
+    const allFunctions = [signUpFn, confirmSignUpFn, signInFn, getUserFn, recognizeDeviceFn, createDeviceFn, listDevicesFn, deleteDeviceFn, getDeviceEnergyFn, getUserSettingsFn, updateUserSettingsFn, getEnergyReportFn, updateDeviceBudgetFn, getDeviceStatsFn, getDeviceImageFn, updateDeviceFn, getDeviceHistoryFn];
 
     for (const fn of allFunctions) {
       usersTable.grantReadWriteData(fn);
       devicesTable.grantReadWriteData(fn);
       deviceEnergyTable.grantReadWriteData(fn);
+      deviceHistoryTable.grantReadWriteData(fn);
       fn.addToRolePolicy(new iam.PolicyStatement({
         actions: [
           'cognito-idp:AdminInitiateAuth',
@@ -280,9 +303,11 @@ export class AppStack extends cdk.Stack {
     devicesResource.addResource('stats').addMethod('GET', new apigateway.LambdaIntegration(getDeviceStatsFn));
     const deviceResource = devicesResource.addResource('{deviceId}');
     deviceResource.addMethod('DELETE', new apigateway.LambdaIntegration(deleteDeviceFn));
+    deviceResource.addMethod('PUT', new apigateway.LambdaIntegration(updateDeviceFn));
     deviceResource.addResource('energy').addMethod('GET', new apigateway.LambdaIntegration(getDeviceEnergyFn));
     deviceResource.addResource('budget').addMethod('PUT', new apigateway.LambdaIntegration(updateDeviceBudgetFn));
     deviceResource.addResource('image').addMethod('GET', new apigateway.LambdaIntegration(getDeviceImageFn));
+    deviceResource.addResource('history').addMethod('GET', new apigateway.LambdaIntegration(getDeviceHistoryFn));
 
     // Settings routes
     const settingsResource = apiResource.addResource('settings');
