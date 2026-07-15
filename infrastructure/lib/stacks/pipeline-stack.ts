@@ -32,10 +32,19 @@ export class PipelineStack extends cdk.Stack {
     const pipeline = new pipelines.CodePipeline(this, 'Pipeline', {
       pipelineName: `myapp-${envConfig.name}-pipeline`,
       crossAccountKeys: false,
+      codeBuildDefaults: {
+        buildEnvironment: {
+          computeType: cdk.aws_codebuild.ComputeType.MEDIUM,
+        },
+        cache: cdk.aws_codebuild.Cache.local(
+          cdk.aws_codebuild.LocalCacheMode.CUSTOM,
+          cdk.aws_codebuild.LocalCacheMode.SOURCE,
+        ),
+      },
       synth: new pipelines.ShellStep('Synth', {
         input: source,
         commands: [
-          // Install dependencies for each package
+          // Install dependencies (cached on subsequent runs)
           'cd infrastructure && npm install && cd ..',
           'cd frontend && npm install && cd ..',
           'cd backend && npm install && cd ..',
@@ -43,7 +52,7 @@ export class PipelineStack extends cdk.Stack {
           // Build backend Lambda packages
           'cd backend && node scripts/build.js && ./scripts/prepare-lambda-packages.sh && cd ..',
 
-          // Build frontend (uses package.json build script: tsc && vite build)
+          // Build frontend
           'cd frontend && npm run build && cd ..',
 
           // Synth CDK

@@ -171,9 +171,40 @@ DO THE FOLLOWING (no questions, just execute):
         continue
       fi
 
-      # ─── Step 2: Monitor Pipeline ──────────────────────────────────────
+      # ─── Step 2: Determine deploy strategy ─────────────────────────────
+      # Check what files changed — if only frontend, use fast deploy
+      local changed_files
+      changed_files=$(cd "$ROOT_DIR" && git diff --name-only HEAD~1..HEAD 2>/dev/null || echo "")
+      local frontend_only=true
+
+      if echo "$changed_files" | grep -qvE "^frontend/|^\."; then
+        frontend_only=false
+      fi
+
+      if [ "$frontend_only" = "true" ] && [ -n "$changed_files" ]; then
+        # Fast path: frontend-only deploy (S3 sync + CloudFront invalidation)
+        log "⚡ Frontend-only change detected — using fast deploy"
+        update_status "FAST DEPLOYING: $task"
+
+        if "$ROOT_DIR/scripts/deploy-frontend.sh" >> "$LOG_FILE" 2>&1; then
+          log "   ✅ Fast deploy succeeded"
+          success=true
+          pipeline_done=true
+        else
+          log "   ❌ Fast deploy failed"
+          feedback="Frontend deploy failed. Check build output."
+        fi
+        
+        # Skip pipeline monitoring for fast deploys
+        if [ "$success" = "true" ]; then
+          break
+        fi
+        continue
+      fi
+
+      # ─── Step 2b: Full pipeline path ───────────────────────────────────
       update_status "MONITORING PIPELINE: $task (attempt $retries/$MAX_RETRIES)"
-      log "📡 Monitoring pipeline..."
+      log "📡 Monitoring pipeline (full deploy)..."
 
       # Wait for pipeline to start
       sleep 30
