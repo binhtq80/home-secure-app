@@ -74,6 +74,7 @@ export function SettingsPage() {
           <button onClick={() => navigate('/devices')} className="btn-nav">Devices</button>
           <button onClick={() => navigate('/reports')} className="btn-nav">Reports</button>
           <button onClick={() => navigate('/settings')} className="btn-nav active">Settings</button>
+          <button onClick={() => navigate('/submit-feature')} className="btn-nav">Request Feature</button>
           <DarkModeToggle />
           <button onClick={handleLogout} className="btn-logout">Sign Out</button>
         </nav>

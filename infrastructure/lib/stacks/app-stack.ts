@@ -101,6 +101,20 @@ export class AppStack extends cdk.Stack {
       removalPolicy: envConfig.isProd ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,
     });
 
+    // Feature requests table
+    const featureRequestsTable = new dynamodb.Table(this, 'FeatureRequestsTable', {
+      tableName: `${prefix}-feature-requests`,
+      partitionKey: { name: 'id', type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: envConfig.isProd ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,
+    });
+
+    featureRequestsTable.addGlobalSecondaryIndex({
+      indexName: 'createdBy-index',
+      partitionKey: { name: 'createdBy', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'createdAt', type: dynamodb.AttributeType.STRING },
+    });
+
     // ─── S3 Bucket for Device Images ──────────────────────────────────────────
 
     const deviceImagesBucket = new s3.Bucket(this, 'DeviceImagesBucket', {
@@ -120,6 +134,7 @@ export class AppStack extends cdk.Stack {
       DEVICES_TABLE: devicesTable.tableName,
       DEVICE_ENERGY_TABLE: deviceEnergyTable.tableName,
       DEVICE_HISTORY_TABLE: deviceHistoryTable.tableName,
+      FEATURE_REQUESTS_TABLE: featureRequestsTable.tableName,
       USER_POOL_ID: userPool.userPoolId,
       USER_POOL_CLIENT_ID: userPoolClient.userPoolClientId,
       BEDROCK_MODEL_ID: 'au.anthropic.claude-haiku-4-5-20251001-v1:0',
@@ -240,14 +255,27 @@ export class AppStack extends cdk.Stack {
       code: lambda.Code.fromAsset(path.join(lambdaDir, 'get-device-history')),
     });
 
+    const createFeatureRequestFn = new lambda.Function(this, 'CreateFeatureRequestFn', {
+      ...commonProps,
+      functionName: `${prefix}-create-feature-request`,
+      code: lambda.Code.fromAsset(path.join(lambdaDir, 'create-feature-request')),
+    });
+
+    const listFeatureRequestsFn = new lambda.Function(this, 'ListFeatureRequestsFn', {
+      ...commonProps,
+      functionName: `${prefix}-list-feature-requests`,
+      code: lambda.Code.fromAsset(path.join(lambdaDir, 'list-feature-requests')),
+    });
+
     // Grant permissions
-    const allFunctions = [signUpFn, confirmSignUpFn, signInFn, getUserFn, recognizeDeviceFn, createDeviceFn, listDevicesFn, deleteDeviceFn, getDeviceEnergyFn, getUserSettingsFn, updateUserSettingsFn, getEnergyReportFn, updateDeviceBudgetFn, getDeviceStatsFn, getDeviceImageFn, updateDeviceFn, getDeviceHistoryFn];
+    const allFunctions = [signUpFn, confirmSignUpFn, signInFn, getUserFn, recognizeDeviceFn, createDeviceFn, listDevicesFn, deleteDeviceFn, getDeviceEnergyFn, getUserSettingsFn, updateUserSettingsFn, getEnergyReportFn, updateDeviceBudgetFn, getDeviceStatsFn, getDeviceImageFn, updateDeviceFn, getDeviceHistoryFn, createFeatureRequestFn, listFeatureRequestsFn];
 
     for (const fn of allFunctions) {
       usersTable.grantReadWriteData(fn);
       devicesTable.grantReadWriteData(fn);
       deviceEnergyTable.grantReadWriteData(fn);
       deviceHistoryTable.grantReadWriteData(fn);
+      featureRequestsTable.grantReadWriteData(fn);
       fn.addToRolePolicy(new iam.PolicyStatement({
         actions: [
           'cognito-idp:AdminInitiateAuth',
@@ -317,6 +345,11 @@ export class AppStack extends cdk.Stack {
     // Reports routes
     const reportsResource = apiResource.addResource('reports');
     reportsResource.addResource('energy').addMethod('GET', new apigateway.LambdaIntegration(getEnergyReportFn));
+
+    // Feature requests routes
+    const featuresResource = apiResource.addResource('features');
+    featuresResource.addMethod('POST', new apigateway.LambdaIntegration(createFeatureRequestFn));
+    featuresResource.addMethod('GET', new apigateway.LambdaIntegration(listFeatureRequestsFn));
 
     // ─── Frontend Hosting ──────────────────────────────────────────────────────
 

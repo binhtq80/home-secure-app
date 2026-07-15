@@ -1322,3 +1322,107 @@
     align-items: flex-start;
   }
 }
+
+/* ─── Feature Request Page ─────────────────────────────────────────────────── */
+
+.feature-form-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  box-shadow: var(--shadow);
+  margin-bottom: 2rem;
+}
+
+.feature-textarea {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  font-size: 1rem;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 120px;
+  transition: border-color 0.2s;
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.feature-textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.btn-submit-feature {
+  width: auto;
+  padding: 0.75rem 2rem;
+}
+
+.feature-list-section {
+  margin-top: 2rem;
+}
+
+.feature-list-section h3 {
+  font-size: 1.125rem;
+  margin-bottom: 1rem;
+}
+
+.feature-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.feature-list-item {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
+  box-shadow: var(--shadow);
+}
+
+.feature-list-description {
+  font-size: 0.95rem;
+  margin-bottom: 0.5rem;
+  line-height: 1.5;
+}
+
+.feature-list-meta {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.feature-ticket {
+  font-family: monospace;
+  color: var(--color-primary);
+  font-weight: 500;
+}
+
+.feature-status {
+  text-transform: capitalize;
+  font-weight: 500;
+}
+
+.feature-status-pending {
+  color: #f59e0b;
+}
+
+.feature-status-approved {
+  color: var(--color-success);
+}
+
+.feature-status-rejected {
+  color: var(--color-error);
+}
+
+.feature-date {
+  color: var(--color-text-muted);
+}
+
+[data-theme="dark"] .feature-textarea {
+  background: var(--color-surface);
+  color: var(--color-text);
+}

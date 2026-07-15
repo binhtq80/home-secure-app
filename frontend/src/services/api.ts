@@ -119,3 +119,13 @@ export const devicesApi = {
   getHistory: (deviceId: string) =>
     request(`/api/devices/${deviceId}/history`),
 };
+
+export const featuresApi = {
+  create: (description: string) =>
+    request('/api/features', {
+      method: 'POST',
+      body: JSON.stringify({ description }),
+    }),
+
+  list: () => request('/api/features'),
+};
