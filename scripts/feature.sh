@@ -32,11 +32,15 @@ case "$1" in
     echo "✅ Submitted: $*"
     echo "   Queue position: $(wc -l < "$QUEUE_FILE")"
 
-    # Auto-start orchestrator if not running
+    # Auto-start orchestrator and bridge if not running
     if ! pgrep -f "scripts/orchestrator.sh" > /dev/null 2>&1; then
       ( cd "$ROOT_DIR" && setsid nohup ./scripts/orchestrator.sh > /dev/null 2>&1 < /dev/null & )
       sleep 1
       echo "   🚀 Orchestrator started automatically"
+    fi
+    if ! pgrep -f "scripts/feature-bridge.sh" > /dev/null 2>&1; then
+      ( cd "$ROOT_DIR" && setsid nohup ./scripts/feature-bridge.sh > /dev/null 2>&1 < /dev/null & )
+      echo "   🌉 Bridge started automatically"
     fi
     ;;
 
@@ -75,25 +79,31 @@ case "$1" in
 
   stop)
     touch "$STOP_FILE"
-    echo "🛑 Stop signal sent. Orchestrator will stop after current step."
+    touch "$HOME/.feature-bridge-stop"
+    echo "🛑 Stop signal sent to orchestrator and bridge."
     ;;
 
   start)
     # Check if orchestrator is already running
     if pgrep -f "scripts/orchestrator.sh" > /dev/null 2>&1; then
       echo "✅ Orchestrator already running"
-      echo "   $(cat "$STATUS_FILE" 2>/dev/null || echo "Status unknown")"
-      echo "   Log: tail -f $LOG_FILE"
     else
       echo "🚀 Starting orchestrator in background..."
       ( cd "$ROOT_DIR" && setsid nohup ./scripts/orchestrator.sh > /dev/null 2>&1 < /dev/null & )
-      sleep 1
-      if [ -f "$STATUS_FILE" ]; then
-        echo "   $(cat "$STATUS_FILE")"
-      fi
-      echo "   Log: tail -f $LOG_FILE"
-      echo "   Status: ./scripts/feature.sh status"
     fi
+
+    # Check if bridge is already running
+    if pgrep -f "scripts/feature-bridge.sh" > /dev/null 2>&1; then
+      echo "✅ Bridge already running"
+    else
+      echo "🌉 Starting feature bridge (DynamoDB → queue)..."
+      ( cd "$ROOT_DIR" && setsid nohup ./scripts/feature-bridge.sh > /dev/null 2>&1 < /dev/null & )
+    fi
+
+    sleep 1
+    echo "   Status: ./scripts/feature.sh status"
+    echo "   Log: tail -f $LOG_FILE"
+    echo "   Bridge log: tail -f $HOME/.feature-bridge.log"
     ;;
 
   *)

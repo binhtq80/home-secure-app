@@ -86,6 +86,36 @@ get_pipeline_error() {
   echo "$stage_error"
 }
 
+update_feature_request_status() {
+  local description="$1"
+  local new_status="$2"
+
+  # Find the feature request by description (scan with filter)
+  local item_id
+  item_id=$(aws dynamodb scan \
+    --table-name "myapp-test-feature-requests" \
+    --filter-expression "description = :desc AND (#s = :processing OR #s = :pending)" \
+    --expression-attribute-names '{"#s":"status"}' \
+    --expression-attribute-values "{\":desc\":{\"S\":\"$description\"},\":processing\":{\"S\":\"processing\"},\":pending\":{\"S\":\"pending\"}}" \
+    --projection-expression "id" \
+    --profile "$AWS_PROFILE" \
+    --region "$AWS_REGION" \
+    --query 'Items[0].id.S' \
+    --output text 2>/dev/null | head -1)
+
+  if [ -n "$item_id" ] && [ "$item_id" != "None" ]; then
+    aws dynamodb update-item \
+      --table-name "myapp-test-feature-requests" \
+      --key "{\"id\":{\"S\":\"$item_id\"}}" \
+      --update-expression "SET #s = :status, completedAt = :now" \
+      --expression-attribute-names '{"#s":"status"}' \
+      --expression-attribute-values "{\":status\":{\"S\":\"$new_status\"},\":now\":{\"S\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}}" \
+      --profile "$AWS_PROFILE" \
+      --region "$AWS_REGION" > /dev/null 2>&1
+    log "   📝 Updated feature request $item_id → $new_status"
+  fi
+}
+
 # ─── Main Loop ────────────────────────────────────────────────────────────────
 main() {
   # Initialize
@@ -299,6 +329,9 @@ DO THE FOLLOWING (no questions, just execute):
       echo "$result" > "$RESULT_FILE"
       update_status "DONE: $task"
       log "$result"
+
+      # Update DynamoDB feature-requests status to "delivered"
+      update_feature_request_status "$task" "delivered"
     else
       local result="❌ Feature: $task
    Attempts: $MAX_RETRIES/$MAX_RETRIES (max reached)
@@ -308,6 +341,9 @@ DO THE FOLLOWING (no questions, just execute):
       echo "$result" > "$RESULT_FILE"
       update_status "FAILED: $task"
       log "$result"
+
+      # Update DynamoDB feature-requests status to "failed"
+      update_feature_request_status "$task" "failed"
     fi
 
     log "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
