@@ -31,7 +31,13 @@ case "$1" in
     echo "$*" >> "$QUEUE_FILE"
     echo "✅ Submitted: $*"
     echo "   Queue position: $(wc -l < "$QUEUE_FILE")"
-    echo "   Start orchestrator: ./scripts/feature.sh start"
+
+    # Auto-start orchestrator if not running
+    if ! pgrep -f "scripts/orchestrator.sh" > /dev/null 2>&1; then
+      ( cd "$ROOT_DIR" && setsid nohup ./scripts/orchestrator.sh > /dev/null 2>&1 < /dev/null & )
+      sleep 1
+      echo "   🚀 Orchestrator started automatically"
+    fi
     ;;
 
   status)
@@ -73,17 +79,21 @@ case "$1" in
     ;;
 
   start)
-    # Kill any existing orchestrator processes
-    pkill -f "scripts/orchestrator.sh" 2>/dev/null || true
-    sleep 1
-    echo "🚀 Starting orchestrator in background..."
-    ( cd "$ROOT_DIR" && setsid nohup ./scripts/orchestrator.sh > /dev/null 2>&1 < /dev/null & )
-    sleep 1
-    if [ -f "$STATUS_FILE" ]; then
-      echo "   $(cat "$STATUS_FILE")"
+    # Check if orchestrator is already running
+    if pgrep -f "scripts/orchestrator.sh" > /dev/null 2>&1; then
+      echo "✅ Orchestrator already running"
+      echo "   $(cat "$STATUS_FILE" 2>/dev/null || echo "Status unknown")"
+      echo "   Log: tail -f $LOG_FILE"
+    else
+      echo "🚀 Starting orchestrator in background..."
+      ( cd "$ROOT_DIR" && setsid nohup ./scripts/orchestrator.sh > /dev/null 2>&1 < /dev/null & )
+      sleep 1
+      if [ -f "$STATUS_FILE" ]; then
+        echo "   $(cat "$STATUS_FILE")"
+      fi
+      echo "   Log: tail -f $LOG_FILE"
+      echo "   Status: ./scripts/feature.sh status"
     fi
-    echo "   Log: tail -f $LOG_FILE"
-    echo "   Status: ./scripts/feature.sh status"
     ;;
 
   *)
