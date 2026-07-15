@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { reportsApi } from '../services/api';
+import { reportsApi, devicesApi } from '../services/api';
 import { DarkModeToggle } from '../components/DarkModeToggle';
 
 interface DeviceMonth {
@@ -33,6 +33,23 @@ interface Summary {
   costPerKwh: number;
 }
 
+interface DeviceInfo {
+  id: string;
+  deviceType: string;
+  brand: string;
+  model: string;
+  monthlyBudgetKwh?: number;
+}
+
+interface ComparisonRow {
+  id: string;
+  name: string;
+  deviceType: string;
+  monthlyAvgKwh: number;
+  monthlyAvgCost: number;
+  budgetStatus: 'over' | 'under' | 'no-budget';
+}
+
 // Generate consistent colors for devices
 const DEVICE_COLORS = [
   '#4f46e5', '#06b6d4', '#f59e0b', '#10b981', '#ef4444',
@@ -46,6 +63,7 @@ export function ReportsPage() {
   const [summary, setSummary] = useState<Summary | null>(null);
   const [topDevices, setTopDevices] = useState<TopDevice[]>([]);
   const [monthly, setMonthly] = useState<MonthlyData[]>([]);
+  const [comparisonData, setComparisonData] = useState<ComparisonRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -55,10 +73,56 @@ export function ReportsPage() {
 
   const loadReport = async () => {
     try {
-      const data = await reportsApi.getEnergyReport();
-      setSummary(data.summary);
-      setTopDevices(data.topDevices);
-      setMonthly(data.monthly);
+      const [reportData, devicesData] = await Promise.all([
+        reportsApi.getEnergyReport(),
+        devicesApi.list(),
+      ]);
+
+      setSummary(reportData.summary);
+      setTopDevices(reportData.topDevices);
+      setMonthly(reportData.monthly);
+
+      // Build comparison data
+      const devices: DeviceInfo[] = devicesData.devices || [];
+      const monthlyArr: MonthlyData[] = reportData.monthly || [];
+      const costPerKwh = reportData.summary?.costPerKwh || 0.20;
+      const monthCount = monthlyArr.length || 1;
+
+      // Build device totals from monthly data
+      const deviceTotals: Record<string, { totalKwh: number; name: string }> = {};
+      for (const month of monthlyArr) {
+        for (const d of month.devices) {
+          if (!deviceTotals[d.id]) {
+            deviceTotals[d.id] = { totalKwh: 0, name: d.name };
+          }
+          deviceTotals[d.id].totalKwh += d.kwh;
+        }
+      }
+
+      // Build comparison rows
+      const rows: ComparisonRow[] = Object.entries(deviceTotals).map(([id, data]) => {
+        const device = devices.find((d) => d.id === id);
+        const monthlyAvgKwh = Math.round((data.totalKwh / monthCount) * 10) / 10;
+        const monthlyAvgCost = Math.round(monthlyAvgKwh * costPerKwh * 100) / 100;
+
+        let budgetStatus: 'over' | 'under' | 'no-budget' = 'no-budget';
+        if (device?.monthlyBudgetKwh) {
+          budgetStatus = monthlyAvgKwh > device.monthlyBudgetKwh ? 'over' : 'under';
+        }
+
+        return {
+          id,
+          name: data.name,
+          deviceType: device?.deviceType || 'unknown',
+          monthlyAvgKwh,
+          monthlyAvgCost,
+          budgetStatus,
+        };
+      });
+
+      // Sort by highest cost first
+      rows.sort((a, b) => b.monthlyAvgCost - a.monthlyAvgCost);
+      setComparisonData(rows);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to load report');
     } finally {
@@ -207,6 +271,46 @@ export function ReportsPage() {
                   <div className="stacked-bar-label">{month.label}</div>
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* Compare Devices Table */}
+        {comparisonData.length > 0 && (
+          <div className="report-section">
+            <h3>📊 Compare Devices</h3>
+            <div className="comparison-table-wrapper">
+              <table className="comparison-table">
+                <thead>
+                  <tr>
+                    <th>Device Name</th>
+                    <th>Type</th>
+                    <th>Monthly Avg kWh</th>
+                    <th>Monthly Avg Cost</th>
+                    <th>Budget Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {comparisonData.map((row) => (
+                    <tr
+                      key={row.id}
+                      className={row.budgetStatus === 'over' ? 'over-budget-row' : ''}
+                    >
+                      <td className="comparison-device-name">{row.name}</td>
+                      <td className="comparison-device-type">{row.deviceType}</td>
+                      <td>{row.monthlyAvgKwh} kWh</td>
+                      <td>${row.monthlyAvgCost}</td>
+                      <td>
+                        <span className={`budget-status-badge ${row.budgetStatus}`}>
+                          {row.budgetStatus === 'over' && '🔴 Over Budget'}
+                          {row.budgetStatus === 'under' && '🟢 Under Budget'}
+                          {row.budgetStatus === 'no-budget' && '⚪ No Budget'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         )}

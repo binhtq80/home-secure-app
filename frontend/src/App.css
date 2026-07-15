@@ -970,3 +970,78 @@
   background: #064e3b;
   border-color: #065f46;
 }
+
+/* Device Comparison Table */
+.comparison-table-wrapper {
+  overflow-x: auto;
+}
+
+.comparison-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.comparison-table th {
+  text-align: left;
+  padding: 0.75rem 1rem;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+  border-bottom: 2px solid var(--color-border);
+  white-space: nowrap;
+}
+
+.comparison-table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+
+.comparison-table tbody tr:hover {
+  background: rgba(79, 70, 229, 0.02);
+}
+
+.comparison-table tbody tr.over-budget-row {
+  background: #fef2f2;
+}
+
+.comparison-table tbody tr.over-budget-row:hover {
+  background: #fee2e2;
+}
+
+[data-theme="dark"] .comparison-table tbody tr.over-budget-row {
+  background: #451a1a;
+}
+
+[data-theme="dark"] .comparison-table tbody tr.over-budget-row:hover {
+  background: #5c1e1e;
+}
+
+.comparison-device-name {
+  font-weight: 500;
+}
+
+.comparison-device-type {
+  text-transform: capitalize;
+  color: var(--color-text-muted);
+}
+
+.budget-status-badge {
+  font-size: 0.8rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.budget-status-badge.over {
+  color: var(--color-error);
+}
+
+.budget-status-badge.under {
+  color: var(--color-success);
+}
+
+.budget-status-badge.no-budget {
+  color: var(--color-text-muted);
+}
