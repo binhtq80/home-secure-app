@@ -47,6 +47,7 @@ export function DevicesPage() {
   const [capturedImageBase64, setCapturedImageBase64] = useState<string | null>(null);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const [lightboxAlt, setLightboxAlt] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Form fields
   const [deviceType, setDeviceType] = useState('');
@@ -211,6 +212,18 @@ export function DevicesPage() {
     };
   }, [lightboxImage, handleLightboxKeyDown]);
 
+  const filteredDevices = devices.filter((device) => {
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.toLowerCase();
+    const name = `${device.brand} ${device.model}`.toLowerCase();
+    return (
+      name.includes(query) ||
+      device.deviceType.toLowerCase().includes(query) ||
+      device.brand.toLowerCase().includes(query) ||
+      (device.description && device.description.toLowerCase().includes(query))
+    );
+  });
+
   const handleLogout = () => {
     logout();
     navigate('/login');
@@ -247,6 +260,19 @@ export function DevicesPage() {
             style={{ display: 'none' }}
           />
         </div>
+
+        {!loading && devices.length > 0 && (
+          <div className="devices-search">
+            <input
+              type="text"
+              className="devices-search-input"
+              placeholder="Search devices by name, brand, type, or description..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              aria-label="Search devices"
+            />
+          </div>
+        )}
 
         {error && <div className="error-message">{error}</div>}
 
@@ -370,9 +396,13 @@ export function DevicesPage() {
             <p>📷 No devices registered yet.</p>
             <p>Upload a photo of a home device to get started!</p>
           </div>
+        ) : filteredDevices.length === 0 && searchQuery.trim() ? (
+          <div className="empty-state">
+            <p>No devices match your search</p>
+          </div>
         ) : (
           <div className="devices-grid">
-            {devices.map((device) => (
+            {filteredDevices.map((device) => (
               <div
                 key={device.id}
                 className="device-card clickable"

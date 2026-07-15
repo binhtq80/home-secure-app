@@ -334,6 +334,32 @@
   border-color: var(--color-text-muted);
 }
 
+/* Device Search */
+.devices-search {
+  margin-bottom: 1.5rem;
+}
+
+.devices-search-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  font-size: 0.95rem;
+  background: var(--color-surface);
+  color: var(--color-text);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.devices-search-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.devices-search-input::placeholder {
+  color: var(--color-text-muted);
+}
+
 /* Device Cards */
 .devices-grid {
   display: grid;
