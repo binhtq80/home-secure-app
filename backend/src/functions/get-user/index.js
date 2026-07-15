@@ -27,6 +27,10 @@ exports.handler = withAuth(async (event) => {
       };
     }
 
+    const memberDays = result.Item.createdAt
+      ? Math.floor((Date.now() - new Date(result.Item.createdAt).getTime()) / (1000 * 60 * 60 * 24))
+      : 0;
+
     return {
       statusCode: 200,
       headers,
@@ -39,6 +43,7 @@ exports.handler = withAuth(async (event) => {
           lastLoginAt: result.Item.lastLoginAt,
           previousLoginAt: result.Item.previousLoginAt,
           loginCount: result.Item.loginCount || 0,
+          memberDays,
         },
       }),
     };
