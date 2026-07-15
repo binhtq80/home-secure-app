@@ -24,7 +24,7 @@ export class PipelineStack extends cdk.Stack {
       githubBranch,
       {
         connectionArn,
-        triggerOnPush: true,
+        triggerOnPush: false, // Pipeline only runs for infra changes (triggered manually or by deploy-infra.yml)
       }
     );
 

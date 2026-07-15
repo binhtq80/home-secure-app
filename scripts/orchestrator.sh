@@ -230,9 +230,16 @@ DO THE FOLLOWING (no questions, just execute):
         break
       fi
 
-      # Route: infrastructure changed → full pipeline (wait for it)
-      log "🔄 Infrastructure change — using full pipeline"
+      # Route: infrastructure changed → full pipeline (trigger manually, wait for it)
+      log "🔄 Infrastructure change — triggering full pipeline"
       update_status "MONITORING PIPELINE: $task (attempt $retries/$MAX_RETRIES)"
+
+      # Manually trigger the pipeline since triggerOnPush is disabled
+      aws codepipeline start-pipeline-execution \
+        --name "$PIPELINE_NAME" \
+        --profile "$AWS_PROFILE" \
+        --region "$AWS_REGION" > /dev/null 2>&1
+
       log "📡 Monitoring pipeline (full deploy)..."
 
       # Wait for pipeline to start
