@@ -1,0 +1,73 @@
+name: Deploy Backend
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: ap-southeast-2
+  PREFIX: myapp-test
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install & Build
+        run: |
+          cd backend
+          npm install
+          node scripts/build.js
+          ./scripts/prepare-lambda-packages.sh
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::626963115365:role/myapp-github-actions-role
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy Lambda functions
+        run: |
+          DEPLOYED=0
+          FAILED=0
+          for func_dir in backend/dist/lambda-packages/*/; do
+            func=$(basename "$func_dir")
+            FUNC_NAME="${PREFIX}-${func}"
+            ZIP_FILE="/tmp/${func}.zip"
+
+            (cd "$func_dir" && zip -qr "$ZIP_FILE" .)
+
+            if aws lambda update-function-code \
+              --function-name "$FUNC_NAME" \
+              --zip-file "fileb://$ZIP_FILE" \
+              --query 'FunctionName' \
+              --output text > /dev/null 2>&1; then
+              echo "✅ $func"
+              DEPLOYED=$((DEPLOYED + 1))
+            else
+              echo "❌ $func"
+              FAILED=$((FAILED + 1))
+            fi
+
+            rm -f "$ZIP_FILE"
+          done
+
+          echo ""
+          echo "Deployed: $DEPLOYED, Failed: $FAILED"
+          if [ $FAILED -gt 0 ]; then exit 1; fi
+
+      - name: Summary
+        run: echo "✅ Backend Lambda functions updated"

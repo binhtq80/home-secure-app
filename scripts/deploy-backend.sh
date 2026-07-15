@@ -1,0 +1,107 @@
+#!/bin/bash
+set -e
+
+# ─── Fast Backend Deploy ──────────────────────────────────────────────────────
+#
+# Updates Lambda function code directly (no CloudFormation).
+# Use when ONLY backend/ files changed (no new Lambdas, no infra changes).
+#
+# Takes ~2-3 minutes vs ~12 minutes through the full pipeline.
+#
+# Usage:
+#   ./scripts/deploy-backend.sh                # build + deploy all functions
+#   ./scripts/deploy-backend.sh signin get-user # deploy specific functions only
+#
+# ─────────────────────────────────────────────────────────────────────────────
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+AWS_PROFILE="${AWS_PROFILE:-dev-admin}"
+AWS_REGION="${AWS_REGION:-ap-southeast-2}"
+export AWS_DEFAULT_REGION="$AWS_REGION"
+PREFIX="myapp-test"
+
+# All Lambda function names (must match infrastructure/lib/stacks/app-stack.ts)
+ALL_FUNCTIONS=(
+  signup
+  confirm-signup
+  signin
+  get-user
+  recognize-device
+  create-device
+  list-devices
+  delete-device
+  get-device-energy
+  get-user-settings
+  update-user-settings
+  get-energy-report
+  update-device-budget
+)
+
+# If specific functions passed as args, only deploy those
+if [ $# -gt 0 ]; then
+  FUNCTIONS=("$@")
+else
+  FUNCTIONS=("${ALL_FUNCTIONS[@]}")
+fi
+
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "🚀 Fast Backend Deploy"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "   Functions: ${FUNCTIONS[*]}"
+echo ""
+
+# Step 1: Build backend
+echo "📦 Building backend..."
+cd "$ROOT_DIR/backend"
+npm install --silent
+node scripts/build.js
+./scripts/prepare-lambda-packages.sh 2>&1 | grep -E "(Packaging|✅)"
+echo ""
+
+# Step 2: Deploy each function
+echo "☁️  Updating Lambda functions..."
+DEPLOYED=0
+FAILED=0
+
+for func in "${FUNCTIONS[@]}"; do
+  FUNC_NAME="${PREFIX}-${func}"
+  ZIP_DIR="$ROOT_DIR/backend/dist/lambda-packages/${func}"
+
+  if [ ! -d "$ZIP_DIR" ]; then
+    echo "   ⚠️  ${func}: package directory not found, skipping"
+    continue
+  fi
+
+  # Create zip
+  ZIP_FILE="/tmp/${func}.zip"
+  (cd "$ZIP_DIR" && zip -qr "$ZIP_FILE" .)
+
+  # Update function code
+  deploy_output=$(aws lambda update-function-code \
+    --function-name "$FUNC_NAME" \
+    --zip-file "fileb://$ZIP_FILE" \
+    --region ap-southeast-2 \
+    --profile dev-admin \
+    --query 'FunctionName' \
+    --output text 2>&1) && deploy_ok=true || deploy_ok=false
+
+  if [ "$deploy_ok" = "true" ]; then
+    echo "   ✅ ${func}"
+    DEPLOYED=$((DEPLOYED + 1))
+  else
+    echo "   ❌ ${func}: ${deploy_output}"
+    FAILED=$((FAILED + 1))
+  fi
+
+  rm -f "$ZIP_FILE"
+done
+
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+if [ $FAILED -eq 0 ]; then
+  echo "✅ Backend deployed! ($DEPLOYED functions updated)"
+else
+  echo "⚠️  Backend deploy: $DEPLOYED succeeded, $FAILED failed"
+  exit 1
+fi
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

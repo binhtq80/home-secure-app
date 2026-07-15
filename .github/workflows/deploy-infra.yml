@@ -1,0 +1,54 @@
+name: Deploy Infrastructure
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'infrastructure/**'
+  workflow_dispatch: # Manual trigger for infra changes
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: ap-southeast-2
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: infrastructure/package-lock.json
+
+      - name: Install all dependencies
+        run: |
+          cd infrastructure && npm install && cd ..
+          cd frontend && npm install && cd ..
+          cd backend && npm install && cd ..
+
+      - name: Build all (required for CDK synth)
+        run: |
+          cd backend && node scripts/build.js && ./scripts/prepare-lambda-packages.sh && cd ..
+          cd frontend && npm run build && cd ..
+          cd infrastructure && npm run build && cd ..
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::626963115365:role/myapp-github-actions-role
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: CDK Diff
+        run: cd infrastructure && npx cdk diff --all
+
+      - name: CDK Deploy
+        run: cd infrastructure && npx cdk deploy --all --require-approval never
+
+      - name: Summary
+        run: echo "✅ Infrastructure deployed via CDK"

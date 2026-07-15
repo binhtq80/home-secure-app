@@ -172,37 +172,66 @@ DO THE FOLLOWING (no questions, just execute):
       fi
 
       # ─── Step 2: Determine deploy strategy ─────────────────────────────
-      # Check what files changed — if only frontend, use fast deploy
+      # Check what files changed — route to fastest deploy path
       local changed_files
       changed_files=$(cd "$ROOT_DIR" && git diff --name-only HEAD~1..HEAD 2>/dev/null || echo "")
-      local frontend_only=true
+      
+      local has_frontend=false
+      local has_backend=false
+      local has_infra=false
 
-      if echo "$changed_files" | grep -qvE "^frontend/|^\."; then
-        frontend_only=false
+      if echo "$changed_files" | grep -q "^frontend/"; then has_frontend=true; fi
+      if echo "$changed_files" | grep -q "^backend/"; then has_backend=true; fi
+      if echo "$changed_files" | grep -q "^infrastructure/"; then has_infra=true; fi
+
+      # If nothing matched (scripts/, root files, etc.), fall through to pipeline
+      if [ "$has_frontend" = "false" ] && [ "$has_backend" = "false" ] && [ "$has_infra" = "false" ]; then
+        has_infra=true  # default to full pipeline for unknown changes
       fi
 
-      if [ "$frontend_only" = "true" ] && [ -n "$changed_files" ]; then
-        # Fast path: frontend-only deploy (S3 sync + CloudFront invalidation)
-        log "⚡ Frontend-only change detected — using fast deploy"
-        update_status "FAST DEPLOYING: $task"
+      # Route: frontend-only → fast S3 deploy
+      if [ "$has_frontend" = "true" ] && [ "$has_backend" = "false" ] && [ "$has_infra" = "false" ]; then
+        log "⚡ Frontend-only change — fast deploy (S3 + CloudFront)"
+        update_status "FAST DEPLOYING FRONTEND: $task"
 
         if "$ROOT_DIR/scripts/deploy-frontend.sh" >> "$LOG_FILE" 2>&1; then
-          log "   ✅ Fast deploy succeeded"
+          log "   ✅ Frontend fast deploy succeeded"
           success=true
-          pipeline_done=true
         else
-          log "   ❌ Fast deploy failed"
+          log "   ❌ Frontend fast deploy failed"
           feedback="Frontend deploy failed. Check build output."
         fi
-        
-        # Skip pipeline monitoring for fast deploys
-        if [ "$success" = "true" ]; then
-          break
-        fi
+        if [ "$success" = "true" ]; then break; fi
         continue
       fi
 
-      # ─── Step 2b: Full pipeline path ───────────────────────────────────
+      # Route: backend-only → direct Lambda update
+      if [ "$has_backend" = "true" ] && [ "$has_infra" = "false" ]; then
+        log "⚡ Backend change — fast deploy (Lambda update-function-code)"
+        update_status "FAST DEPLOYING BACKEND: $task"
+
+        # Deploy backend
+        if "$ROOT_DIR/scripts/deploy-backend.sh" >> "$LOG_FILE" 2>&1; then
+          log "   ✅ Backend fast deploy succeeded"
+        else
+          log "   ❌ Backend fast deploy failed"
+          feedback="Backend Lambda deploy failed."
+          continue
+        fi
+
+        # Also deploy frontend if it changed alongside backend
+        if [ "$has_frontend" = "true" ]; then
+          if "$ROOT_DIR/scripts/deploy-frontend.sh" >> "$LOG_FILE" 2>&1; then
+            log "   ✅ Frontend fast deploy succeeded"
+          fi
+        fi
+
+        success=true
+        break
+      fi
+
+      # Route: infrastructure changed → full pipeline (wait for it)
+      log "🔄 Infrastructure change — using full pipeline"
       update_status "MONITORING PIPELINE: $task (attempt $retries/$MAX_RETRIES)"
       log "📡 Monitoring pipeline (full deploy)..."
 
