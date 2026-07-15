@@ -1,9 +1,51 @@
+import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { reportsApi } from '../services/api';
+
+interface EnergySummary {
+  totalKwh: number;
+  totalCost: number;
+  deviceCount: number;
+  costPerKwh: number;
+}
+
+interface MonthlyData {
+  month: string;
+  label: string;
+  totalKwh: number;
+  totalCost: number;
+}
 
 export function DashboardPage() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [energySummary, setEnergySummary] = useState<EnergySummary | null>(null);
+  const [currentMonthCost, setCurrentMonthCost] = useState<number | null>(null);
+  const [energyLoading, setEnergyLoading] = useState(true);
+
+  useEffect(() => {
+    loadEnergySummary();
+  }, []);
+
+  const loadEnergySummary = async () => {
+    try {
+      const data = await reportsApi.getEnergyReport();
+      setEnergySummary(data.summary);
+
+      // Get current month's cost from monthly data
+      const now = new Date();
+      const currentMonth = now.toISOString().slice(0, 7); // e.g. "2026-07"
+      const currentMonthData = (data.monthly as MonthlyData[]).find(
+        (m: MonthlyData) => m.month === currentMonth
+      );
+      setCurrentMonthCost(currentMonthData?.totalCost ?? 0);
+    } catch {
+      // Silently fail - dashboard still works without energy data
+    } finally {
+      setEnergyLoading(false);
+    }
+  };
 
   const handleLogout = () => {
     logout();
@@ -104,6 +146,45 @@ export function DashboardPage() {
               <p className="stat-value">{user?.email}</p>
             </div>
           </div>
+        </div>
+
+        {/* Energy Summary Card */}
+        <div className="energy-summary-section">
+          <h3>Energy Overview</h3>
+          {energyLoading ? (
+            <p className="loading-text">Loading energy data...</p>
+          ) : energySummary ? (
+            <div className="stats-grid">
+              <div className="stat-card">
+                <div className="stat-icon">📱</div>
+                <div className="stat-content">
+                  <h3>Devices Tracked</h3>
+                  <p className="stat-value">{energySummary.deviceCount}</p>
+                  <p className="stat-subtitle">Active devices</p>
+                </div>
+              </div>
+
+              <div className="stat-card">
+                <div className="stat-icon">💰</div>
+                <div className="stat-content">
+                  <h3>This Month&apos;s Cost</h3>
+                  <p className="stat-value">${currentMonthCost?.toFixed(2) ?? '0.00'}</p>
+                  <p className="stat-subtitle">@ ${energySummary.costPerKwh}/kWh</p>
+                </div>
+              </div>
+
+              <div className="stat-card">
+                <div className="stat-icon">⚡</div>
+                <div className="stat-content">
+                  <h3>Total Energy (12 mo)</h3>
+                  <p className="stat-value">{energySummary.totalKwh} kWh</p>
+                  <p className="stat-subtitle">${energySummary.totalCost} total cost</p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <p className="stat-subtitle">No energy data available. Add devices to start tracking.</p>
+          )}
         </div>
       </main>
     </div>

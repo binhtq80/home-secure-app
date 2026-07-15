@@ -917,3 +917,14 @@
   font-size: 0.7rem;
   color: var(--color-text-muted);
 }
+
+/* Energy Summary Section (Dashboard) */
+.energy-summary-section {
+  margin-top: 2rem;
+}
+
+.energy-summary-section h3 {
+  font-size: 1.125rem;
+  margin-bottom: 1rem;
+  color: var(--color-text);
+}
