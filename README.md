@@ -278,6 +278,130 @@ curl -s https://d2ok3vs29hr98h.cloudfront.net/api/auth/signup -X POST -H "Conten
 
 ---
 
+
+## Deploying to a New AWS Account
+
+Follow these steps to deploy the full stack to a fresh AWS account.
+
+### Prerequisites
+
+- AWS account with admin access
+- AWS CLI profile configured (e.g., `my-admin`)
+- GitHub account with repo access
+- Node.js 20+
+
+### Step 1: Update configuration
+
+Edit `infrastructure/lib/config/environments.ts`:
+
+```typescript
+export const YOUR_ENV: EnvironmentConfig = {
+  name: 'yourenv',          // prefix for all resources
+  env: {
+    account: 'YOUR_ACCOUNT_ID',
+    region: 'YOUR_REGION',   // e.g., ap-southeast-2
+  },
+  isProd: false,
+  tags: {
+    Environment: 'yourenv',
+    ManagedBy: 'cdk',
+    Project: 'myapp',
+  },
+};
+```
+
+Update `infrastructure/bin/app.ts` to use your environment config and GitHub details.
+
+### Step 2: Bootstrap CDK
+
+```bash
+cdk bootstrap aws://YOUR_ACCOUNT_ID/YOUR_REGION --profile my-admin
+```
+
+### Step 3: Create GitHub Connection (AWS Console)
+
+1. Go to **AWS Console → Developer Tools → Connections**
+2. Click **Create connection** → Select **GitHub**
+3. Authorize and connect
+4. Copy the Connection ARN
+5. Update `infrastructure/bin/app.ts` with the new ARN
+
+### Step 4: Deploy OIDC Stack (one-time)
+
+```bash
+cd infrastructure
+npx cdk deploy MyappGithubOidcStack --profile my-admin
+```
+
+This creates the GitHub OIDC trust so GitHub Actions can deploy.
+
+### Step 5: Deploy the full application
+
+```bash
+# Build everything first
+cd ../backend && npm install && node scripts/build.js && ./scripts/prepare-lambda-packages.sh && cd ..
+cd frontend && npm install && npm run build && cd ..
+cd infrastructure && npm install && npm run build
+
+# Deploy all stacks
+npx cdk deploy --all --profile my-admin --require-approval never
+```
+
+### Step 6: Enable Bedrock model access
+
+1. Go to **AWS Console → Bedrock → Model access**
+2. Request access to Claude models (Haiku 4.5 recommended)
+3. Wait for approval (usually instant)
+
+### Step 7: Seed test data (optional)
+
+```bash
+node scripts/seed-energy-data.js --profile my-admin --region YOUR_REGION \
+  --devices-table myapp-yourenv-devices \
+  --energy-table myapp-yourenv-device-energy
+```
+
+### Step 8: Update deploy scripts
+
+Update these files with your account-specific values:
+
+| File | What to change |
+|------|---------------|
+| `scripts/deploy-frontend.sh` | `S3_BUCKET`, `DISTRIBUTION_ID` |
+| `scripts/deploy-backend.sh` | `PREFIX`, region |
+| `scripts/orchestrator.sh` | `PIPELINE_NAME`, `APP_URL` |
+| `scripts/smoke-test.sh` | `API_URL` |
+| `.github/workflows/*.yml` | Role ARN, bucket, distribution ID |
+
+### Step 9: Verify
+
+```bash
+# Run smoke tests against your deployment
+API_URL=https://YOUR_CLOUDFRONT_DOMAIN ./scripts/smoke-test.sh
+```
+
+### Step 10: Deploy Pipeline (optional, for infra CI/CD)
+
+```bash
+npx cdk deploy MyappPipelineStack --profile my-admin \
+  -c githubOwner=YOUR_GITHUB_USERNAME \
+  -c githubRepo=myapp-infra \
+  -c connectionArn=arn:aws:codeconnections:REGION:ACCOUNT:connection/ID
+```
+
+After this, infrastructure changes will auto-deploy via the pipeline.
+
+### Multi-Account Setup (Prod)
+
+To add a production account:
+
+1. Add `PROD_ENV` config in `environments.ts`
+2. Bootstrap CDK in the prod account: `cdk bootstrap aws://PROD_ACCOUNT/REGION --trust YOUR_TEST_ACCOUNT`
+3. Add a `ProdStage` in `pipeline-stack.ts` with a `ManualApprovalStep` before it
+4. The pipeline will deploy to test first, then wait for approval before prod
+
+---
+
 ## Troubleshooting
 
 | Problem | Solution |
