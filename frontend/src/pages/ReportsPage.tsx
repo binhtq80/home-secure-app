@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { reportsApi } from '../services/api';
+import { DarkModeToggle } from '../components/DarkModeToggle';
 
 interface DeviceMonth {
   id: string;
@@ -100,6 +101,7 @@ export function ReportsPage() {
           <button onClick={() => navigate('/devices')} className="btn-nav">Devices</button>
           <button onClick={() => navigate('/reports')} className="btn-nav active">Reports</button>
           <button onClick={() => navigate('/settings')} className="btn-nav">Settings</button>
+          <DarkModeToggle />
           <button onClick={handleLogout} className="btn-logout">Sign Out</button>
         </nav>
       </header>

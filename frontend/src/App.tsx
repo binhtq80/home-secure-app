@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { ConfirmPage } from './pages/ConfirmPage';
@@ -38,12 +39,14 @@ function AppRoutes() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <div className="app">
-          <AppRoutes />
-        </div>
-      </BrowserRouter>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <BrowserRouter>
+          <div className="app">
+            <AppRoutes />
+          </div>
+        </BrowserRouter>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

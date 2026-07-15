@@ -2,6 +2,7 @@ import { useState, useEffect, FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { settingsApi } from '../services/api';
+import { DarkModeToggle } from '../components/DarkModeToggle';
 
 export function SettingsPage() {
   const { logout } = useAuth();
@@ -73,6 +74,7 @@ export function SettingsPage() {
           <button onClick={() => navigate('/devices')} className="btn-nav">Devices</button>
           <button onClick={() => navigate('/reports')} className="btn-nav">Reports</button>
           <button onClick={() => navigate('/settings')} className="btn-nav active">Settings</button>
+          <DarkModeToggle />
           <button onClick={handleLogout} className="btn-logout">Sign Out</button>
         </nav>
       </header>
