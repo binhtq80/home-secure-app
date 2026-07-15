@@ -7,25 +7,40 @@ When user says: "implement feature ..." or "add feature ..." or "build ..."
 ## Configuration
 
 - **MAX_RETRIES:** 3 (total failures before stopping)
-- **POLL_INTERVAL:** 2 minutes (pipeline status check)
+- **POLL_INTERVAL:** 2 minutes (pipeline status check, only for infra path)
 - **PIPELINE_NAME:** myapp-test-pipeline
 - **AWS_PROFILE:** dev-admin
 - **REGION:** ap-southeast-2
+- **APP_URL:** https://d2ok3vs29hr98h.cloudfront.net
 
 ## Loop
 
 ```
-PLAN → IMPLEMENT → LOCAL VALIDATE → PUSH → MONITOR → [APPROVE|REJECT|FAIL] → EXIT or RETRY
+PLAN → IMPLEMENT → LOCAL VALIDATE → PUSH → DEPLOY (route by scope) → VERIFY → EXIT or RETRY
 ```
+
+## Deploy Routing
+
+After pushing, the orchestrator detects what changed and routes to the fastest path:
+
+| Files changed | Deploy path | Time | Verification |
+|---------------|-------------|------|--------------|
+| `frontend/` only | S3 sync + CloudFront invalidation | ~30s | curl homepage |
+| `backend/` only | Lambda update-function-code | ~2 min | curl API endpoint |
+| `backend/` + `frontend/` | Lambda update + S3 sync | ~2.5 min | curl both |
+| `infrastructure/` (any) | Full CDK Pipeline | ~8-10 min | Poll pipeline status |
+
+## Steps
 
 ### Step 1: PLAN
 - Analyze the feature requirements
+- Determine scope: frontend-only? backend? infra?
 - Design: API endpoints, data model, UI components
 - List all files to create/modify
 
 ### Step 2: IMPLEMENT
-- Write backend Lambda functions
-- Update infrastructure (CDK stack)
+- Write backend Lambda functions (if needed)
+- Update infrastructure CDK stack (if new resources needed)
 - Write frontend pages/components
 - Update routing and API service
 
@@ -43,35 +58,38 @@ git commit -m "<descriptive message>"
 SKIP_AI_REVIEW=1 git push --no-verify
 ```
 
-### Step 5: MONITOR PIPELINE
-Poll pipeline status every 2 minutes until terminal state:
+### Step 5: DEPLOY (routed automatically)
 
-**On Build/Deploy/Smoke Test FAILURE:**
-1. Read error from CodeBuild logs or CloudFormation events
-2. Diagnose root cause
-3. Fix code
-4. Increment retry counter
-5. Go to Step 3
+**Fast path (frontend-only):**
+```bash
+./scripts/deploy-frontend.sh
+```
+→ Done in ~30 seconds. Proceed to Step 6.
 
-**On reaching Manual Approval:**
-- Keep polling — wait for user to approve or reject
-- Do NOT stop or report yet
+**Fast path (backend, with or without frontend):**
+```bash
+./scripts/deploy-backend.sh
+./scripts/deploy-frontend.sh  # if frontend also changed
+```
+→ Done in ~2-3 minutes. Proceed to Step 6.
 
-**On user APPROVES (pipeline execution succeeds):**
-- ✅ EXIT LOOP
-- Report: feature delivered
+**Full pipeline path (infrastructure changes):**
+- Pipeline triggers automatically from push
+- Poll every 2 minutes until terminal state
+- On pipeline FAILURE: read logs, diagnose, fix, retry
+- On reaching Manual Approval: keep polling for user approve/reject
+- On APPROVE: proceed to Step 6
+- On REJECT: use feedback to fix, retry
 
-**On user REJECTS (pipeline execution fails):**
-- User provides feedback (reason for rejection)
-- Use feedback as context for fix
-- Increment retry counter
-- Go to Step 2 (re-implement with feedback)
+### Step 6: REPORT
+Report result to user with URL and what to test.
 
-### Exit Conditions
+## Exit Conditions
 
 | Condition | Action |
 |-----------|--------|
-| User approves → pipeline succeeds | ✅ Exit. Report success. |
+| Fast deploy succeeds | ✅ Exit. Report success. |
+| Pipeline approved (infra path) | ✅ Exit. Report success. |
 | Retries >= MAX_RETRIES (3) | ❌ Exit. Report what's blocking. |
 | User interrupts with "stop" | ⏸️ Exit. Report current state. |
 
@@ -79,37 +97,41 @@ Poll pipeline status every 2 minutes until terminal state:
 
 | Event | Counts as retry? |
 |-------|:---:|
+| Local validation failure | ✅ Yes |
+| Fast deploy failure | ✅ Yes |
 | Pipeline build/deploy/smoke failure | ✅ Yes |
 | User rejects at manual approval | ✅ Yes |
-| Local validation failure (simulate-pipeline.sh) | ✅ Yes |
-| User provides additional context/clarification | ❌ No |
+| User provides additional context | ❌ No |
 
-## Reporting
+## Human Feedback
 
-### On Success (user approved):
+At any point, user can provide feedback:
+- **Text:** "The button doesn't save"
+- **Screenshot:** [image] + "This is broken"
+- **API issue:** "Returns 500 when I click X"
+- **Design correction:** "Wrong approach, use Y instead"
+
+Feedback provides context for the fix, doesn't count as retry.
+If feedback requires design change → re-plan before implementing.
+
+## Reporting Template
+
+### On Success:
 ```
 ✅ Feature: <name>
    Attempts: N/3
-   Status: Delivered (approved)
+   Deploy: <fast-frontend|fast-backend|pipeline>
+   Time: <seconds or minutes>
    URL: https://d2ok3vs29hr98h.cloudfront.net
+   What to test: <description>
 ```
 
-### On Failure (max retries):
+### On Failure:
 ```
 ❌ Feature: <name>
    Attempts: 3/3 (max reached)
    Blocking issue: <description>
-   Last failure: <Build|Deploy|SmokeTest|Rejected>
+   Last failure: <local-validate|fast-deploy|pipeline>
    Error: <details>
    Suggested next step: <what to try>
 ```
-
-## Human Feedback (on rejection)
-
-When user rejects, they provide feedback in chat:
-- Text: "The cost field doesn't save correctly"
-- Screenshot: [image] + "This looks wrong"
-- API issue: "Returns 500 when I submit"
-- Design change: "Wrong approach, do X instead"
-
-I acknowledge the feedback, diagnose, fix, and retry.
