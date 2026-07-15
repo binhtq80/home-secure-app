@@ -62,7 +62,7 @@ get_pipeline_status() {
     --region "$AWS_REGION" \
     --max-items 1 \
     --query 'pipelineExecutionSummaries[0].status' \
-    --output text 2>/dev/null
+    --output text 2>/dev/null | head -1
 }
 
 get_pipeline_execution_id() {
@@ -72,7 +72,7 @@ get_pipeline_execution_id() {
     --region "$AWS_REGION" \
     --max-items 1 \
     --query 'pipelineExecutionSummaries[0].pipelineExecutionId' \
-    --output text 2>/dev/null
+    --output text 2>/dev/null | head -1
 }
 
 get_pipeline_error() {
@@ -206,11 +206,9 @@ DO THE FOLLOWING (no questions, just execute):
             log "   ❌ Pipeline failed: $feedback"
             ;;
           Cancelled|Superseded)
-            # Pipeline restarted (self-mutation), keep waiting
             log "   ↻ Pipeline restarted, continuing to poll..."
             ;;
           InProgress)
-            # Still running
             ;;
           *)
             log "   Unknown status: $status"
