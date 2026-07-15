@@ -44,6 +44,9 @@ export default function App() {
         <BrowserRouter>
           <div className="app">
             <AppRoutes />
+            <footer className="app-footer">
+              MyApp v1.0 — Powered by AWS
+            </footer>
           </div>
         </BrowserRouter>
       </AuthProvider>
