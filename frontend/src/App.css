@@ -123,7 +123,7 @@
   align-items: center;
   padding: 1rem 2rem;
   background: var(--color-surface);
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 2px solid rgba(79, 70, 229, 0.15);
   box-shadow: var(--shadow);
 }
 
@@ -161,6 +161,7 @@
 .welcome-section h2 {
   font-size: 1.75rem;
   margin-bottom: 0.5rem;
+  color: var(--color-primary);
 }
 
 .welcome-subtitle {
