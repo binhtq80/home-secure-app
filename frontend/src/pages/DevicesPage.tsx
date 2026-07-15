@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, FormEvent } from 'react';
+import { useState, useEffect, useRef, useCallback, FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { devicesApi } from '../services/api';
@@ -45,6 +45,8 @@ export function DevicesPage() {
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [deviceImages, setDeviceImages] = useState<Record<string, string>>({});
   const [capturedImageBase64, setCapturedImageBase64] = useState<string | null>(null);
+  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+  const [lightboxAlt, setLightboxAlt] = useState('');
 
   // Form fields
   const [deviceType, setDeviceType] = useState('');
@@ -181,6 +183,33 @@ export function DevicesPage() {
     setFeatures('');
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
+
+  const openLightbox = (imageUrl: string, alt: string) => {
+    setLightboxImage(imageUrl);
+    setLightboxAlt(alt);
+  };
+
+  const closeLightbox = () => {
+    setLightboxImage(null);
+    setLightboxAlt('');
+  };
+
+  const handleLightboxKeyDown = useCallback((e: KeyboardEvent) => {
+    if (e.key === 'Escape') closeLightbox();
+  }, []);
+
+  useEffect(() => {
+    if (lightboxImage) {
+      document.addEventListener('keydown', handleLightboxKeyDown);
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.removeEventListener('keydown', handleLightboxKeyDown);
+      document.body.style.overflow = '';
+    };
+  }, [lightboxImage, handleLightboxKeyDown]);
 
   const handleLogout = () => {
     logout();
@@ -367,7 +396,23 @@ export function DevicesPage() {
                   </div>
                 </div>
                 {deviceImages[device.id] && (
-                  <div className="device-card-image">
+                  <div
+                    className="device-card-image"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openLightbox(deviceImages[device.id], `${device.brand} ${device.model}`);
+                    }}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.stopPropagation();
+                        openLightbox(deviceImages[device.id], `${device.brand} ${device.model}`);
+                      }
+                    }}
+                    aria-label={`View full image of ${device.brand} ${device.model}`}
+                    style={{ cursor: 'zoom-in' }}
+                  >
                     <img src={deviceImages[device.id]} alt={`${device.brand} ${device.model}`} />
                   </div>
                 )}
@@ -401,6 +446,19 @@ export function DevicesPage() {
           </div>
         )}
       </main>
+
+      {/* Lightbox Modal */}
+      {lightboxImage && (
+        <div className="lightbox-overlay" onClick={closeLightbox} role="dialog" aria-modal="true" aria-label="Image lightbox">
+          <button className="lightbox-close" onClick={closeLightbox} aria-label="Close lightbox">✕</button>
+          <img
+            className="lightbox-image"
+            src={lightboxImage}
+            alt={lightboxAlt}
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
     </div>
   );
 }
