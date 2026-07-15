@@ -92,6 +92,16 @@ export class AppStack extends cdk.Stack {
       removalPolicy: envConfig.isProd ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,
     });
 
+    // ─── S3 Bucket for Device Images ──────────────────────────────────────────
+
+    const deviceImagesBucket = new s3.Bucket(this, 'DeviceImagesBucket', {
+      bucketName: `${prefix}-device-images`,
+      removalPolicy: envConfig.isProd ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,
+      autoDeleteObjects: !envConfig.isProd,
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+      encryption: s3.BucketEncryption.S3_MANAGED,
+    });
+
     // ─── Lambda Functions ──────────────────────────────────────────────────────
 
     const lambdaDir = path.join(__dirname, '../../../backend/dist/lambda-packages');
@@ -103,6 +113,7 @@ export class AppStack extends cdk.Stack {
       USER_POOL_ID: userPool.userPoolId,
       USER_POOL_CLIENT_ID: userPoolClient.userPoolClientId,
       BEDROCK_MODEL_ID: 'au.anthropic.claude-haiku-4-5-20251001-v1:0',
+      DEVICE_IMAGES_BUCKET: deviceImagesBucket.bucketName,
     };
 
     const commonProps = {
@@ -201,8 +212,14 @@ export class AppStack extends cdk.Stack {
       code: lambda.Code.fromAsset(path.join(lambdaDir, 'get-device-stats')),
     });
 
+    const getDeviceImageFn = new lambda.Function(this, 'GetDeviceImageFn', {
+      ...commonProps,
+      functionName: `${prefix}-get-device-image`,
+      code: lambda.Code.fromAsset(path.join(lambdaDir, 'get-device-image')),
+    });
+
     // Grant permissions
-    const allFunctions = [signUpFn, confirmSignUpFn, signInFn, getUserFn, recognizeDeviceFn, createDeviceFn, listDevicesFn, deleteDeviceFn, getDeviceEnergyFn, getUserSettingsFn, updateUserSettingsFn, getEnergyReportFn, updateDeviceBudgetFn, getDeviceStatsFn];
+    const allFunctions = [signUpFn, confirmSignUpFn, signInFn, getUserFn, recognizeDeviceFn, createDeviceFn, listDevicesFn, deleteDeviceFn, getDeviceEnergyFn, getUserSettingsFn, updateUserSettingsFn, getEnergyReportFn, updateDeviceBudgetFn, getDeviceStatsFn, getDeviceImageFn];
 
     for (const fn of allFunctions) {
       usersTable.grantReadWriteData(fn);
@@ -227,6 +244,10 @@ export class AppStack extends cdk.Stack {
       actions: ['bedrock:InvokeModel'],
       resources: ['*'],
     }));
+
+    // S3 access for device images
+    deviceImagesBucket.grantReadWrite(createDeviceFn);
+    deviceImagesBucket.grantRead(getDeviceImageFn);
 
     // ─── API Gateway ───────────────────────────────────────────────────────────
 
@@ -261,6 +282,7 @@ export class AppStack extends cdk.Stack {
     deviceResource.addMethod('DELETE', new apigateway.LambdaIntegration(deleteDeviceFn));
     deviceResource.addResource('energy').addMethod('GET', new apigateway.LambdaIntegration(getDeviceEnergyFn));
     deviceResource.addResource('budget').addMethod('PUT', new apigateway.LambdaIntegration(updateDeviceBudgetFn));
+    deviceResource.addResource('image').addMethod('GET', new apigateway.LambdaIntegration(getDeviceImageFn));
 
     // Settings routes
     const settingsResource = apiResource.addResource('settings');

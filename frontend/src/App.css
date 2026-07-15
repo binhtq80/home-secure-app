@@ -356,6 +356,20 @@
   margin-bottom: 0.5rem;
 }
 
+.device-card-image {
+  width: 100%;
+  height: 120px;
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 0.75rem;
+}
+
+.device-card-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .device-type-badge {
   background: rgba(79, 70, 229, 0.1);
   color: var(--color-primary);

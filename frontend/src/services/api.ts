@@ -81,6 +81,7 @@ export const devicesApi = {
     condition?: string;
     description?: string;
     features?: string[];
+    imageBase64?: string;
   }) =>
     request('/api/devices', {
       method: 'POST',
@@ -90,6 +91,8 @@ export const devicesApi = {
   list: () => request('/api/devices'),
 
   getEnergy: (deviceId: string) => request(`/api/devices/${deviceId}/energy`),
+
+  getImage: (deviceId: string) => request(`/api/devices/${deviceId}/image`),
 
   setBudget: (deviceId: string, monthlyBudgetKwh: number) =>
     request(`/api/devices/${deviceId}/budget`, {

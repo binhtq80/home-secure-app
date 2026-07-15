@@ -17,6 +17,8 @@ interface Device {
   monthlyBudgetKwh?: number;
   currentMonthKwh?: number;
   budgetPercentage?: number | null;
+  hasImage?: boolean;
+  imageKey?: string;
 }
 
 interface RecognizedDevice {
@@ -41,6 +43,8 @@ export function DevicesPage() {
   const [error, setError] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [deviceImages, setDeviceImages] = useState<Record<string, string>>({});
+  const [capturedImageBase64, setCapturedImageBase64] = useState<string | null>(null);
 
   // Form fields
   const [deviceType, setDeviceType] = useState('');
@@ -59,6 +63,23 @@ export function DevicesPage() {
     try {
       const data = await devicesApi.list();
       setDevices(data.devices);
+      // Load images for devices that have them
+      const imagePromises = data.devices
+        .filter((d: Device) => d.hasImage || d.imageKey)
+        .map(async (d: Device) => {
+          try {
+            const result = await devicesApi.getImage(d.id);
+            return { id: d.id, url: result.url };
+          } catch {
+            return null;
+          }
+        });
+      const images = await Promise.all(imagePromises);
+      const imageMap: Record<string, string> = {};
+      images.forEach((img) => {
+        if (img) imageMap[img.id] = img.url;
+      });
+      setDeviceImages(imageMap);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to load devices');
     } finally {
@@ -87,6 +108,8 @@ export function DevicesPage() {
       try {
         const base64 = (evt.target?.result as string).split(',')[1];
         const mimeType = file.type || 'image/jpeg';
+
+        setCapturedImageBase64(base64);
 
         const result = await devicesApi.recognize(base64, mimeType);
         const device: RecognizedDevice = result.device;
@@ -122,6 +145,7 @@ export function DevicesPage() {
         condition,
         description,
         features: features.split(',').map((f) => f.trim()).filter(Boolean),
+        imageBase64: capturedImageBase64 || undefined,
       });
 
       // Reset form and reload
@@ -147,6 +171,7 @@ export function DevicesPage() {
   const resetForm = () => {
     setShowForm(false);
     setPreviewImage(null);
+    setCapturedImageBase64(null);
     setDeviceType('');
     setBrand('');
     setModel('');
@@ -341,6 +366,11 @@ export function DevicesPage() {
                     </button>
                   </div>
                 </div>
+                {deviceImages[device.id] && (
+                  <div className="device-card-image">
+                    <img src={deviceImages[device.id]} alt={`${device.brand} ${device.model}`} />
+                  </div>
+                )}
                 <h4>{device.brand} {device.model !== 'Unknown' ? device.model : ''}</h4>
                 <p className="device-description">{device.description}</p>
                 <div className="device-meta">
