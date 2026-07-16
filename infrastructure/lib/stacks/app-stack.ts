@@ -185,6 +185,8 @@ export class AppStack extends cdk.Stack {
     const createDeviceFn = new lambda.Function(this, 'CreateDeviceFn', {
       ...commonProps,
       functionName: `${prefix}-create-device`,
+      timeout: cdk.Duration.seconds(60), // Bedrock call for energy tips can be slow
+      memorySize: 512,
       code: lambda.Code.fromAsset(path.join(lambdaDir, 'create-device')),
     });
 
@@ -335,6 +337,12 @@ export class AppStack extends cdk.Stack {
 
     // Bedrock access for device recognition
     recognizeDeviceFn.addToRolePolicy(new iam.PolicyStatement({
+      actions: ['bedrock:InvokeModel'],
+      resources: ['*'],
+    }));
+
+    // Bedrock access for energy saving tips generation on device creation
+    createDeviceFn.addToRolePolicy(new iam.PolicyStatement({
       actions: ['bedrock:InvokeModel'],
       resources: ['*'],
     }));

@@ -30,6 +30,7 @@ interface DeviceInfo {
   description?: string;
   status?: 'on' | 'off';
   monthlyBudgetKwh?: number;
+  energySavingTips?: string[];
 }
 
 interface HistoryEntry {
@@ -526,6 +527,20 @@ export function DeviceDetailPage() {
                 <p className="budget-exceeded">🚨 Budget exceeded!</p>
               )}
             </div>
+          )}
+        </div>
+
+        {/* Energy Saving Tips */}
+        <div className="energy-tips-card">
+          <h3>💡 AI Energy Saving Tips</h3>
+          {device?.energySavingTips && device.energySavingTips.length > 0 ? (
+            <ul className="energy-tips-list">
+              {device.energySavingTips.map((tip, index) => (
+                <li key={index} className="energy-tip-item">{tip}</li>
+              ))}
+            </ul>
+          ) : (
+            <p className="energy-tips-na">N/A</p>
           )}
         </div>
 
