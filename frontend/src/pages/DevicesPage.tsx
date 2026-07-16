@@ -51,6 +51,7 @@ export function DevicesPage() {
   const [lightboxAlt, setLightboxAlt] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [toggleConfirm, setToggleConfirm] = useState<{ deviceId: string; currentStatus?: 'on' | 'off' } | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ deviceId: string; deviceName: string } | null>(null);
 
   // Form fields
   const [deviceType, setDeviceType] = useState('');
@@ -164,14 +165,19 @@ export function DevicesPage() {
     }
   };
 
-  const handleDelete = async (deviceId: string) => {
-    if (!confirm('Are you sure you want to remove this device?')) return;
+  const handleDelete = async (deviceId: string, deviceName: string) => {
+    setDeleteConfirm({ deviceId, deviceName });
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteConfirm) return;
     try {
-      await devicesApi.delete(deviceId);
-      setDevices(devices.filter((d) => d.id !== deviceId));
+      await devicesApi.delete(deleteConfirm.deviceId);
+      setDevices(devices.filter((d) => d.id !== deleteConfirm.deviceId));
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to delete device');
+      setError(err instanceof Error ? err.message : 'Failed to remove device');
     }
+    setDeleteConfirm(null);
   };
 
   const handleToggleStatus = async (deviceId: string, currentStatus?: 'on' | 'off') => {
@@ -451,8 +457,8 @@ export function DevicesPage() {
                     )}
                     <button
                       className="btn-delete"
-                      onClick={(e) => { e.stopPropagation(); handleDelete(device.id); }}
-                      aria-label="Delete device"
+                      onClick={(e) => { e.stopPropagation(); handleDelete(device.id, `${device.brand} ${device.model}`); }}
+                      aria-label="Remove device"
                     >
                       ✕
                     </button>
@@ -533,6 +539,16 @@ export function DevicesPage() {
         confirmLabel={toggleConfirm?.currentStatus === 'on' ? 'Turn Off' : 'Turn On'}
         onConfirm={confirmToggleStatus}
         onCancel={() => setToggleConfirm(null)}
+      />
+
+      {/* Delete Device Confirmation */}
+      <ConfirmDialog
+        open={deleteConfirm !== null}
+        title="Remove Device?"
+        message={`Are you sure you want to remove "${deleteConfirm?.deviceName || ''}"? The device will no longer appear in your list, but its data will be preserved for recovery.`}
+        confirmLabel="Remove"
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteConfirm(null)}
       />
     </div>
   );

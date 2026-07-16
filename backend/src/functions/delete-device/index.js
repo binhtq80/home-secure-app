@@ -1,5 +1,5 @@
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
-const { DynamoDBDocumentClient, DeleteCommand, GetCommand } = require('@aws-sdk/lib-dynamodb');
+const { DynamoDBDocumentClient, UpdateCommand, GetCommand } = require('@aws-sdk/lib-dynamodb');
 const { withAuth, headers } = require('./common/middleware');
 
 const ddbClient = DynamoDBDocumentClient.from(new DynamoDBClient({}));
@@ -44,15 +44,29 @@ exports.handler = withAuth(async (event) => {
       };
     }
 
-    await ddbClient.send(new DeleteCommand({
+    if (existing.Item.deleted) {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({ message: 'Device is already deleted' }),
+      };
+    }
+
+    // Soft delete: mark as deleted instead of removing from DB
+    await ddbClient.send(new UpdateCommand({
       TableName: DEVICES_TABLE,
       Key: { id: deviceId },
+      UpdateExpression: 'SET deleted = :deleted, deletedAt = :deletedAt',
+      ExpressionAttributeValues: {
+        ':deleted': true,
+        ':deletedAt': new Date().toISOString(),
+      },
     }));
 
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify({ message: 'Device deleted successfully' }),
+      body: JSON.stringify({ message: 'Device removed successfully' }),
     };
   } catch (error) {
     console.error('Delete device error:', error);

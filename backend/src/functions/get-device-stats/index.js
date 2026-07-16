@@ -22,7 +22,7 @@ exports.handler = withAuth(async (event) => {
       ScanIndexForward: false,
     }));
 
-    const devices = result.Items || [];
+    const devices = (result.Items || []).filter((d) => !d.deleted);
     const totalCount = devices.length;
 
     // Find most common device type

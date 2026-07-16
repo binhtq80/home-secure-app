@@ -33,7 +33,7 @@ exports.handler = withAuth(async (event) => {
       ExpressionAttributeValues: { ':userId': userId },
     }));
 
-    const devices = devicesResult.Items || [];
+    const devices = (devicesResult.Items || []).filter((d) => !d.deleted);
 
     if (devices.length === 0) {
       return {

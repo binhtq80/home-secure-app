@@ -23,7 +23,7 @@ exports.handler = withAuth(async (event) => {
       ScanIndexForward: false,
     }));
 
-    const devices = result.Items || [];
+    const devices = (result.Items || []).filter((d) => !d.deleted);
 
     // If we have the energy table, enrich with current month's usage
     if (DEVICE_ENERGY_TABLE && devices.length > 0) {
