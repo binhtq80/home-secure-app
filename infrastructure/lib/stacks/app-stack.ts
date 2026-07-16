@@ -273,6 +273,16 @@ export class AppStack extends cdk.Stack {
       code: lambda.Code.fromAsset(path.join(lambdaDir, 'get-feature-request')),
     });
 
+    const approveFeatureRequestFn = new lambda.Function(this, 'ApproveFeatureRequestFn', {
+      ...commonProps,
+      functionName: `${prefix}-approve-feature-request`,
+      code: lambda.Code.fromAsset(path.join(lambdaDir, 'approve-feature-request')),
+      environment: {
+        ...lambdaEnv,
+        PIPELINE_NAME: `${prefix}-pipeline`,
+      },
+    });
+
     // Device manuals functions
     const uploadDeviceManualFn = new lambda.Function(this, 'UploadDeviceManualFn', {
       ...commonProps,
@@ -295,7 +305,7 @@ export class AppStack extends cdk.Stack {
     });
 
     // Grant permissions
-    const allFunctions = [signUpFn, confirmSignUpFn, signInFn, getUserFn, recognizeDeviceFn, createDeviceFn, listDevicesFn, deleteDeviceFn, getDeviceEnergyFn, getUserSettingsFn, updateUserSettingsFn, getEnergyReportFn, updateDeviceBudgetFn, getDeviceStatsFn, getDeviceImageFn, updateDeviceFn, getDeviceHistoryFn, createFeatureRequestFn, listFeatureRequestsFn, getFeatureRequestFn, uploadDeviceManualFn, getDeviceManualsFn, deleteDeviceManualFn];
+    const allFunctions = [signUpFn, confirmSignUpFn, signInFn, getUserFn, recognizeDeviceFn, createDeviceFn, listDevicesFn, deleteDeviceFn, getDeviceEnergyFn, getUserSettingsFn, updateUserSettingsFn, getEnergyReportFn, updateDeviceBudgetFn, getDeviceStatsFn, getDeviceImageFn, updateDeviceFn, getDeviceHistoryFn, createFeatureRequestFn, listFeatureRequestsFn, getFeatureRequestFn, approveFeatureRequestFn, uploadDeviceManualFn, getDeviceManualsFn, deleteDeviceManualFn];
 
     for (const fn of allFunctions) {
       usersTable.grantReadWriteData(fn);
@@ -321,6 +331,12 @@ export class AppStack extends cdk.Stack {
     recognizeDeviceFn.addToRolePolicy(new iam.PolicyStatement({
       actions: ['bedrock:InvokeModel'],
       resources: ['*'],
+    }));
+
+    // CodePipeline access for feature approval
+    approveFeatureRequestFn.addToRolePolicy(new iam.PolicyStatement({
+      actions: ['codepipeline:GetPipelineState', 'codepipeline:PutApprovalResult'],
+      resources: [`arn:aws:codepipeline:${this.region}:${this.account}:${prefix}-pipeline`],
     }));
 
     // S3 access for device images
@@ -384,7 +400,9 @@ export class AppStack extends cdk.Stack {
     const featuresResource = apiResource.addResource('features');
     featuresResource.addMethod('POST', new apigateway.LambdaIntegration(createFeatureRequestFn));
     featuresResource.addMethod('GET', new apigateway.LambdaIntegration(listFeatureRequestsFn));
-    featuresResource.addResource('{featureId}').addMethod('GET', new apigateway.LambdaIntegration(getFeatureRequestFn));
+    const featureResource = featuresResource.addResource('{featureId}');
+    featureResource.addMethod('GET', new apigateway.LambdaIntegration(getFeatureRequestFn));
+    featureResource.addResource('approve').addMethod('POST', new apigateway.LambdaIntegration(approveFeatureRequestFn));
 
     // ─── Frontend Hosting ──────────────────────────────────────────────────────
 

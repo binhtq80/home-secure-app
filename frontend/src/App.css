@@ -1859,6 +1859,11 @@
   color: #ca8a04;
 }
 
+.feature-badge-warning {
+  background: rgba(249, 115, 22, 0.12);
+  color: #ea580c;
+}
+
 /* Feature Timeline */
 .feature-timeline {
   margin-top: 0.75rem;
@@ -2023,4 +2028,120 @@
   display: flex;
   gap: 0.75rem;
   justify-content: flex-end;
+}
+
+/* ─── Feature Approval Section ─────────────────────────────────────────────── */
+
+.feature-approval-section {
+  margin-top: 1.5rem;
+  padding: 1.5rem;
+  background: rgba(249, 115, 22, 0.05);
+  border: 1px solid rgba(249, 115, 22, 0.2);
+  border-radius: 12px;
+}
+
+.feature-approval-section h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1.1rem;
+  color: var(--color-text);
+}
+
+.feature-approval-description {
+  color: var(--color-text-muted);
+  margin: 0 0 1rem;
+  font-size: 0.9rem;
+}
+
+.feature-approval-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.btn-approve {
+  padding: 0.6rem 1.5rem;
+  background: #16a34a;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.btn-approve:hover:not(:disabled) {
+  background: #15803d;
+}
+
+.btn-approve:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-reject {
+  padding: 0.6rem 1.5rem;
+  background: #dc2626;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.btn-reject:hover:not(:disabled) {
+  background: #b91c1c;
+}
+
+.btn-reject:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-cancel {
+  padding: 0.6rem 1.5rem;
+  background: var(--color-surface, #e5e7eb);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+
+.btn-cancel:hover:not(:disabled) {
+  background: var(--color-bg-hover, #d1d5db);
+}
+
+.feature-reject-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.feature-reject-label {
+  font-size: 0.9rem;
+  color: var(--color-text);
+  font-weight: 500;
+}
+
+.feature-reject-textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  resize: vertical;
+  background: var(--color-surface, #ffffff);
+  color: var(--color-text);
+}
+
+.feature-reject-textarea:focus {
+  outline: none;
+  border-color: var(--color-primary, #6366f1);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }

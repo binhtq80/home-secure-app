@@ -294,6 +294,7 @@ DO THE FOLLOWING (no questions, just execute):
       local pipeline_done=false
       local poll_count=0
       local max_polls=30  # 30 * 2 min = 60 min max
+      local awaiting_approval_set=false
 
       while [ "$pipeline_done" != "true" ] && [ $poll_count -lt $max_polls ]; do
         if should_stop; then
@@ -307,6 +308,22 @@ DO THE FOLLOWING (no questions, just execute):
         local status
         status=$(get_pipeline_status)
         log "   Poll $poll_count: $status"
+
+        # Detect if pipeline is waiting at E2EApproval step
+        if [ "$awaiting_approval_set" = "false" ] && [ "$status" = "InProgress" ]; then
+          local approval_status
+          approval_status=$(aws codepipeline get-pipeline-state \
+            --name "$PIPELINE_NAME" \
+            --profile "$AWS_PROFILE" \
+            --region "$AWS_REGION" \
+            --query 'stageStates[*].actionStates[?actionName==`E2EApproval`].latestExecution.status' \
+            --output text 2>/dev/null | head -1)
+          if [ "$approval_status" = "InProgress" ]; then
+            log "   ⏸️  Pipeline waiting at E2EApproval — setting status to awaiting_approval"
+            update_feature_request_status "$task" "awaiting_approval" "Pipeline waiting for manual approval"
+            awaiting_approval_set=true
+          fi
+        fi
 
         case "$status" in
           Succeeded)

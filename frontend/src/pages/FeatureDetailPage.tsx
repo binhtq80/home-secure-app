@@ -27,6 +27,9 @@ export function FeatureDetailPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
+  const [showRejectForm, setShowRejectForm] = useState(false);
+  const [rejectFeedback, setRejectFeedback] = useState('');
+  const [approving, setApproving] = useState(false);
 
   const loadFeature = useCallback(async (showRefreshing = false) => {
     if (!featureId) return;
@@ -57,13 +60,46 @@ export function FeatureDetailPage() {
     navigate('/login');
   };
 
+  const handleApprove = async () => {
+    if (!featureId) return;
+    setApproving(true);
+    setError('');
+    try {
+      await featuresApi.approve(featureId, 'approve');
+      await loadFeature();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to approve feature');
+    } finally {
+      setApproving(false);
+    }
+  };
+
+  const handleReject = async () => {
+    if (!featureId) return;
+    setApproving(true);
+    setError('');
+    try {
+      await featuresApi.approve(featureId, 'reject', rejectFeedback || undefined);
+      setShowRejectForm(false);
+      setRejectFeedback('');
+      await loadFeature();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to reject feature');
+    } finally {
+      setApproving(false);
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'completed':
-      case 'deployed': return 'success';
-      case 'failed': return 'error';
+      case 'deployed':
+      case 'delivered': return 'success';
+      case 'failed':
+      case 'rejected': return 'error';
       case 'in-progress':
       case 'implementing': return 'active';
+      case 'awaiting_approval': return 'warning';
       default: return 'pending';
     }
   };
@@ -166,6 +202,64 @@ export function FeatureDetailPage() {
                 </div>
               )}
             </div>
+
+            {(feature.currentStep === 'awaiting_approval' || feature.status === 'awaiting_approval') && (
+              <div className="feature-approval-section">
+                <h3>🔒 Pipeline Approval Required</h3>
+                <p className="feature-approval-description">
+                  The deployment pipeline is waiting for manual approval. Review the changes and approve or reject.
+                </p>
+
+                {!showRejectForm ? (
+                  <div className="feature-approval-actions">
+                    <button
+                      onClick={handleApprove}
+                      disabled={approving}
+                      className="btn-approve"
+                    >
+                      {approving ? 'Processing...' : '✓ Approve'}
+                    </button>
+                    <button
+                      onClick={() => setShowRejectForm(true)}
+                      disabled={approving}
+                      className="btn-reject"
+                    >
+                      ✗ Reject
+                    </button>
+                  </div>
+                ) : (
+                  <div className="feature-reject-form">
+                    <label htmlFor="reject-feedback" className="feature-reject-label">
+                      Rejection feedback (optional):
+                    </label>
+                    <textarea
+                      id="reject-feedback"
+                      className="feature-reject-textarea"
+                      value={rejectFeedback}
+                      onChange={(e) => setRejectFeedback(e.target.value)}
+                      placeholder="Explain why this feature is being rejected..."
+                      rows={4}
+                    />
+                    <div className="feature-approval-actions">
+                      <button
+                        onClick={handleReject}
+                        disabled={approving}
+                        className="btn-reject"
+                      >
+                        {approving ? 'Processing...' : '✗ Confirm Rejection'}
+                      </button>
+                      <button
+                        onClick={() => { setShowRejectForm(false); setRejectFeedback(''); }}
+                        disabled={approving}
+                        className="btn-cancel"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 
