@@ -22,6 +22,7 @@ export class AppStack extends cdk.Stack {
 
     const { envConfig } = props;
     const prefix = `myapp-${envConfig.name}`;
+    const accountSuffix = envConfig.env.account ? `-${envConfig.env.account}` : '';
 
     // ─── Cognito ───────────────────────────────────────────────────────────────
 
@@ -118,7 +119,7 @@ export class AppStack extends cdk.Stack {
     // ─── S3 Bucket for Device Images ──────────────────────────────────────────
 
     const deviceImagesBucket = new s3.Bucket(this, 'DeviceImagesBucket', {
-      bucketName: `${prefix}-device-images`,
+      bucketName: `${prefix}-device-images${accountSuffix}`,
       removalPolicy: envConfig.isProd ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,
       autoDeleteObjects: !envConfig.isProd,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
@@ -433,7 +434,7 @@ export class AppStack extends cdk.Stack {
     // ─── Frontend Hosting ──────────────────────────────────────────────────────
 
     const websiteBucket = new s3.Bucket(this, 'WebsiteBucket', {
-      bucketName: `${prefix}-website`,
+      bucketName: `${prefix}-website${accountSuffix}`,
       removalPolicy: envConfig.isProd ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,
       autoDeleteObjects: !envConfig.isProd,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
