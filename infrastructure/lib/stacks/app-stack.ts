@@ -273,8 +273,29 @@ export class AppStack extends cdk.Stack {
       code: lambda.Code.fromAsset(path.join(lambdaDir, 'get-feature-request')),
     });
 
+    // Device manuals functions
+    const uploadDeviceManualFn = new lambda.Function(this, 'UploadDeviceManualFn', {
+      ...commonProps,
+      functionName: `${prefix}-upload-device-manual`,
+      timeout: cdk.Duration.seconds(60),
+      memorySize: 512,
+      code: lambda.Code.fromAsset(path.join(lambdaDir, 'upload-device-manual')),
+    });
+
+    const getDeviceManualsFn = new lambda.Function(this, 'GetDeviceManualsFn', {
+      ...commonProps,
+      functionName: `${prefix}-get-device-manuals`,
+      code: lambda.Code.fromAsset(path.join(lambdaDir, 'get-device-manuals')),
+    });
+
+    const deleteDeviceManualFn = new lambda.Function(this, 'DeleteDeviceManualFn', {
+      ...commonProps,
+      functionName: `${prefix}-delete-device-manual`,
+      code: lambda.Code.fromAsset(path.join(lambdaDir, 'delete-device-manual')),
+    });
+
     // Grant permissions
-    const allFunctions = [signUpFn, confirmSignUpFn, signInFn, getUserFn, recognizeDeviceFn, createDeviceFn, listDevicesFn, deleteDeviceFn, getDeviceEnergyFn, getUserSettingsFn, updateUserSettingsFn, getEnergyReportFn, updateDeviceBudgetFn, getDeviceStatsFn, getDeviceImageFn, updateDeviceFn, getDeviceHistoryFn, createFeatureRequestFn, listFeatureRequestsFn, getFeatureRequestFn];
+    const allFunctions = [signUpFn, confirmSignUpFn, signInFn, getUserFn, recognizeDeviceFn, createDeviceFn, listDevicesFn, deleteDeviceFn, getDeviceEnergyFn, getUserSettingsFn, updateUserSettingsFn, getEnergyReportFn, updateDeviceBudgetFn, getDeviceStatsFn, getDeviceImageFn, updateDeviceFn, getDeviceHistoryFn, createFeatureRequestFn, listFeatureRequestsFn, getFeatureRequestFn, uploadDeviceManualFn, getDeviceManualsFn, deleteDeviceManualFn];
 
     for (const fn of allFunctions) {
       usersTable.grantReadWriteData(fn);
@@ -305,6 +326,9 @@ export class AppStack extends cdk.Stack {
     // S3 access for device images
     deviceImagesBucket.grantReadWrite(createDeviceFn);
     deviceImagesBucket.grantRead(getDeviceImageFn);
+    deviceImagesBucket.grantReadWrite(uploadDeviceManualFn);
+    deviceImagesBucket.grantRead(getDeviceManualsFn);
+    deviceImagesBucket.grantReadWrite(deleteDeviceManualFn);
 
     // ─── API Gateway ───────────────────────────────────────────────────────────
 
@@ -342,6 +366,10 @@ export class AppStack extends cdk.Stack {
     deviceResource.addResource('budget').addMethod('PUT', new apigateway.LambdaIntegration(updateDeviceBudgetFn));
     deviceResource.addResource('image').addMethod('GET', new apigateway.LambdaIntegration(getDeviceImageFn));
     deviceResource.addResource('history').addMethod('GET', new apigateway.LambdaIntegration(getDeviceHistoryFn));
+    const manualsResource = deviceResource.addResource('manuals');
+    manualsResource.addMethod('POST', new apigateway.LambdaIntegration(uploadDeviceManualFn));
+    manualsResource.addMethod('GET', new apigateway.LambdaIntegration(getDeviceManualsFn));
+    manualsResource.addMethod('DELETE', new apigateway.LambdaIntegration(deleteDeviceManualFn));
 
     // Settings routes
     const settingsResource = apiResource.addResource('settings');

@@ -42,6 +42,14 @@ interface HistoryEntry {
   changedAt: string;
 }
 
+interface DeviceManual {
+  id: string;
+  fileName: string;
+  s3Key: string;
+  size: number;
+  uploadedAt: string;
+}
+
 export function DeviceDetailPage() {
   const { deviceId } = useParams<{ deviceId: string }>();
   const { logout } = useAuth();
@@ -75,10 +83,18 @@ export function DeviceDetailPage() {
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
 
+  // Manuals state
+  const [manuals, setManuals] = useState<DeviceManual[]>([]);
+  const [manualsLoading, setManualsLoading] = useState(false);
+  const [uploadingManual, setUploadingManual] = useState(false);
+  const [manualSuccess, setManualSuccess] = useState('');
+  const [deletingManualId, setDeletingManualId] = useState<string | null>(null);
+
   useEffect(() => {
     if (deviceId) {
       loadEnergyData(deviceId);
       loadHistory(deviceId);
+      loadManuals(deviceId);
     }
   }, [deviceId]);
 
@@ -107,6 +123,85 @@ export function DeviceDetailPage() {
       setHistory([]);
     } finally {
       setHistoryLoading(false);
+    }
+  };
+
+  const loadManuals = async (id: string) => {
+    setManualsLoading(true);
+    try {
+      const data = await devicesApi.getManuals(id);
+      setManuals(data.manuals || []);
+    } catch {
+      setManuals([]);
+    } finally {
+      setManualsLoading(false);
+    }
+  };
+
+  const handleUploadManual = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !deviceId) return;
+
+    if (!file.name.toLowerCase().endsWith('.pdf')) {
+      setError('Only PDF files are allowed');
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      setError('File size must be less than 10MB');
+      return;
+    }
+
+    setUploadingManual(true);
+    setError('');
+    setManualSuccess('');
+
+    try {
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const base64 = (reader.result as string).split(',')[1];
+        await devicesApi.uploadManual(deviceId, file.name, base64);
+        setManualSuccess('Manual uploaded successfully!');
+        setTimeout(() => setManualSuccess(''), 3000);
+        loadManuals(deviceId);
+        setUploadingManual(false);
+      };
+      reader.onerror = () => {
+        setError('Failed to read file');
+        setUploadingManual(false);
+      };
+      reader.readAsDataURL(file);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to upload manual');
+      setUploadingManual(false);
+    }
+
+    // Reset input so same file can be re-uploaded
+    e.target.value = '';
+  };
+
+  const handleDownloadManual = async (manual: DeviceManual) => {
+    if (!deviceId) return;
+    try {
+      const data = await devicesApi.getManualUrl(deviceId, manual.id);
+      window.open(data.url, '_blank');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to download manual');
+    }
+  };
+
+  const handleDeleteManual = async (manualId: string) => {
+    if (!deviceId) return;
+    setDeletingManualId(manualId);
+    try {
+      await devicesApi.deleteManual(deviceId, manualId);
+      setManuals(manuals.filter(m => m.id !== manualId));
+      setManualSuccess('Manual deleted.');
+      setTimeout(() => setManualSuccess(''), 3000);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to delete manual');
+    } finally {
+      setDeletingManualId(null);
     }
   };
 
@@ -449,6 +544,61 @@ export function DeviceDetailPage() {
               </div>
             ))}
           </div>
+        </div>
+
+        {/* Device Manuals */}
+        <div className="manuals-card">
+          <h3>📄 Device Manuals (PDF)</h3>
+          {manualSuccess && <p className="success-message">{manualSuccess}</p>}
+          <div className="manual-upload-section">
+            <label className="btn-primary btn-upload-manual" htmlFor="manual-upload">
+              {uploadingManual ? 'Uploading...' : '+ Upload Manual (PDF)'}
+            </label>
+            <input
+              id="manual-upload"
+              type="file"
+              accept=".pdf"
+              onChange={handleUploadManual}
+              disabled={uploadingManual}
+              style={{ display: 'none' }}
+            />
+          </div>
+          {manualsLoading ? (
+            <p className="loading-text">Loading manuals...</p>
+          ) : manuals.length === 0 ? (
+            <p className="manuals-empty">No manuals uploaded yet. Upload a PDF manual for this device.</p>
+          ) : (
+            <div className="manuals-list">
+              {manuals.map((manual) => (
+                <div key={manual.id} className="manual-item">
+                  <div className="manual-info">
+                    <span className="manual-icon">📄</span>
+                    <div className="manual-details">
+                      <span className="manual-name">{manual.fileName}</span>
+                      <span className="manual-meta">
+                        {(manual.size / 1024).toFixed(0)} KB • {new Date(manual.uploadedAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="manual-actions">
+                    <button
+                      className="btn-secondary btn-manual-download"
+                      onClick={() => handleDownloadManual(manual)}
+                    >
+                      ⬇️ Download
+                    </button>
+                    <button
+                      className="btn-danger btn-manual-delete"
+                      onClick={() => handleDeleteManual(manual.id)}
+                      disabled={deletingManualId === manual.id}
+                    >
+                      {deletingManualId === manual.id ? '...' : '🗑️'}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Change History */}

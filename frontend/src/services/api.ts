@@ -119,6 +119,24 @@ export const devicesApi = {
 
   getHistory: (deviceId: string) =>
     request(`/api/devices/${deviceId}/history`),
+
+  getManuals: (deviceId: string) =>
+    request(`/api/devices/${deviceId}/manuals`),
+
+  getManualUrl: (deviceId: string, manualId: string) =>
+    request(`/api/devices/${deviceId}/manuals?manualId=${manualId}`),
+
+  uploadManual: (deviceId: string, fileName: string, fileBase64: string) =>
+    request(`/api/devices/${deviceId}/manuals`, {
+      method: 'POST',
+      body: JSON.stringify({ fileName, fileBase64 }),
+    }),
+
+  deleteManual: (deviceId: string, manualId: string) =>
+    request(`/api/devices/${deviceId}/manuals`, {
+      method: 'DELETE',
+      body: JSON.stringify({ manualId }),
+    }),
 };
 
 export const featuresApi = {
