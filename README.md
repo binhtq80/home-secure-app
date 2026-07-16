@@ -150,8 +150,14 @@ git add -A && git commit -m "your message" && git push
 # Submit a feature request (natural language)
 ./scripts/feature.sh submit "add a search bar to the devices page"
 
-# Start the orchestrator (runs in background)
+# Start the orchestrator (runs in background, defaults to test account)
 ./scripts/feature.sh start
+
+# Start targeting a specific account via ENV_FILE
+ENV_FILE=~/shared/myapp-envs/prod.sh ./scripts/feature.sh start
+
+# Submit a feature to a specific account
+ENV_FILE=~/shared/myapp-envs/prod.sh ./scripts/feature.sh submit "add dark mode toggle"
 
 # Monitor progress
 ./scripts/feature.sh status      # current state
@@ -164,6 +170,33 @@ git add -A && git commit -m "your message" && git push
 # Stop when done
 ./scripts/feature.sh stop
 ```
+
+#### Multi-account environment files
+
+Environment files live in `~/shared/myapp-envs/` and persist across DevSpaces sessions:
+
+```
+~/shared/myapp-envs/
+├── test.sh    ← test account (default when no ENV_FILE set)
+├── prod.sh    ← production account
+└── *.sh       ← add more by copying test.sh as a template
+```
+
+To target a specific account, prefix any script with `ENV_FILE=<path>`:
+
+```bash
+ENV_FILE=~/shared/myapp-envs/prod.sh ./scripts/deploy-frontend.sh
+ENV_FILE=~/shared/myapp-envs/prod.sh ./scripts/deploy-backend.sh
+ENV_FILE=~/shared/myapp-envs/prod.sh ./scripts/feature.sh start
+```
+
+Alternatively, use the `ENV` variable to load repo-local config files (`scripts/env.<name>.sh`):
+
+```bash
+ENV=prod ./scripts/deploy-frontend.sh
+```
+
+Priority: `ENV_FILE` (external) > `ENV` (repo-local) > defaults (test).
 
 The orchestrator will:
 1. Invoke kiro-cli to implement the feature
@@ -408,6 +441,7 @@ To add a production account:
 |---------|----------|
 | `simulate-pipeline.sh` fails on CDK synth | Run `cd backend && node scripts/build.js && ./scripts/prepare-lambda-packages.sh` first |
 | Lambda deploy fails with wrong region | Ensure `~/.aws/config` has correct region or use `AWS_DEFAULT_REGION=ap-southeast-2` |
+| Deploy uses wrong AWS profile | Ensure `ENV_FILE` is set when starting the orchestrator, and that the profile name in the env file matches `~/.aws/config` exactly |
 | Frontend changes not visible | Hard refresh `Ctrl+Shift+R` (browser cache) |
 | "Invalid or expired token" | Log out and log back in (Cognito tokens expire after 1 hour) |
 | Pipeline stuck at Manual Approval | Approve in AWS Console → CodePipeline, or trigger new execution |
