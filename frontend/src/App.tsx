@@ -51,7 +51,7 @@ export default function App() {
           <div className="app">
             <AppRoutes />
             <footer className="app-footer">
-              MyApp v1.0 — Powered by AWS
+              MyApp v1.0 - Home Device Management
             </footer>
           </div>
         </BrowserRouter>
