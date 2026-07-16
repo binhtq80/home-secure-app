@@ -85,6 +85,7 @@ if [ "$START_STEP" -le 3 ]; then
   npx cdk deploy MyappGithubOidcStack \
     --profile "$APP_AWS_PROFILE" \
     --require-approval never \
+    -c envName="$APP_ENV_NAME" \
     -c githubOwner="$APP_GITHUB_OWNER" \
     -c githubRepo="$APP_GITHUB_REPO"
   echo "   ✓ OIDC stack deployed"
@@ -101,11 +102,11 @@ if [ "$START_STEP" -le 4 ]; then
   npx cdk deploy --all \
     --profile "$APP_AWS_PROFILE" \
     --require-approval never \
+    -c envName="$APP_ENV_NAME" \
     -c githubOwner="$APP_GITHUB_OWNER" \
     -c githubRepo="$APP_GITHUB_REPO" \
     -c githubBranch="$APP_GITHUB_BRANCH" \
-    -c connectionArn="$APP_CONNECTION_ARN" \
-    -c envName="$APP_ENV_NAME"
+    -c connectionArn="$APP_CONNECTION_ARN"
   echo "   ✓ All stacks deployed"
   echo ""
 fi

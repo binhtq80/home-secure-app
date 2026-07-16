@@ -22,16 +22,16 @@ export const TEST_ENV: EnvironmentConfig = {
 };
 
 // Uncomment and fill in when you have your prod account
-// export const PROD_ENV: EnvironmentConfig = {
-//   name: 'prod',
-//   env: {
-//     account: 'PROD_ACCOUNT_ID',
-//     region: 'ap-southeast-2',
-//   },
-//   isProd: true,
-//   tags: {
-//     Environment: 'production',
-//     ManagedBy: 'cdk',
-//     Project: 'myapp',
-//   },
-// };
+export const PROD_ENV: EnvironmentConfig = {
+  name: 'prod',
+  env: {
+    account: '325503637661',
+    region: 'ap-southeast-2',
+  },
+  isProd: true,
+  tags: {
+    Environment: 'production',
+    ManagedBy: 'cdk',
+    Project: 'myapp',
+  },
+};
