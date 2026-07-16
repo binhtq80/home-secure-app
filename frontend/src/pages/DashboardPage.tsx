@@ -130,13 +130,7 @@ export function DashboardPage() {
             </div>
           </div>
 
-          <div className="stat-card">
-            <div className="stat-icon">📧</div>
-            <div className="stat-content">
-              <h3>Email</h3>
-              <p className="stat-value">{user?.email}</p>
-            </div>
-          </div>
+
         </div>
 
         {/* Energy Summary Card */}
