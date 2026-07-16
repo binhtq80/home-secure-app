@@ -88,6 +88,7 @@ export function DashboardPage() {
           <button onClick={() => navigate('/devices')} className="btn-nav">Devices</button>
           <button onClick={() => navigate('/reports')} className="btn-nav">Reports</button>
           <button onClick={() => navigate('/settings')} className="btn-nav">Settings</button>
+          <span className="nav-divider" />
           <button onClick={() => navigate('/submit-feature')} className="btn-nav">Request Feature</button>
           <button onClick={() => navigate('/feature-summary')} className="btn-nav">Feature Summary</button>
           <DarkModeToggle />
