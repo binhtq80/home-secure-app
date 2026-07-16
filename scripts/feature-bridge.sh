@@ -83,8 +83,8 @@ items = json.load(sys.stdin)
 for item in items:
     id = item['id']['S']
     desc = item['description']['S']
-    print(f'{id}|||{desc}')
-" 2>/dev/null | while IFS='|||' read -r id desc; do
+    print(f'{id}\t{desc}')
+" 2>/dev/null | while IFS=$'\t' read -r id desc; do
         if [ -n "$id" ] && [ -n "$desc" ]; then
           log "📋 New request: $id — ${desc:0:60}..."
           
