@@ -88,8 +88,8 @@ for item in items:
         if [ -n "$id" ] && [ -n "$desc" ]; then
           log "📋 New request: $id — ${desc:0:60}..."
           
-          # Write to orchestrator queue
-          echo "$desc" >> "$QUEUE_FILE"
+          # Write id||description to orchestrator queue
+          echo "${id}||${desc}" >> "$QUEUE_FILE"
           
           # Update status to processing
           update_status "$id" "processing"

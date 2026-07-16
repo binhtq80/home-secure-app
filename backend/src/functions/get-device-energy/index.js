@@ -174,6 +174,7 @@ exports.handler = withAuth(async (event) => {
           model: device.model,
           color: device.color,
           condition: device.condition,
+          energySavingTips: device.energySavingTips || [],
         },
         energy: {
           dataSource,
