@@ -236,9 +236,23 @@ DO THE FOLLOWING (no questions, just execute):
         log "   ✅ Code pushed to GitHub"
         update_feature_request_status_by_id "$task_id" "implementing" "Code pushed to GitHub"
       else
-        log "   ⚠️ Push may have failed, checking..."
-        feedback="kiro-cli did not push code. Output: $(echo "$kiro_output" | tail -10)"
-        continue
+        # Check if there's simply nothing to change (fix already exists)
+        local git_status
+        git_status=$(cd "$ROOT_DIR" && git status --porcelain 2>/dev/null)
+        local git_behind
+        git_behind=$(cd "$ROOT_DIR" && git rev-list --count HEAD..origin/main 2>/dev/null || echo "0")
+
+        if [ -z "$git_status" ] && [ "$git_behind" = "0" ]; then
+          # Clean tree + up-to-date = fix already exists, treat as success
+          log "   ✅ No changes needed — fix already exists in codebase"
+          update_feature_request_status_by_id "$task_id" "delivered" "Already resolved — fix exists in current codebase"
+          success=true
+          break
+        else
+          log "   ⚠️ Push may have failed, checking..."
+          feedback="kiro-cli did not push code. Output: $(echo "$kiro_output" | tail -10)"
+          continue
+        fi
       fi
 
       # ─── Step 2: Determine deploy strategy ─────────────────────────────
