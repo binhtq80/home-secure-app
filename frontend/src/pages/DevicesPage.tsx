@@ -313,6 +313,21 @@ export function DevicesPage() {
     );
   });
 
+  // Group devices by room for visual section headers
+  const groupedDevices = filteredDevices.reduce<Record<string, Device[]>>((groups, device) => {
+    const roomName = device.room || 'Unassigned';
+    if (!groups[roomName]) groups[roomName] = [];
+    groups[roomName].push(device);
+    return groups;
+  }, {});
+
+  // Sort room groups: named rooms first (alphabetical), then "Unassigned" last
+  const sortedRoomGroups = Object.keys(groupedDevices).sort((a, b) => {
+    if (a === 'Unassigned') return 1;
+    if (b === 'Unassigned') return -1;
+    return a.localeCompare(b);
+  });
+
   const handleLogout = () => {
     logout();
     navigate('/login');
@@ -553,7 +568,7 @@ export function DevicesPage() {
           </div>
         )}
 
-        {/* Device List */}
+        {/* Device List — Grouped by Room */}
         {loading ? (
           <p className="loading-text">Loading devices...</p>
         ) : devices.length === 0 && !showForm ? (
@@ -566,99 +581,113 @@ export function DevicesPage() {
             <p>No devices match your {roomFilter !== 'all' ? 'room filter' : 'search'}</p>
           </div>
         ) : (
-          <div className="devices-grid">
-            {filteredDevices.map((device) => (
-              <div
-                key={device.id}
-                className="device-card clickable"
-                onClick={() => navigate(`/devices/${device.id}`)}
-              >
-                <div className="device-card-header">
-                  <span className="device-type-badge">{device.deviceType}</span>
-                  <div className="device-card-actions">
-                    <button
-                      className={`btn-status-toggle ${device.status === 'on' ? 'status-on' : 'status-off'}`}
-                      onClick={(e) => { e.stopPropagation(); handleToggleStatus(device.id, device.status); }}
-                      aria-label={`Turn device ${device.status === 'on' ? 'off' : 'on'}`}
-                      title={`Device is ${device.status === 'on' ? 'ON' : 'OFF'} — click to toggle`}
+          <div className="devices-grouped">
+            {sortedRoomGroups.map((roomName) => (
+              <div key={roomName} className="room-group">
+                <div className="room-group-header">
+                  <h3 className="room-group-title">
+                    {roomName === 'Unassigned' ? '📦 Unassigned' : `🏠 ${roomName}`}
+                  </h3>
+                  <span className="room-group-count">
+                    {groupedDevices[roomName].length} device{groupedDevices[roomName].length !== 1 ? 's' : ''}
+                  </span>
+                </div>
+                <div className="devices-grid">
+                  {groupedDevices[roomName].map((device) => (
+                    <div
+                      key={device.id}
+                      className="device-card clickable"
+                      onClick={() => navigate(`/devices/${device.id}`)}
                     >
-                      {device.status === 'on' ? '🟢 ON' : '🔴 OFF'}
-                    </button>
-                    {device.budgetPercentage !== null && device.budgetPercentage !== undefined && device.budgetPercentage >= 80 && (
-                      <span className={`budget-badge ${device.budgetPercentage >= 100 ? 'exceeded' : 'warning'}`}>
-                        {device.budgetPercentage >= 100 ? '🚨' : '⚠️'} {device.budgetPercentage}%
-                      </span>
-                    )}
-                    <button
-                      className="btn-delete"
-                      onClick={(e) => { e.stopPropagation(); handleDelete(device.id, `${device.brand} ${device.model}`); }}
-                      aria-label="Remove device"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                </div>
-                {deviceImages[device.id] && (
-                  <div
-                    className="device-card-image"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      openLightbox(deviceImages[device.id], `${device.brand} ${device.model}`);
-                    }}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.stopPropagation();
-                        openLightbox(deviceImages[device.id], `${device.brand} ${device.model}`);
-                      }
-                    }}
-                    aria-label={`View full image of ${device.brand} ${device.model}`}
-                    style={{ cursor: 'zoom-in' }}
-                  >
-                    <img src={deviceImages[device.id]} alt={`${device.brand} ${device.model}`} />
-                  </div>
-                )}
-                <h4>{device.brand} {device.model !== 'Unknown' ? device.model : ''}</h4>
-                <p className="device-description">{device.description}</p>
-                <div className="device-meta">
-                  <span>Color: {device.color}</span>
-                  <span>Condition: {device.condition}</span>
-                </div>
-                {/* Room assignment dropdown */}
-                <div className="device-room-assign" onClick={(e) => e.stopPropagation()}>
-                  <label htmlFor={`room-${device.id}`} className="room-assign-label">Room:</label>
-                  <select
-                    id={`room-${device.id}`}
-                    value={device.room || ''}
-                    onChange={(e) => handleRoomChange(device.id, e.target.value)}
-                    className="room-assign-select"
-                  >
-                    <option value="">Unassigned</option>
-                    {availableRooms.map((room) => (
-                      <option key={room} value={room}>{room}</option>
-                    ))}
-                  </select>
-                </div>
-                {device.budgetPercentage !== null && device.budgetPercentage !== undefined && (
-                  <div className="device-card-budget">
-                    <div className="mini-progress-bar">
-                      <div
-                        className={`mini-progress-fill ${device.budgetPercentage >= 100 ? 'exceeded' : device.budgetPercentage >= 80 ? 'warning' : ''}`}
-                        style={{ width: `${Math.min(device.budgetPercentage, 100)}%` }}
-                      />
+                      <div className="device-card-header">
+                        <span className="device-type-badge">{device.deviceType}</span>
+                        <div className="device-card-actions">
+                          <button
+                            className={`btn-status-toggle ${device.status === 'on' ? 'status-on' : 'status-off'}`}
+                            onClick={(e) => { e.stopPropagation(); handleToggleStatus(device.id, device.status); }}
+                            aria-label={`Turn device ${device.status === 'on' ? 'off' : 'on'}`}
+                            title={`Device is ${device.status === 'on' ? 'ON' : 'OFF'} — click to toggle`}
+                          >
+                            {device.status === 'on' ? '🟢 ON' : '🔴 OFF'}
+                          </button>
+                          {device.budgetPercentage !== null && device.budgetPercentage !== undefined && device.budgetPercentage >= 80 && (
+                            <span className={`budget-badge ${device.budgetPercentage >= 100 ? 'exceeded' : 'warning'}`}>
+                              {device.budgetPercentage >= 100 ? '🚨' : '⚠️'} {device.budgetPercentage}%
+                            </span>
+                          )}
+                          <button
+                            className="btn-delete"
+                            onClick={(e) => { e.stopPropagation(); handleDelete(device.id, `${device.brand} ${device.model}`); }}
+                            aria-label="Remove device"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      </div>
+                      {deviceImages[device.id] && (
+                        <div
+                          className="device-card-image"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openLightbox(deviceImages[device.id], `${device.brand} ${device.model}`);
+                          }}
+                          role="button"
+                          tabIndex={0}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.stopPropagation();
+                              openLightbox(deviceImages[device.id], `${device.brand} ${device.model}`);
+                            }
+                          }}
+                          aria-label={`View full image of ${device.brand} ${device.model}`}
+                          style={{ cursor: 'zoom-in' }}
+                        >
+                          <img src={deviceImages[device.id]} alt={`${device.brand} ${device.model}`} />
+                        </div>
+                      )}
+                      <h4>{device.brand} {device.model !== 'Unknown' ? device.model : ''}</h4>
+                      <p className="device-description">{device.description}</p>
+                      <div className="device-meta">
+                        <span>Color: {device.color}</span>
+                        <span>Condition: {device.condition}</span>
+                      </div>
+                      {/* Room assignment dropdown */}
+                      <div className="device-room-assign" onClick={(e) => e.stopPropagation()}>
+                        <label htmlFor={`room-${device.id}`} className="room-assign-label">Room:</label>
+                        <select
+                          id={`room-${device.id}`}
+                          value={device.room || ''}
+                          onChange={(e) => handleRoomChange(device.id, e.target.value)}
+                          className="room-assign-select"
+                        >
+                          <option value="">Unassigned</option>
+                          {availableRooms.map((room) => (
+                            <option key={room} value={room}>{room}</option>
+                          ))}
+                        </select>
+                      </div>
+                      {device.budgetPercentage !== null && device.budgetPercentage !== undefined && (
+                        <div className="device-card-budget">
+                          <div className="mini-progress-bar">
+                            <div
+                              className={`mini-progress-fill ${device.budgetPercentage >= 100 ? 'exceeded' : device.budgetPercentage >= 80 ? 'warning' : ''}`}
+                              style={{ width: `${Math.min(device.budgetPercentage, 100)}%` }}
+                            />
+                          </div>
+                          <span className="mini-progress-label">{device.currentMonthKwh} / {device.monthlyBudgetKwh} kWh</span>
+                        </div>
+                      )}
+                      {device.features?.length > 0 && (
+                        <div className="device-features">
+                          {device.features.map((f, i) => (
+                            <span key={i} className="feature-tag">{f}</span>
+                          ))}
+                        </div>
+                      )}
+                      <p className="device-date">Added {new Date(device.createdAt).toLocaleDateString()}</p>
                     </div>
-                    <span className="mini-progress-label">{device.currentMonthKwh} / {device.monthlyBudgetKwh} kWh</span>
-                  </div>
-                )}
-                {device.features?.length > 0 && (
-                  <div className="device-features">
-                    {device.features.map((f, i) => (
-                      <span key={i} className="feature-tag">{f}</span>
-                    ))}
-                  </div>
-                )}
-                <p className="device-date">Added {new Date(device.createdAt).toLocaleDateString()}</p>
+                  ))}
+                </div>
               </div>
             ))}
           </div>
