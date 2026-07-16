@@ -1531,6 +1531,149 @@
   color: #fca5a5;
 }
 
+/* Feature List Clickable */
+.feature-list-item-clickable {
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s, box-shadow 0.2s;
+}
+
+.feature-list-item-clickable:hover {
+  background: var(--color-bg-hover, rgba(99, 102, 241, 0.05));
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.feature-list-item-clickable:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Feature Detail Page */
+.feature-detail-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.feature-detail-header h2 {
+  flex: 1;
+  margin: 0;
+}
+
+.btn-back {
+  background: none;
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.2s;
+}
+
+.btn-back:hover {
+  background: var(--color-bg-hover, rgba(99, 102, 241, 0.05));
+}
+
+.btn-refresh {
+  background: var(--color-primary, #6366f1);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.2s, opacity 0.2s;
+}
+
+.btn-refresh:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.btn-refresh:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.feature-detail-card {
+  background: var(--color-card-bg, #ffffff);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.feature-detail-info {
+  margin-bottom: 2rem;
+}
+
+.feature-detail-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.feature-detail-row:last-child {
+  border-bottom: none;
+}
+
+.feature-detail-label {
+  font-weight: 600;
+  color: var(--color-text-muted);
+  min-width: 100px;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.feature-detail-value {
+  color: var(--color-text);
+  flex: 1;
+}
+
+.feature-detail-progress h3 {
+  margin-bottom: 1rem;
+  color: var(--color-text);
+}
+
+.feature-timeline-full {
+  padding-left: 1rem;
+}
+
+.feature-timeline-full .feature-timeline-step {
+  padding: 0.5rem 0;
+  padding-left: 1.5rem;
+}
+
+.feature-timeline-full .feature-timeline-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.feature-timeline-full .feature-timeline-time {
+  font-size: 0.75rem;
+}
+
+.feature-timeline-full .feature-timeline-detail {
+  font-size: 0.9rem;
+}
+
+.feature-no-steps {
+  color: var(--color-text-muted);
+  font-style: italic;
+  text-align: center;
+  padding: 2rem 1rem;
+}
+
+.loading-message {
+  text-align: center;
+  color: var(--color-text-muted);
+  padding: 2rem;
+}
+
 /* Feature Timeline */
 .feature-timeline {
   margin-top: 0.75rem;

@@ -267,8 +267,14 @@ export class AppStack extends cdk.Stack {
       code: lambda.Code.fromAsset(path.join(lambdaDir, 'list-feature-requests')),
     });
 
+    const getFeatureRequestFn = new lambda.Function(this, 'GetFeatureRequestFn', {
+      ...commonProps,
+      functionName: `${prefix}-get-feature-request`,
+      code: lambda.Code.fromAsset(path.join(lambdaDir, 'get-feature-request')),
+    });
+
     // Grant permissions
-    const allFunctions = [signUpFn, confirmSignUpFn, signInFn, getUserFn, recognizeDeviceFn, createDeviceFn, listDevicesFn, deleteDeviceFn, getDeviceEnergyFn, getUserSettingsFn, updateUserSettingsFn, getEnergyReportFn, updateDeviceBudgetFn, getDeviceStatsFn, getDeviceImageFn, updateDeviceFn, getDeviceHistoryFn, createFeatureRequestFn, listFeatureRequestsFn];
+    const allFunctions = [signUpFn, confirmSignUpFn, signInFn, getUserFn, recognizeDeviceFn, createDeviceFn, listDevicesFn, deleteDeviceFn, getDeviceEnergyFn, getUserSettingsFn, updateUserSettingsFn, getEnergyReportFn, updateDeviceBudgetFn, getDeviceStatsFn, getDeviceImageFn, updateDeviceFn, getDeviceHistoryFn, createFeatureRequestFn, listFeatureRequestsFn, getFeatureRequestFn];
 
     for (const fn of allFunctions) {
       usersTable.grantReadWriteData(fn);
@@ -350,6 +356,7 @@ export class AppStack extends cdk.Stack {
     const featuresResource = apiResource.addResource('features');
     featuresResource.addMethod('POST', new apigateway.LambdaIntegration(createFeatureRequestFn));
     featuresResource.addMethod('GET', new apigateway.LambdaIntegration(listFeatureRequestsFn));
+    featuresResource.addResource('{featureId}').addMethod('GET', new apigateway.LambdaIntegration(getFeatureRequestFn));
 
     // ─── Frontend Hosting ──────────────────────────────────────────────────────
 

@@ -121,7 +121,15 @@ export function SubmitFeaturePage() {
             <h3>Your Previous Requests</h3>
             <div className="feature-list">
               {features.map((f) => (
-                <div key={f.id} className="feature-list-item">
+                <div
+                  key={f.id}
+                  className="feature-list-item feature-list-item-clickable"
+                  onClick={() => navigate(`/submit-feature/${f.id}`)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') navigate(`/submit-feature/${f.id}`); }}
+                  aria-label={`View details for feature request ${f.id.slice(0, 8)}`}
+                >
                   <div className="feature-list-description">{f.description}</div>
                   <div className="feature-list-meta">
                     <span className="feature-ticket">#{f.id.slice(0, 8)}</span>
@@ -130,19 +138,6 @@ export function SubmitFeaturePage() {
                     </span>
                     <span className="feature-date">{new Date(f.createdAt).toLocaleDateString()}</span>
                   </div>
-                  {f.steps && f.steps.length > 0 && (
-                    <div className="feature-timeline">
-                      {f.steps.map((step, idx) => (
-                        <div key={idx} className="feature-timeline-step">
-                          <span className="feature-timeline-dot" />
-                          <span className="feature-timeline-time">
-                            {new Date(step.time).toLocaleString()}
-                          </span>
-                          <span className="feature-timeline-detail">{step.detail}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
                 </div>
               ))}
             </div>

@@ -129,4 +129,6 @@ export const featuresApi = {
     }),
 
   list: () => request('/api/features'),
+
+  getById: (id: string) => request(`/api/features/${id}`),
 };
