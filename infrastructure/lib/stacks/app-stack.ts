@@ -273,6 +273,12 @@ export class AppStack extends cdk.Stack {
       code: lambda.Code.fromAsset(path.join(lambdaDir, 'get-feature-request')),
     });
 
+    const getFeatureRequestStatsFn = new lambda.Function(this, 'GetFeatureRequestStatsFn', {
+      ...commonProps,
+      functionName: `${prefix}-get-feature-request-stats`,
+      code: lambda.Code.fromAsset(path.join(lambdaDir, 'get-feature-request-stats')),
+    });
+
     const approveFeatureRequestFn = new lambda.Function(this, 'ApproveFeatureRequestFn', {
       ...commonProps,
       functionName: `${prefix}-approve-feature-request`,
@@ -305,7 +311,7 @@ export class AppStack extends cdk.Stack {
     });
 
     // Grant permissions
-    const allFunctions = [signUpFn, confirmSignUpFn, signInFn, getUserFn, recognizeDeviceFn, createDeviceFn, listDevicesFn, deleteDeviceFn, getDeviceEnergyFn, getUserSettingsFn, updateUserSettingsFn, getEnergyReportFn, updateDeviceBudgetFn, getDeviceStatsFn, getDeviceImageFn, updateDeviceFn, getDeviceHistoryFn, createFeatureRequestFn, listFeatureRequestsFn, getFeatureRequestFn, approveFeatureRequestFn, uploadDeviceManualFn, getDeviceManualsFn, deleteDeviceManualFn];
+    const allFunctions = [signUpFn, confirmSignUpFn, signInFn, getUserFn, recognizeDeviceFn, createDeviceFn, listDevicesFn, deleteDeviceFn, getDeviceEnergyFn, getUserSettingsFn, updateUserSettingsFn, getEnergyReportFn, updateDeviceBudgetFn, getDeviceStatsFn, getDeviceImageFn, updateDeviceFn, getDeviceHistoryFn, createFeatureRequestFn, listFeatureRequestsFn, getFeatureRequestFn, getFeatureRequestStatsFn, approveFeatureRequestFn, uploadDeviceManualFn, getDeviceManualsFn, deleteDeviceManualFn];
 
     for (const fn of allFunctions) {
       usersTable.grantReadWriteData(fn);
@@ -400,6 +406,7 @@ export class AppStack extends cdk.Stack {
     const featuresResource = apiResource.addResource('features');
     featuresResource.addMethod('POST', new apigateway.LambdaIntegration(createFeatureRequestFn));
     featuresResource.addMethod('GET', new apigateway.LambdaIntegration(listFeatureRequestsFn));
+    featuresResource.addResource('stats').addMethod('GET', new apigateway.LambdaIntegration(getFeatureRequestStatsFn));
     const featureResource = featuresResource.addResource('{featureId}');
     featureResource.addMethod('GET', new apigateway.LambdaIntegration(getFeatureRequestFn));
     featureResource.addResource('approve').addMethod('POST', new apigateway.LambdaIntegration(approveFeatureRequestFn));

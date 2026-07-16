@@ -2145,3 +2145,114 @@
   border-color: var(--color-primary, #6366f1);
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
+
+/* ─── Feature Request Summary Page ──────────────────────────────────────── */
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.stats-grid .stat-card {
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 1.25rem;
+}
+
+.stats-grid .stat-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.stats-grid .stat-label {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+  margin-top: 0.25rem;
+}
+
+.stat-card-success {
+  border-left: 4px solid #10b981;
+}
+
+.stat-card-info {
+  border-left: 4px solid #3b82f6;
+}
+
+.stat-card-warning {
+  border-left: 4px solid #f59e0b;
+}
+
+.stat-card-progress {
+  border-left: 4px solid #8b5cf6;
+}
+
+.stat-card-danger {
+  border-left: 4px solid #ef4444;
+}
+
+.feature-summary-monthly {
+  margin-top: 1.5rem;
+}
+
+.feature-summary-monthly h3 {
+  font-size: 1.1rem;
+  margin-bottom: 1rem;
+  color: var(--color-text);
+}
+
+.table-container {
+  overflow-x: auto;
+  border-radius: var(--radius);
+  border: 1px solid var(--color-border);
+}
+
+.summary-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.summary-table th,
+.summary-table td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.summary-table th {
+  background: var(--color-surface);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+}
+
+.summary-table tbody tr:hover {
+  background: var(--color-surface);
+}
+
+.summary-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.text-success {
+  color: #10b981;
+  font-weight: 600;
+}
+
+.text-warning {
+  color: #f59e0b;
+  font-weight: 600;
+}
+
+.text-danger {
+  color: #ef4444;
+  font-weight: 600;
+}

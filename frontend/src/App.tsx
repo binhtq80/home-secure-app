@@ -11,6 +11,7 @@ import { SettingsPage } from './pages/SettingsPage';
 import { ReportsPage } from './pages/ReportsPage';
 import { SubmitFeaturePage } from './pages/SubmitFeaturePage';
 import { FeatureDetailPage } from './pages/FeatureDetailPage';
+import { FeatureRequestSummaryPage } from './pages/FeatureRequestSummaryPage';
 import './App.css';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -36,6 +37,7 @@ function AppRoutes() {
       <Route path="/reports" element={<ProtectedRoute><ReportsPage /></ProtectedRoute>} />
       <Route path="/submit-feature" element={<ProtectedRoute><SubmitFeaturePage /></ProtectedRoute>} />
       <Route path="/submit-feature/:featureId" element={<ProtectedRoute><FeatureDetailPage /></ProtectedRoute>} />
+      <Route path="/feature-summary" element={<ProtectedRoute><FeatureRequestSummaryPage /></ProtectedRoute>} />
       <Route path="*" element={<Navigate to="/dashboard" />} />
     </Routes>
   );

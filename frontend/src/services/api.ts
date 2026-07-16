@@ -150,6 +150,8 @@ export const featuresApi = {
 
   getById: (id: string) => request(`/api/features/${id}`),
 
+  getStats: () => request('/api/features/stats'),
+
   approve: (id: string, action: 'approve' | 'reject', feedback?: string) =>
     request(`/api/features/${id}/approve`, {
       method: 'POST',
