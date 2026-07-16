@@ -34,12 +34,12 @@ case "$1" in
 
     # Auto-start orchestrator and bridge if not running
     if ! pgrep -f "scripts/orchestrator.sh" > /dev/null 2>&1; then
-      ( cd "$ROOT_DIR" && setsid nohup ./scripts/orchestrator.sh > /dev/null 2>&1 < /dev/null & )
+      ( cd "$ROOT_DIR" && setsid nohup env ENV_FILE="${ENV_FILE:-}" ./scripts/orchestrator.sh > /dev/null 2>&1 < /dev/null & )
       sleep 1
       echo "   🚀 Orchestrator started automatically"
     fi
     if ! pgrep -f "scripts/feature-bridge.sh" > /dev/null 2>&1; then
-      ( cd "$ROOT_DIR" && setsid nohup ./scripts/feature-bridge.sh > /dev/null 2>&1 < /dev/null & )
+      ( cd "$ROOT_DIR" && setsid nohup env ENV_FILE="${ENV_FILE:-}" ./scripts/feature-bridge.sh > /dev/null 2>&1 < /dev/null & )
       echo "   🌉 Bridge started automatically"
     fi
     ;;
@@ -89,7 +89,7 @@ case "$1" in
       echo "✅ Orchestrator already running"
     else
       echo "🚀 Starting orchestrator in background..."
-      ( cd "$ROOT_DIR" && setsid nohup ./scripts/orchestrator.sh > /dev/null 2>&1 < /dev/null & )
+      ( cd "$ROOT_DIR" && setsid nohup env ENV_FILE="${ENV_FILE:-}" ./scripts/orchestrator.sh > /dev/null 2>&1 < /dev/null & )
     fi
 
     # Check if bridge is already running
@@ -97,7 +97,7 @@ case "$1" in
       echo "✅ Bridge already running"
     else
       echo "🌉 Starting feature bridge (DynamoDB → queue)..."
-      ( cd "$ROOT_DIR" && setsid nohup ./scripts/feature-bridge.sh > /dev/null 2>&1 < /dev/null & )
+      ( cd "$ROOT_DIR" && setsid nohup env ENV_FILE="${ENV_FILE:-}" ./scripts/feature-bridge.sh > /dev/null 2>&1 < /dev/null & )
     fi
 
     sleep 1

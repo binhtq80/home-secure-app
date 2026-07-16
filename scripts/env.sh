@@ -9,13 +9,19 @@
 #
 # ─────────────────────────────────────────────────────────────────────────────
 
+# If caller provided an external ENV_FILE, use it directly
+if [ -n "$ENV_FILE" ] && [ -f "$ENV_FILE" ]; then
+  source "$ENV_FILE"
+  return 0 2>/dev/null || exit 0
+fi
+
 # Allow override via ENV variable (default: test)
 ENV="${ENV:-test}"
 
-# Load environment-specific overrides if they exist
-ENV_FILE="$(dirname "${BASH_SOURCE[0]}")/env.${ENV}.sh"
-if [ -f "$ENV_FILE" ]; then
-  source "$ENV_FILE"
+# Load environment-specific overrides from repo if they exist
+_ENV_FILE="$(dirname "${BASH_SOURCE[0]}")/env.${ENV}.sh"
+if [ -f "$_ENV_FILE" ]; then
+  source "$_ENV_FILE"
   return 0 2>/dev/null || exit 0
 fi
 
