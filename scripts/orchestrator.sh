@@ -91,6 +91,9 @@ update_feature_request_status() {
   local new_status="$2"
   local step_detail="${3:-$new_status}"
 
+  # Strip || prefix from bridge parsing bug
+  description="${description#||}"
+
   # Find the feature request by description (scan with filter)
   local item_id
   item_id=$(aws dynamodb scan \
