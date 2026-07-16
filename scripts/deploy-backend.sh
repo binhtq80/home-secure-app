@@ -15,10 +15,12 @@ set -e
 # ─────────────────────────────────────────────────────────────────────────────
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-AWS_PROFILE="${AWS_PROFILE:-dev-admin}"
-AWS_REGION="${AWS_REGION:-ap-southeast-2}"
+source "$ROOT_DIR/scripts/env.sh"
+
+AWS_PROFILE="${APP_AWS_PROFILE}"
+AWS_REGION="${APP_AWS_REGION}"
 export AWS_DEFAULT_REGION="$AWS_REGION"
-PREFIX="myapp-test"
+PREFIX="${APP_PREFIX}"
 
 # All Lambda function names (must match infrastructure/lib/stacks/app-stack.ts)
 ALL_FUNCTIONS=(
@@ -92,8 +94,8 @@ for func in "${FUNCTIONS[@]}"; do
   deploy_output=$(aws lambda update-function-code \
     --function-name "$FUNC_NAME" \
     --zip-file "fileb://$ZIP_FILE" \
-    --region ap-southeast-2 \
-    --profile dev-admin \
+    --region "$AWS_REGION" \
+    --profile "$AWS_PROFILE" \
     --query 'FunctionName' \
     --output text 2>&1) && deploy_ok=true || deploy_ok=false
 

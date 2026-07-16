@@ -15,10 +15,12 @@ set -e
 # ─────────────────────────────────────────────────────────────────────────────
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-AWS_PROFILE="${AWS_PROFILE:-dev-admin}"
-AWS_REGION="${AWS_REGION:-ap-southeast-2}"
-S3_BUCKET="myapp-test-website"
-DISTRIBUTION_ID="E1CM3HF3SAXPMG"
+source "$ROOT_DIR/scripts/env.sh"
+
+AWS_PROFILE="${APP_AWS_PROFILE}"
+AWS_REGION="${APP_AWS_REGION}"
+S3_BUCKET="${APP_S3_WEBSITE_BUCKET}"
+DISTRIBUTION_ID="${APP_CLOUDFRONT_DISTRIBUTION_ID}"
 
 SKIP_BUILD=false
 if [ "$1" == "--skip-build" ]; then
@@ -64,6 +66,6 @@ echo "   ✓ Invalidation: $INVALIDATION_ID"
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "✅ Frontend deployed!"
-echo "   URL: https://d2ok3vs29hr98h.cloudfront.net"
+echo "   URL: ${APP_URL}"
 echo "   (may take 30-60s for CloudFront to propagate)"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

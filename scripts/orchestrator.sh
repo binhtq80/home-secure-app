@@ -24,6 +24,8 @@ set -o pipefail
 
 # ─── Configuration ────────────────────────────────────────────────────────────
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "$ROOT_DIR/scripts/env.sh"
+
 QUEUE_FILE="$HOME/.feature-queue"
 STATUS_FILE="$HOME/.feature-status"
 STOP_FILE="$HOME/.feature-stop"
@@ -32,12 +34,13 @@ RESULT_FILE="$HOME/.feature-result"
 
 MAX_RETRIES=3
 POLL_INTERVAL=120  # seconds
-PIPELINE_NAME="myapp-test-pipeline"
-AWS_PROFILE="dev-admin"
-AWS_REGION="ap-southeast-2"
+PIPELINE_NAME="${APP_PIPELINE_NAME}"
+AWS_PROFILE="${APP_AWS_PROFILE}"
+AWS_REGION="${APP_AWS_REGION}"
 KIRO_CLI="/agentspaces/kiro-cli.latest/kiro-cli"
 
-APP_URL="https://d2ok3vs29hr98h.cloudfront.net"
+APP_URL="${APP_URL}"
+FEATURE_TABLE="${APP_FEATURE_REQUESTS_TABLE}"
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
 log() {
@@ -97,7 +100,7 @@ update_feature_request_status() {
   # Find the feature request by description (scan with filter)
   local item_id
   item_id=$(aws dynamodb scan \
-    --table-name "myapp-test-feature-requests" \
+    --table-name "$FEATURE_TABLE" \
     --filter-expression "description = :desc AND (#s <> :delivered AND #s <> :failed)" \
     --expression-attribute-names '{"#s":"status"}' \
     --expression-attribute-values "{\":desc\":{\"S\":\"$description\"},\":delivered\":{\"S\":\"delivered\"},\":failed\":{\"S\":\"failed\"}}" \
@@ -127,7 +130,7 @@ update_feature_request_status_by_id() {
 
   # Update status, currentStep, completedAt, and append to steps array
   aws dynamodb update-item \
-    --table-name "myapp-test-feature-requests" \
+    --table-name "$FEATURE_TABLE" \
     --key "{\"id\":{\"S\":\"$item_id\"}}" \
     --update-expression "SET #s = :status, currentStep = :step, completedAt = :now, #steps = list_append(if_not_exists(#steps, :emptyList), :newStep)" \
     --expression-attribute-names '{"#s":"status","#steps":"steps"}' \

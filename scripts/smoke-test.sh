@@ -6,7 +6,14 @@ set -e
 # Exits with code 1 if any critical test fails.
 # ─────────────────────────────────────────────────────────────────────────────
 
-API_URL="${API_URL:-https://d2ok3vs29hr98h.cloudfront.net}"
+API_URL="${API_URL:-}"
+
+# Source env config if API_URL not already set
+if [ -z "$API_URL" ]; then
+  ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+  source "$ROOT_DIR/scripts/env.sh"
+  API_URL="${APP_URL}"
+fi
 
 PASS=0
 FAIL=0

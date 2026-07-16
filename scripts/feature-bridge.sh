@@ -14,13 +14,16 @@
 
 set -o pipefail
 
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "$ROOT_DIR/scripts/env.sh"
+
 QUEUE_FILE="$HOME/.feature-queue"
 BRIDGE_LOG="$HOME/.feature-bridge.log"
 STOP_FILE="$HOME/.feature-bridge-stop"
 
-AWS_PROFILE="${AWS_PROFILE:-dev-admin}"
-AWS_REGION="ap-southeast-2"
-TABLE_NAME="myapp-test-feature-requests"
+AWS_PROFILE="${APP_AWS_PROFILE}"
+AWS_REGION="${APP_AWS_REGION}"
+TABLE_NAME="${APP_FEATURE_REQUESTS_TABLE}"
 POLL_INTERVAL=30  # seconds
 
 log() {

@@ -19,6 +19,11 @@ node_modules/
 .vscode/
 *.swp
 
+# Environment configs (contain account-specific values)
+scripts/env.*.sh
+!scripts/env.sh
+!scripts/env.*.sh.template
+
 # OS
 .DS_Store
 
