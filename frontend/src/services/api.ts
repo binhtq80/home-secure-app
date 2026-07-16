@@ -82,6 +82,7 @@ export const devicesApi = {
     description?: string;
     features?: string[];
     imageBase64?: string;
+    room?: string;
   }) =>
     request('/api/devices', {
       method: 'POST',
@@ -111,6 +112,7 @@ export const devicesApi = {
     condition?: string;
     description?: string;
     status?: 'on' | 'off';
+    room?: string | null;
   }) =>
     request(`/api/devices/${deviceId}`, {
       method: 'PUT',

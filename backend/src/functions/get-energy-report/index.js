@@ -101,6 +101,25 @@ exports.handler = withAuth(async (event) => {
         totalCost: d.totalCost,
       }));
 
+    // Build room-based energy breakdown
+    const roomBreakdown = {};
+    for (const device of devices) {
+      const roomName = device.room || 'Unassigned';
+      if (!roomBreakdown[roomName]) {
+        roomBreakdown[roomName] = { room: roomName, totalKwh: 0, totalCost: 0, deviceCount: 0 };
+      }
+      const deviceData = deviceEnergyMap[device.id];
+      roomBreakdown[roomName].totalKwh += deviceData.totalKwh;
+      roomBreakdown[roomName].totalCost += deviceData.totalCost;
+      roomBreakdown[roomName].deviceCount += 1;
+    }
+    // Round values and convert to array
+    const roomBreakdownList = Object.values(roomBreakdown).map((r) => ({
+      ...r,
+      totalKwh: Math.round(r.totalKwh * 10) / 10,
+      totalCost: Math.round(r.totalCost * 100) / 100,
+    }));
+
     // Build stacked monthly data (per device, per month)
     // Collect all unique months
     const allMonths = new Set();
@@ -142,6 +161,7 @@ exports.handler = withAuth(async (event) => {
           costPerKwh,
         },
         topDevices,
+        roomBreakdown: roomBreakdownList,
         monthly,
       }),
     };

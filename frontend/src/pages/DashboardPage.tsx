@@ -18,11 +18,19 @@ interface MonthlyData {
   totalCost: number;
 }
 
+interface RoomBreakdown {
+  room: string;
+  totalKwh: number;
+  totalCost: number;
+  deviceCount: number;
+}
+
 export function DashboardPage() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [energySummary, setEnergySummary] = useState<EnergySummary | null>(null);
   const [currentMonthCost, setCurrentMonthCost] = useState<number | null>(null);
+  const [roomBreakdown, setRoomBreakdown] = useState<RoomBreakdown[]>([]);
   const [energyLoading, setEnergyLoading] = useState(true);
 
   useEffect(() => {
@@ -33,6 +41,7 @@ export function DashboardPage() {
     try {
       const data = await reportsApi.getEnergyReport();
       setEnergySummary(data.summary);
+      setRoomBreakdown(data.roomBreakdown || []);
 
       // Get current month's cost from monthly data
       const now = new Date();
@@ -172,6 +181,33 @@ export function DashboardPage() {
             <p className="stat-subtitle">No energy data available. Add devices to start tracking.</p>
           )}
         </div>
+
+        {/* Per-Room Energy Breakdown */}
+        {!energyLoading && roomBreakdown.length > 0 && (
+          <div className="energy-summary-section">
+            <h3>Energy by Room / Zone</h3>
+            <div className="room-breakdown-grid">
+              {roomBreakdown.map((room) => (
+                <div key={room.room} className="room-breakdown-card">
+                  <div className="room-breakdown-header">
+                    <span className="room-breakdown-name">{room.room}</span>
+                    <span className="room-breakdown-devices">{room.deviceCount} device{room.deviceCount !== 1 ? 's' : ''}</span>
+                  </div>
+                  <div className="room-breakdown-stats">
+                    <div className="room-breakdown-stat">
+                      <span className="room-stat-label">Energy (12 mo)</span>
+                      <span className="room-stat-value">{room.totalKwh} kWh</span>
+                    </div>
+                    <div className="room-breakdown-stat">
+                      <span className="room-stat-label">Cost (12 mo)</span>
+                      <span className="room-stat-value">${room.totalCost.toFixed(2)}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );

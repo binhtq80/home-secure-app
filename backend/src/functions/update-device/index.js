@@ -25,7 +25,7 @@ exports.handler = withAuth(async (event) => {
     const userId = event.user.id;
     const body = JSON.parse(event.body || '{}');
 
-    const allowedFields = ['deviceType', 'brand', 'model', 'color', 'condition', 'description', 'status'];
+    const allowedFields = ['deviceType', 'brand', 'model', 'color', 'condition', 'description', 'status', 'room'];
     const updates = {};
     for (const field of allowedFields) {
       if (body[field] !== undefined) {

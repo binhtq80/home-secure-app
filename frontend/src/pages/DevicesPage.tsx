@@ -21,6 +21,7 @@ interface Device {
   budgetPercentage?: number | null;
   hasImage?: boolean;
   imageKey?: string;
+  room?: string | null;
 }
 
 interface RecognizedDevice {
@@ -32,6 +33,8 @@ interface RecognizedDevice {
   description: string;
   features: string[];
 }
+
+const DEFAULT_ROOMS = ['Kitchen', 'Living Room', 'Bedroom', 'Office', 'Bathroom', 'Garage', 'Garden'];
 
 export function DevicesPage() {
   const { logout } = useAuth();
@@ -53,6 +56,12 @@ export function DevicesPage() {
   const [toggleConfirm, setToggleConfirm] = useState<{ deviceId: string; currentStatus?: 'on' | 'off' } | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ deviceId: string; deviceName: string } | null>(null);
 
+  // Room state
+  const [rooms, setRooms] = useState<string[]>([]);
+  const [newRoomName, setNewRoomName] = useState('');
+  const [showRoomForm, setShowRoomForm] = useState(false);
+  const [roomFilter, setRoomFilter] = useState<string>('all');
+
   // Form fields
   const [deviceType, setDeviceType] = useState('');
   const [brand, setBrand] = useState('');
@@ -61,10 +70,23 @@ export function DevicesPage() {
   const [condition, setCondition] = useState('good');
   const [description, setDescription] = useState('');
   const [features, setFeatures] = useState('');
+  const [selectedRoom, setSelectedRoom] = useState('');
 
   useEffect(() => {
     loadDevices();
   }, []);
+
+  // Derive rooms from devices
+  useEffect(() => {
+    const deviceRooms = devices
+      .map((d) => d.room)
+      .filter((r): r is string => !!r);
+    const uniqueRooms = Array.from(new Set([...deviceRooms]));
+    // Merge with any saved rooms from localStorage
+    const savedRooms: string[] = JSON.parse(localStorage.getItem('userRooms') || '[]');
+    const allRooms = Array.from(new Set([...uniqueRooms, ...savedRooms]));
+    setRooms(allRooms.sort());
+  }, [devices]);
 
   const loadDevices = async () => {
     try {
@@ -153,6 +175,7 @@ export function DevicesPage() {
         description,
         features: features.split(',').map((f) => f.trim()).filter(Boolean),
         imageBase64: capturedImageBase64 || undefined,
+        room: selectedRoom || undefined,
       });
 
       // Reset form and reload
@@ -199,6 +222,38 @@ export function DevicesPage() {
     setToggleConfirm(null);
   };
 
+  const handleRoomChange = async (deviceId: string, room: string) => {
+    const roomValue = room === '' ? null : room;
+    try {
+      await devicesApi.update(deviceId, { room: roomValue });
+      setDevices(devices.map((d) =>
+        d.id === deviceId ? { ...d, room: roomValue } : d
+      ));
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to assign room');
+    }
+  };
+
+  const handleAddRoom = (e: FormEvent) => {
+    e.preventDefault();
+    const trimmed = newRoomName.trim();
+    if (!trimmed) return;
+    if (rooms.includes(trimmed)) {
+      setError('Room already exists');
+      return;
+    }
+    const updatedRooms = [...rooms, trimmed].sort();
+    setRooms(updatedRooms);
+    // Persist custom rooms to localStorage
+    const savedRooms: string[] = JSON.parse(localStorage.getItem('userRooms') || '[]');
+    if (!savedRooms.includes(trimmed)) {
+      localStorage.setItem('userRooms', JSON.stringify([...savedRooms, trimmed]));
+    }
+    setNewRoomName('');
+    setShowRoomForm(false);
+    setError('');
+  };
+
   const resetForm = () => {
     setShowForm(false);
     setPreviewImage(null);
@@ -210,6 +265,7 @@ export function DevicesPage() {
     setCondition('good');
     setDescription('');
     setFeatures('');
+    setSelectedRoom('');
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -241,6 +297,11 @@ export function DevicesPage() {
   }, [lightboxImage, handleLightboxKeyDown]);
 
   const filteredDevices = devices.filter((device) => {
+    // Room filter
+    if (roomFilter === 'unassigned' && device.room) return false;
+    if (roomFilter !== 'all' && roomFilter !== 'unassigned' && device.room !== roomFilter) return false;
+
+    // Search filter
     if (!searchQuery.trim()) return true;
     const query = searchQuery.toLowerCase();
     const name = `${device.brand} ${device.model}`.toLowerCase();
@@ -256,6 +317,9 @@ export function DevicesPage() {
     logout();
     navigate('/login');
   };
+
+  // Get available rooms for dropdowns (merge defaults with custom)
+  const availableRooms = Array.from(new Set([...DEFAULT_ROOMS, ...rooms])).sort();
 
   return (
     <div className="dashboard-container">
@@ -292,16 +356,70 @@ export function DevicesPage() {
           />
         </div>
 
+        {/* Room Management Section */}
+        <div className="room-management-section">
+          <div className="room-management-header">
+            <h3>Rooms / Zones</h3>
+            <button
+              className="btn-secondary btn-small"
+              onClick={() => setShowRoomForm(!showRoomForm)}
+            >
+              {showRoomForm ? 'Cancel' : '+ Add Room'}
+            </button>
+          </div>
+
+          {showRoomForm && (
+            <form onSubmit={handleAddRoom} className="room-add-form">
+              <input
+                type="text"
+                value={newRoomName}
+                onChange={(e) => setNewRoomName(e.target.value)}
+                placeholder="Enter room name (e.g., Kitchen, Office)"
+                className="room-input"
+                aria-label="New room name"
+                autoFocus
+              />
+              <button type="submit" className="btn-primary btn-small">Add</button>
+            </form>
+          )}
+
+          {rooms.length > 0 && (
+            <div className="room-tags">
+              {rooms.map((room) => (
+                <span key={room} className="room-tag">{room}</span>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Filter and Search */}
         {!loading && devices.length > 0 && (
-          <div className="devices-search">
-            <input
-              type="text"
-              className="devices-search-input"
-              placeholder="Search devices by name, brand, type, or description..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              aria-label="Search devices"
-            />
+          <div className="devices-filter-bar">
+            <div className="devices-search">
+              <input
+                type="text"
+                className="devices-search-input"
+                placeholder="Search devices by name, brand, type, or description..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                aria-label="Search devices"
+              />
+            </div>
+            <div className="room-filter">
+              <label htmlFor="room-filter-select">Filter by room:</label>
+              <select
+                id="room-filter-select"
+                value={roomFilter}
+                onChange={(e) => setRoomFilter(e.target.value)}
+                className="room-filter-select"
+              >
+                <option value="all">All Rooms</option>
+                <option value="unassigned">Unassigned</option>
+                {rooms.map((room) => (
+                  <option key={room} value={room}>{room}</option>
+                ))}
+              </select>
+            </div>
           </div>
         )}
 
@@ -395,15 +513,31 @@ export function DevicesPage() {
                   </div>
                 </div>
 
-                <div className="form-group">
-                  <label htmlFor="description">Description</label>
-                  <input
-                    id="description"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder={recognizing ? 'Detecting...' : 'Brief description'}
-                    disabled={recognizing}
-                  />
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="description">Description</label>
+                    <input
+                      id="description"
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      placeholder={recognizing ? 'Detecting...' : 'Brief description'}
+                      disabled={recognizing}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="room">Room / Zone</label>
+                    <select
+                      id="room"
+                      value={selectedRoom}
+                      onChange={(e) => setSelectedRoom(e.target.value)}
+                      disabled={recognizing}
+                    >
+                      <option value="">No room assigned</option>
+                      {availableRooms.map((room) => (
+                        <option key={room} value={room}>{room}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
 
                 <div className="form-actions">
@@ -427,9 +561,9 @@ export function DevicesPage() {
             <p>📷 No devices registered yet.</p>
             <p>Upload a photo of a home device to get started!</p>
           </div>
-        ) : filteredDevices.length === 0 && searchQuery.trim() ? (
+        ) : filteredDevices.length === 0 && (searchQuery.trim() || roomFilter !== 'all') ? (
           <div className="empty-state">
-            <p>No devices match your search</p>
+            <p>No devices match your {roomFilter !== 'all' ? 'room filter' : 'search'}</p>
           </div>
         ) : (
           <div className="devices-grid">
@@ -490,6 +624,21 @@ export function DevicesPage() {
                 <div className="device-meta">
                   <span>Color: {device.color}</span>
                   <span>Condition: {device.condition}</span>
+                </div>
+                {/* Room assignment dropdown */}
+                <div className="device-room-assign" onClick={(e) => e.stopPropagation()}>
+                  <label htmlFor={`room-${device.id}`} className="room-assign-label">Room:</label>
+                  <select
+                    id={`room-${device.id}`}
+                    value={device.room || ''}
+                    onChange={(e) => handleRoomChange(device.id, e.target.value)}
+                    className="room-assign-select"
+                  >
+                    <option value="">Unassigned</option>
+                    {availableRooms.map((room) => (
+                      <option key={room} value={room}>{room}</option>
+                    ))}
+                  </select>
                 </div>
                 {device.budgetPercentage !== null && device.budgetPercentage !== undefined && (
                   <div className="device-card-budget">

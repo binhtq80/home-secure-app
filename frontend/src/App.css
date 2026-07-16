@@ -2346,3 +2346,206 @@
   color: #ef4444;
   font-weight: 600;
 }
+
+/* Room Management Section */
+.room-management-section {
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 12px;
+  padding: 1rem 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.room-management-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.room-management-header h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--text-primary, #1e293b);
+}
+
+.room-add-form {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.room-input {
+  flex: 1;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 8px;
+  font-size: 0.875rem;
+  background: var(--input-bg, #fff);
+  color: var(--text-primary, #1e293b);
+}
+
+.room-input:focus {
+  outline: none;
+  border-color: var(--primary-color, #6366f1);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.room-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.room-tag {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  background: var(--tag-bg, #eef2ff);
+  color: var(--primary-color, #6366f1);
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.btn-small {
+  padding: 0.4rem 0.75rem;
+  font-size: 0.8rem;
+}
+
+/* Devices filter bar */
+.devices-filter-bar {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.devices-filter-bar .devices-search {
+  flex: 1;
+  min-width: 200px;
+  margin-bottom: 0;
+}
+
+.room-filter {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.room-filter label {
+  font-size: 0.85rem;
+  color: var(--text-secondary, #64748b);
+  white-space: nowrap;
+}
+
+.room-filter-select {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 8px;
+  font-size: 0.875rem;
+  background: var(--input-bg, #fff);
+  color: var(--text-primary, #1e293b);
+  cursor: pointer;
+}
+
+.room-filter-select:focus {
+  outline: none;
+  border-color: var(--primary-color, #6366f1);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+/* Room assignment on device card */
+.device-room-assign {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border-color, #e2e8f0);
+}
+
+.room-assign-label {
+  font-size: 0.8rem;
+  color: var(--text-secondary, #64748b);
+  font-weight: 500;
+}
+
+.room-assign-select {
+  flex: 1;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 6px;
+  font-size: 0.8rem;
+  background: var(--input-bg, #fff);
+  color: var(--text-primary, #1e293b);
+  cursor: pointer;
+}
+
+.room-assign-select:focus {
+  outline: none;
+  border-color: var(--primary-color, #6366f1);
+}
+
+/* Room breakdown on Dashboard */
+.room-breakdown-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.room-breakdown-card {
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 10px;
+  padding: 1rem;
+  transition: box-shadow 0.2s;
+}
+
+.room-breakdown-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.room-breakdown-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.room-breakdown-name {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--text-primary, #1e293b);
+}
+
+.room-breakdown-devices {
+  font-size: 0.75rem;
+  color: var(--text-secondary, #64748b);
+  background: var(--tag-bg, #eef2ff);
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+}
+
+.room-breakdown-stats {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.room-breakdown-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.room-stat-label {
+  font-size: 0.75rem;
+  color: var(--text-secondary, #64748b);
+}
+
+.room-stat-value {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary, #1e293b);
+}

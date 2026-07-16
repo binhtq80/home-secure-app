@@ -67,7 +67,7 @@ Example format: ["Tip 1", "Tip 2", "Tip 3"]`;
 
 exports.handler = withAuth(async (event) => {
   try {
-    const { deviceType, brand, model, color, condition, description, features, imageBase64 } = JSON.parse(event.body);
+    const { deviceType, brand, model, color, condition, description, features, imageBase64, room } = JSON.parse(event.body);
 
     if (!deviceType || !brand) {
       return {
@@ -110,6 +110,7 @@ exports.handler = withAuth(async (event) => {
       description: description || '',
       features: features || [],
       status: 'off',
+      room: room || null,
       hasImage: !!imageBase64,
       imageKey: imageKey || undefined,
       energySavingTips,
