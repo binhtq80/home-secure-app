@@ -89,14 +89,15 @@ get_pipeline_error() {
 update_feature_request_status() {
   local description="$1"
   local new_status="$2"
+  local step_detail="${3:-$new_status}"
 
   # Find the feature request by description (scan with filter)
   local item_id
   item_id=$(aws dynamodb scan \
     --table-name "myapp-test-feature-requests" \
-    --filter-expression "description = :desc AND (#s = :processing OR #s = :pending)" \
+    --filter-expression "description = :desc AND (#s <> :delivered AND #s <> :failed)" \
     --expression-attribute-names '{"#s":"status"}' \
-    --expression-attribute-values "{\":desc\":{\"S\":\"$description\"},\":processing\":{\"S\":\"processing\"},\":pending\":{\"S\":\"pending\"}}" \
+    --expression-attribute-values "{\":desc\":{\"S\":\"$description\"},\":delivered\":{\"S\":\"delivered\"},\":failed\":{\"S\":\"failed\"}}" \
     --projection-expression "id" \
     --profile "$AWS_PROFILE" \
     --region "$AWS_REGION" \
@@ -104,15 +105,19 @@ update_feature_request_status() {
     --output text 2>/dev/null | head -1)
 
   if [ -n "$item_id" ] && [ "$item_id" != "None" ]; then
+    local now
+    now="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+    # Update status, currentStep, completedAt, and append to steps array
     aws dynamodb update-item \
       --table-name "myapp-test-feature-requests" \
       --key "{\"id\":{\"S\":\"$item_id\"}}" \
-      --update-expression "SET #s = :status, completedAt = :now" \
-      --expression-attribute-names '{"#s":"status"}' \
-      --expression-attribute-values "{\":status\":{\"S\":\"$new_status\"},\":now\":{\"S\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}}" \
+      --update-expression "SET #s = :status, currentStep = :step, completedAt = :now, #steps = list_append(if_not_exists(#steps, :emptyList), :newStep)" \
+      --expression-attribute-names '{"#s":"status","#steps":"steps"}' \
+      --expression-attribute-values "{\":status\":{\"S\":\"$new_status\"},\":step\":{\"S\":\"$new_status\"},\":now\":{\"S\":\"$now\"},\":emptyList\":{\"L\":[]},\":newStep\":{\"L\":[{\"M\":{\"time\":{\"S\":\"$now\"},\"detail\":{\"S\":\"$step_detail\"}}}]}}" \
       --profile "$AWS_PROFILE" \
       --region "$AWS_REGION" > /dev/null 2>&1
-    log "   📝 Updated feature request $item_id → $new_status"
+    log "   📝 Updated feature request $item_id → $new_status (step: $step_detail)"
   fi
 }
 
@@ -154,6 +159,9 @@ main() {
     log "📋 New task: $task"
     log "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
+    # Mark as picked up
+    update_feature_request_status "$task" "processing" "Task picked up by orchestrator"
+
     local retries=0
     local success=false
     local feedback=""
@@ -164,6 +172,7 @@ main() {
 
       # ─── Step 1: Implement (invoke kiro-cli) ────────────────────────────
       update_status "IMPLEMENTING: $task (attempt $retries/$MAX_RETRIES)"
+      update_feature_request_status "$task" "implementing" "Implementing (attempt $retries/$MAX_RETRIES)"
 
       local prompt="You are working on the project at $ROOT_DIR. This is a monorepo with frontend/ (React), backend/ (Lambda), infrastructure/ (CDK).
 
@@ -195,6 +204,7 @@ DO THE FOLLOWING (no questions, just execute):
       # Check if code was pushed (look for git push success)
       if echo "$kiro_output" | grep -q "github.com"; then
         log "   ✅ Code pushed to GitHub"
+        update_feature_request_status "$task" "implementing" "Code pushed to GitHub"
       else
         log "   ⚠️ Push may have failed, checking..."
         feedback="kiro-cli did not push code. Output: $(echo "$kiro_output" | tail -10)"
@@ -223,6 +233,7 @@ DO THE FOLLOWING (no questions, just execute):
       if [ "$has_frontend" = "true" ] && [ "$has_backend" = "false" ] && [ "$has_infra" = "false" ]; then
         log "⚡ Frontend-only change — fast deploy (S3 + CloudFront)"
         update_status "FAST DEPLOYING FRONTEND: $task"
+        update_feature_request_status "$task" "deploying" "Deploying frontend (S3 + CloudFront)"
 
         if "$ROOT_DIR/scripts/deploy-frontend.sh" >> "$LOG_FILE" 2>&1; then
           log "   ✅ Frontend fast deploy succeeded"
@@ -239,6 +250,7 @@ DO THE FOLLOWING (no questions, just execute):
       if [ "$has_backend" = "true" ] && [ "$has_infra" = "false" ]; then
         log "⚡ Backend change — fast deploy (Lambda update-function-code)"
         update_status "FAST DEPLOYING BACKEND: $task"
+        update_feature_request_status "$task" "deploying" "Deploying backend (Lambda update)"
 
         # Deploy backend
         if "$ROOT_DIR/scripts/deploy-backend.sh" >> "$LOG_FILE" 2>&1; then
@@ -263,6 +275,7 @@ DO THE FOLLOWING (no questions, just execute):
       # Route: infrastructure changed → full pipeline (trigger manually, wait for it)
       log "🔄 Infrastructure change — triggering full pipeline"
       update_status "MONITORING PIPELINE: $task (attempt $retries/$MAX_RETRIES)"
+      update_feature_request_status "$task" "deploying" "Deploying via CDK Pipeline (infrastructure change)"
 
       # Manually trigger the pipeline since triggerOnPush is disabled
       aws codepipeline start-pipeline-execution \
@@ -331,7 +344,7 @@ DO THE FOLLOWING (no questions, just execute):
       log "$result"
 
       # Update DynamoDB feature-requests status to "delivered"
-      update_feature_request_status "$task" "delivered"
+      update_feature_request_status "$task" "delivered" "Feature delivered successfully"
     else
       local result="❌ Feature: $task
    Attempts: $MAX_RETRIES/$MAX_RETRIES (max reached)
@@ -343,7 +356,7 @@ DO THE FOLLOWING (no questions, just execute):
       log "$result"
 
       # Update DynamoDB feature-requests status to "failed"
-      update_feature_request_status "$task" "failed"
+      update_feature_request_status "$task" "failed" "Failed after $MAX_RETRIES attempts: $feedback"
     fi
 
     log "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

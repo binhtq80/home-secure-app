@@ -4,10 +4,17 @@ import { useNavigate } from 'react-router-dom';
 import { featuresApi } from '../services/api';
 import { DarkModeToggle } from '../components/DarkModeToggle';
 
+interface FeatureStep {
+  time: string;
+  detail: string;
+}
+
 interface FeatureRequest {
   id: string;
   description: string;
   status: string;
+  currentStep?: string;
+  steps?: FeatureStep[];
   createdAt: string;
 }
 
@@ -118,9 +125,24 @@ export function SubmitFeaturePage() {
                   <div className="feature-list-description">{f.description}</div>
                   <div className="feature-list-meta">
                     <span className="feature-ticket">#{f.id.slice(0, 8)}</span>
-                    <span className={`feature-status feature-status-${f.status}`}>{f.status}</span>
+                    <span className={`feature-status-badge feature-badge-${f.currentStep || f.status}`}>
+                      {f.currentStep || f.status}
+                    </span>
                     <span className="feature-date">{new Date(f.createdAt).toLocaleDateString()}</span>
                   </div>
+                  {f.steps && f.steps.length > 0 && (
+                    <div className="feature-timeline">
+                      {f.steps.map((step, idx) => (
+                        <div key={idx} className="feature-timeline-step">
+                          <span className="feature-timeline-dot" />
+                          <span className="feature-timeline-time">
+                            {new Date(step.time).toLocaleString()}
+                          </span>
+                          <span className="feature-timeline-detail">{step.detail}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

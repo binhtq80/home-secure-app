@@ -1463,3 +1463,124 @@
   background: var(--color-surface);
   color: var(--color-text);
 }
+
+/* Feature Status Badges */
+.feature-status-badge {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+.feature-badge-pending {
+  background: #e5e7eb;
+  color: #4b5563;
+}
+
+.feature-badge-processing {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.feature-badge-implementing {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.feature-badge-deploying {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.feature-badge-delivered {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.feature-badge-failed {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+[data-theme="dark"] .feature-badge-pending {
+  background: #374151;
+  color: #9ca3af;
+}
+
+[data-theme="dark"] .feature-badge-processing,
+[data-theme="dark"] .feature-badge-implementing {
+  background: #1e3a5f;
+  color: #93c5fd;
+}
+
+[data-theme="dark"] .feature-badge-deploying {
+  background: #451a03;
+  color: #fcd34d;
+}
+
+[data-theme="dark"] .feature-badge-delivered {
+  background: #064e3b;
+  color: #6ee7b7;
+}
+
+[data-theme="dark"] .feature-badge-failed {
+  background: #451a1a;
+  color: #fca5a5;
+}
+
+/* Feature Timeline */
+.feature-timeline {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-border);
+  padding-left: 0.75rem;
+}
+
+.feature-timeline-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.3rem 0;
+  position: relative;
+  padding-left: 1rem;
+}
+
+.feature-timeline-step::before {
+  content: '';
+  position: absolute;
+  left: 0.3rem;
+  top: 1rem;
+  bottom: -0.3rem;
+  width: 1px;
+  background: var(--color-border);
+}
+
+.feature-timeline-step:last-child::before {
+  display: none;
+}
+
+.feature-timeline-dot {
+  position: absolute;
+  left: 0;
+  top: 0.5rem;
+  width: 8px;
+  height: 8px;
+  background: var(--color-primary);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.feature-timeline-time {
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+  min-width: 130px;
+  flex-shrink: 0;
+}
+
+.feature-timeline-detail {
+  font-size: 0.8rem;
+  color: var(--color-text);
+}

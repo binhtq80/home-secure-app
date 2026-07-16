@@ -24,10 +24,17 @@ exports.handler = withAuth(async (event) => {
       ScanIndexForward: false, // newest first
     }));
 
+    // Ensure steps array is always present in each item
+    const features = (result.Items || []).map(item => ({
+      ...item,
+      steps: item.steps || [],
+      currentStep: item.currentStep || item.status,
+    }));
+
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify({ features: result.Items || [] }),
+      body: JSON.stringify({ features }),
     };
   } catch (error) {
     console.error('List feature requests error:', error);
