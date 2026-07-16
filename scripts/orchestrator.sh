@@ -203,6 +203,9 @@ main() {
       retries=$((retries + 1))
       log "🔄 Attempt $retries/$MAX_RETRIES"
 
+      # ─── Step 0: Sync with remote ──────────────────────────────────────
+      (cd "$ROOT_DIR" && git pull --rebase --quiet 2>/dev/null) || log "   ⚠️ git pull failed, continuing with local state"
+
       # ─── Step 1: Implement (invoke kiro-cli) ────────────────────────────
       update_status "IMPLEMENTING: $task (attempt $retries/$MAX_RETRIES)"
       update_feature_request_status_by_id "$task_id" "implementing" "Implementing (attempt $retries/$MAX_RETRIES)"
