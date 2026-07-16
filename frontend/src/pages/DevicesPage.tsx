@@ -14,6 +14,7 @@ interface Device {
   description: string;
   features: string[];
   createdAt: string;
+  status?: 'on' | 'off';
   monthlyBudgetKwh?: number;
   currentMonthKwh?: number;
   budgetPercentage?: number | null;
@@ -168,6 +169,18 @@ export function DevicesPage() {
       setDevices(devices.filter((d) => d.id !== deviceId));
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to delete device');
+    }
+  };
+
+  const handleToggleStatus = async (deviceId: string, currentStatus?: 'on' | 'off') => {
+    const newStatus = currentStatus === 'on' ? 'off' : 'on';
+    try {
+      await devicesApi.update(deviceId, { status: newStatus });
+      setDevices(devices.map((d) =>
+        d.id === deviceId ? { ...d, status: newStatus } : d
+      ));
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to toggle device status');
     }
   };
 
@@ -412,6 +425,14 @@ export function DevicesPage() {
                 <div className="device-card-header">
                   <span className="device-type-badge">{device.deviceType}</span>
                   <div className="device-card-actions">
+                    <button
+                      className={`btn-status-toggle ${device.status === 'on' ? 'status-on' : 'status-off'}`}
+                      onClick={(e) => { e.stopPropagation(); handleToggleStatus(device.id, device.status); }}
+                      aria-label={`Turn device ${device.status === 'on' ? 'off' : 'on'}`}
+                      title={`Device is ${device.status === 'on' ? 'ON' : 'OFF'} — click to toggle`}
+                    >
+                      {device.status === 'on' ? '🟢 ON' : '🔴 OFF'}
+                    </button>
                     {device.budgetPercentage !== null && device.budgetPercentage !== undefined && device.budgetPercentage >= 80 && (
                       <span className={`budget-badge ${device.budgetPercentage >= 100 ? 'exceeded' : 'warning'}`}>
                         {device.budgetPercentage >= 100 ? '🚨' : '⚠️'} {device.budgetPercentage}%

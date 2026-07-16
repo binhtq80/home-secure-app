@@ -55,6 +55,7 @@ exports.handler = withAuth(async (event) => {
       condition: condition || 'good',
       description: description || '',
       features: features || [],
+      status: 'off',
       hasImage: !!imageBase64,
       imageKey: imageKey || undefined,
       createdAt: now,

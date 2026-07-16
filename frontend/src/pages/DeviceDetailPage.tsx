@@ -27,6 +27,7 @@ interface DeviceInfo {
   color: string;
   condition: string;
   description?: string;
+  status?: 'on' | 'off';
   monthlyBudgetKwh?: number;
 }
 
@@ -174,6 +175,18 @@ export function DeviceDetailPage() {
     }
   };
 
+  const handleToggleStatus = async () => {
+    if (!deviceId || !device) return;
+    const newStatus = device.status === 'on' ? 'off' : 'on';
+    try {
+      await devicesApi.update(deviceId, { status: newStatus });
+      setDevice({ ...device, status: newStatus });
+      loadHistory(deviceId);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to toggle device status');
+    }
+  };
+
   const handleLogout = () => {
     logout();
     navigate('/login');
@@ -231,11 +244,21 @@ export function DeviceDetailPage() {
         <div className="device-detail-header">
           <div className="device-detail-title-row">
             <h2>{device?.brand} {device?.model !== 'Unknown' ? device?.model : device?.deviceType}</h2>
-            {!isEditing && (
-              <button className="btn-primary btn-edit-device" onClick={handleStartEdit}>
-                ✏️ Edit
+            <div className="device-detail-actions">
+              <button
+                className={`btn-status-toggle ${device?.status === 'on' ? 'status-on' : 'status-off'}`}
+                onClick={handleToggleStatus}
+                aria-label={`Turn device ${device?.status === 'on' ? 'off' : 'on'}`}
+                title={`Device is ${device?.status === 'on' ? 'ON' : 'OFF'} — click to toggle`}
+              >
+                {device?.status === 'on' ? '🟢 ON' : '🔴 OFF'}
               </button>
-            )}
+              {!isEditing && (
+                <button className="btn-primary btn-edit-device" onClick={handleStartEdit}>
+                  ✏️ Edit
+                </button>
+              )}
+            </div>
           </div>
           <p className="device-detail-meta">
             <span className="device-type-badge">{device?.deviceType}</span>

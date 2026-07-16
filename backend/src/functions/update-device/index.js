@@ -25,12 +25,21 @@ exports.handler = withAuth(async (event) => {
     const userId = event.user.id;
     const body = JSON.parse(event.body || '{}');
 
-    const allowedFields = ['deviceType', 'brand', 'model', 'color', 'condition', 'description'];
+    const allowedFields = ['deviceType', 'brand', 'model', 'color', 'condition', 'description', 'status'];
     const updates = {};
     for (const field of allowedFields) {
       if (body[field] !== undefined) {
         updates[field] = body[field];
       }
+    }
+
+    // Validate status field
+    if (updates.status !== undefined && !['on', 'off'].includes(updates.status)) {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({ message: 'Status must be "on" or "off"' }),
+      };
     }
 
     if (Object.keys(updates).length === 0) {

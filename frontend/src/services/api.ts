@@ -110,6 +110,7 @@ export const devicesApi = {
     color?: string;
     condition?: string;
     description?: string;
+    status?: 'on' | 'off';
   }) =>
     request(`/api/devices/${deviceId}`, {
       method: 'PUT',
