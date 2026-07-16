@@ -81,6 +81,7 @@ export function SubmitFeaturePage() {
           <button onClick={() => navigate('/reports')} className="btn-nav">Reports</button>
           <button onClick={() => navigate('/settings')} className="btn-nav">Settings</button>
           <button onClick={() => navigate('/submit-feature')} className="btn-nav active">Request Feature</button>
+          <button onClick={() => navigate('/feature-summary')} className="btn-nav">Feature Summary</button>
           <DarkModeToggle />
           <button onClick={handleLogout} className="btn-logout">Sign Out</button>
         </nav>
