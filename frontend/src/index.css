@@ -3,6 +3,7 @@
   --color-primary-hover: #4338ca;
   --color-bg: #f9fafb;
   --color-surface: #ffffff;
+  --color-card-bg: #ffffff;
   --color-text: #111827;
   --color-text-muted: #6b7280;
   --color-border: #e5e7eb;
@@ -18,6 +19,7 @@
   --color-primary-hover: #6366f1;
   --color-bg: #111827;
   --color-surface: #1f2937;
+  --color-card-bg: #1f2937;
   --color-text: #f9fafb;
   --color-text-muted: #9ca3af;
   --color-border: #374151;
