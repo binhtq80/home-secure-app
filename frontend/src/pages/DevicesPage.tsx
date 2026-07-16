@@ -774,6 +774,11 @@ export function DevicesPage() {
         onConfirm={confirmRemoveRoom}
         onCancel={() => setRoomDeleteConfirm(null)}
       />
+
+      {/* Last Updated Timestamp */}
+      <p style={{ textAlign: 'center', color: 'var(--text-secondary, #888)', fontSize: '0.85rem', marginTop: '2rem', paddingBottom: '1rem' }}>
+        Last updated: {new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
+      </p>
     </div>
   );
 }
