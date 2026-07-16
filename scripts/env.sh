@@ -7,10 +7,13 @@
 # To use a different environment:
 #   ENV=prod ./scripts/deploy-frontend.sh
 #
+# To use a custom env file (any account):
+#   ENV_FILE=/path/to/my-env.sh ./scripts/deploy-frontend.sh
+#
 # ─────────────────────────────────────────────────────────────────────────────
 
-# If caller provided an external ENV_FILE, use it directly
-if [ -n "$ENV_FILE" ] && [ -f "$ENV_FILE" ]; then
+# If ENV_FILE is explicitly set, source it and skip everything else
+if [ -n "${ENV_FILE:-}" ] && [ -f "$ENV_FILE" ]; then
   source "$ENV_FILE"
   return 0 2>/dev/null || exit 0
 fi
@@ -18,7 +21,7 @@ fi
 # Allow override via ENV variable (default: test)
 ENV="${ENV:-test}"
 
-# Load environment-specific overrides from repo if they exist
+# Load environment-specific overrides if they exist
 _ENV_FILE="$(dirname "${BASH_SOURCE[0]}")/env.${ENV}.sh"
 if [ -f "$_ENV_FILE" ]; then
   source "$_ENV_FILE"

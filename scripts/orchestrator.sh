@@ -209,6 +209,8 @@ main() {
 
       local prompt="You are working on the project at $ROOT_DIR. This is a monorepo with frontend/ (React), backend/ (Lambda), infrastructure/ (CDK).
 
+FIRST: Read $ROOT_DIR/.kiro/steering.md for project conventions and patterns.
+
 TASK: $task"
 
       if [ -n "$feedback" ]; then
@@ -223,11 +225,13 @@ Fix the issue and try again."
       prompt="$prompt
 
 DO THE FOLLOWING (no questions, just execute):
-1. Plan the changes needed
-2. Write/modify all necessary files
-3. Run: cd $ROOT_DIR && ./scripts/simulate-pipeline.sh --quick
-4. If validation passes, run: cd $ROOT_DIR && git add -A && git commit -m 'feat: ${task:0:50}' && SKIP_AI_REVIEW=1 git push --no-verify
-5. Report what you did"
+1. Read .kiro/steering.md and the reference files it points to (for the relevant layer)
+2. Plan the changes needed
+3. Write/modify all necessary files following existing patterns
+4. If your changes introduced a new pattern, env var, or hard rule, update .kiro/steering.md per its self-maintenance instructions
+5. Run: cd $ROOT_DIR && ./scripts/simulate-pipeline.sh --quick
+6. If validation passes, run: cd $ROOT_DIR && git add -A && git commit -m 'feat: ${task:0:50}' && SKIP_AI_REVIEW=1 git push --no-verify
+7. Report what you did"
 
       log "🤖 Invoking kiro-cli..."
       local kiro_output
