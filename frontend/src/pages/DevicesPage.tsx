@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { devicesApi } from '../services/api';
+import { devicesApi, roomsApi } from '../services/api';
 import { DarkModeToggle } from '../components/DarkModeToggle';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 
@@ -55,6 +55,7 @@ export function DevicesPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [toggleConfirm, setToggleConfirm] = useState<{ deviceId: string; currentStatus?: 'on' | 'off' } | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ deviceId: string; deviceName: string } | null>(null);
+  const [roomDeleteConfirm, setRoomDeleteConfirm] = useState<string | null>(null);
 
   // Room state
   const [rooms, setRooms] = useState<string[]>([]);
@@ -254,6 +255,31 @@ export function DevicesPage() {
     setError('');
   };
 
+  const handleRemoveRoom = (roomName: string) => {
+    setRoomDeleteConfirm(roomName);
+  };
+
+  const confirmRemoveRoom = async () => {
+    if (!roomDeleteConfirm) return;
+    try {
+      await roomsApi.delete(roomDeleteConfirm);
+      // Update local state: move devices to unassigned
+      setDevices(devices.map((d) =>
+        d.room === roomDeleteConfirm ? { ...d, room: null } : d
+      ));
+      // Remove room from localStorage
+      const savedRooms: string[] = JSON.parse(localStorage.getItem('userRooms') || '[]');
+      localStorage.setItem('userRooms', JSON.stringify(savedRooms.filter((r) => r !== roomDeleteConfirm)));
+      // Reset room filter if it was filtering by the deleted room
+      if (roomFilter === roomDeleteConfirm) {
+        setRoomFilter('all');
+      }
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to remove room');
+    }
+    setRoomDeleteConfirm(null);
+  };
+
   const resetForm = () => {
     setShowForm(false);
     setPreviewImage(null);
@@ -401,7 +427,17 @@ export function DevicesPage() {
           {rooms.length > 0 && (
             <div className="room-tags">
               {rooms.map((room) => (
-                <span key={room} className="room-tag">{room}</span>
+                <span key={room} className="room-tag">
+                  {room}
+                  <button
+                    className="btn-room-delete"
+                    onClick={() => handleRemoveRoom(room)}
+                    aria-label={`Remove room ${room}`}
+                    title={`Remove ${room}`}
+                  >
+                    ✕
+                  </button>
+                </span>
               ))}
             </div>
           )}
@@ -727,6 +763,16 @@ export function DevicesPage() {
         confirmLabel="Remove"
         onConfirm={confirmDelete}
         onCancel={() => setDeleteConfirm(null)}
+      />
+
+      {/* Remove Room Confirmation */}
+      <ConfirmDialog
+        open={roomDeleteConfirm !== null}
+        title="Remove Room?"
+        message="Are you sure you want to remove this room? All devices in this room will be moved to Unassigned."
+        confirmLabel="Remove"
+        onConfirm={confirmRemoveRoom}
+        onCancel={() => setRoomDeleteConfirm(null)}
       />
     </div>
   );

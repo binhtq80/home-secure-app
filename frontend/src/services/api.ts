@@ -141,6 +141,11 @@ export const devicesApi = {
     }),
 };
 
+export const roomsApi = {
+  delete: (roomName: string) =>
+    request(`/api/rooms/${encodeURIComponent(roomName)}`, { method: 'DELETE' }),
+};
+
 export const featuresApi = {
   create: (description: string) =>
     request('/api/features', {

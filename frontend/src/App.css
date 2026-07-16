@@ -2398,13 +2398,38 @@
 }
 
 .room-tag {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
   padding: 0.25rem 0.75rem;
   background: var(--tag-bg, #eef2ff);
   color: var(--primary-color, #6366f1);
   border-radius: 999px;
   font-size: 0.8rem;
   font-weight: 500;
+}
+
+.btn-room-delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.2rem;
+  height: 1.2rem;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--primary-color, #6366f1);
+  font-size: 0.7rem;
+  border-radius: 50%;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.2s, background 0.2s, color 0.2s;
+}
+
+.btn-room-delete:hover {
+  opacity: 1;
+  background: var(--danger-color, #ef4444);
+  color: #fff;
 }
 
 .btn-small {

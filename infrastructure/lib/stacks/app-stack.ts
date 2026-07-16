@@ -312,8 +312,14 @@ export class AppStack extends cdk.Stack {
       code: lambda.Code.fromAsset(path.join(lambdaDir, 'delete-device-manual')),
     });
 
+    const deleteRoomFn = new lambda.Function(this, 'DeleteRoomFn', {
+      ...commonProps,
+      functionName: `${prefix}-delete-room`,
+      code: lambda.Code.fromAsset(path.join(lambdaDir, 'delete-room')),
+    });
+
     // Grant permissions
-    const allFunctions = [signUpFn, confirmSignUpFn, signInFn, getUserFn, recognizeDeviceFn, createDeviceFn, listDevicesFn, deleteDeviceFn, getDeviceEnergyFn, getUserSettingsFn, updateUserSettingsFn, getEnergyReportFn, updateDeviceBudgetFn, getDeviceStatsFn, getDeviceImageFn, updateDeviceFn, getDeviceHistoryFn, createFeatureRequestFn, listFeatureRequestsFn, getFeatureRequestFn, getFeatureRequestStatsFn, approveFeatureRequestFn, uploadDeviceManualFn, getDeviceManualsFn, deleteDeviceManualFn];
+    const allFunctions = [signUpFn, confirmSignUpFn, signInFn, getUserFn, recognizeDeviceFn, createDeviceFn, listDevicesFn, deleteDeviceFn, getDeviceEnergyFn, getUserSettingsFn, updateUserSettingsFn, getEnergyReportFn, updateDeviceBudgetFn, getDeviceStatsFn, getDeviceImageFn, updateDeviceFn, getDeviceHistoryFn, createFeatureRequestFn, listFeatureRequestsFn, getFeatureRequestFn, getFeatureRequestStatsFn, approveFeatureRequestFn, uploadDeviceManualFn, getDeviceManualsFn, deleteDeviceManualFn, deleteRoomFn];
 
     for (const fn of allFunctions) {
       usersTable.grantReadWriteData(fn);
@@ -405,6 +411,11 @@ export class AppStack extends cdk.Stack {
     const settingsResource = apiResource.addResource('settings');
     settingsResource.addMethod('GET', new apigateway.LambdaIntegration(getUserSettingsFn));
     settingsResource.addMethod('PUT', new apigateway.LambdaIntegration(updateUserSettingsFn));
+
+    // Room routes
+    const roomsResource = apiResource.addResource('rooms');
+    const roomResource = roomsResource.addResource('{roomName}');
+    roomResource.addMethod('DELETE', new apigateway.LambdaIntegration(deleteRoomFn));
 
     // Reports routes
     const reportsResource = apiResource.addResource('reports');
