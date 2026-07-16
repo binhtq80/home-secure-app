@@ -166,6 +166,7 @@ export function ReportsPage() {
           <button onClick={() => navigate('/reports')} className="btn-nav active">Reports</button>
           <button onClick={() => navigate('/settings')} className="btn-nav">Settings</button>
           <button onClick={() => navigate('/submit-feature')} className="btn-nav">Request Feature</button>
+          <button onClick={() => navigate('/feature-summary')} className="btn-nav">Feature Summary</button>
           <DarkModeToggle />
           <button onClick={handleLogout} className="btn-logout">Sign Out</button>
         </nav>
