@@ -2196,6 +2196,40 @@
   border-left: 4px solid #ef4444;
 }
 
+.feature-summary-delivery-rate {
+  margin-top: 1.5rem;
+  padding: 1.25rem;
+  background: var(--color-surface, #f9fafb);
+  border-radius: 0.75rem;
+  border: 1px solid var(--color-border, #e5e7eb);
+}
+
+.feature-summary-delivery-rate h3 {
+  font-size: 1.1rem;
+  margin-bottom: 0.75rem;
+  color: var(--color-text);
+}
+
+.delivery-rate-bar {
+  height: 1.25rem;
+  background: var(--color-border, #e5e7eb);
+  border-radius: 0.625rem;
+  overflow: hidden;
+}
+
+.delivery-rate-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #22c55e, #16a34a);
+  border-radius: 0.625rem;
+  transition: width 0.6s ease;
+}
+
+.delivery-rate-text {
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--color-text-muted, #6b7280);
+}
+
 .feature-summary-monthly {
   margin-top: 1.5rem;
 }

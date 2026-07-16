@@ -116,8 +116,22 @@ export function FeatureRequestSummaryPage() {
               </div>
               <div className="stat-card">
                 <div className="stat-value">{stats.avgPerDay}</div>
-                <div className="stat-label">Avg Requests / Day</div>
+                <div className="stat-label">Avg Delivered / Day (30d)</div>
               </div>
+            </div>
+
+            <div className="feature-summary-delivery-rate">
+              <h3>Delivery Rate</h3>
+              <div className="delivery-rate-bar">
+                <div
+                  className="delivery-rate-fill"
+                  style={{ width: `${stats.total > 0 ? Math.round((stats.delivered.total / stats.total) * 100) : 0}%` }}
+                />
+              </div>
+              <p className="delivery-rate-text">
+                {stats.total > 0 ? Math.round((stats.delivered.total / stats.total) * 100) : 0}% of requests delivered
+                ({stats.delivered.total} / {stats.total})
+              </p>
             </div>
 
             {stats.monthlyStats.length > 0 && (
