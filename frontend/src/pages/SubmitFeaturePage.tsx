@@ -119,6 +119,7 @@ export function SubmitFeaturePage() {
         {!loading && features.length > 0 && (
           <div className="feature-list-section">
             <h3>Your Previous Requests</h3>
+            <p className="feature-list-hint">Click on a request to view full progress history</p>
             <div className="feature-list">
               {features.map((f) => (
                 <div
@@ -130,14 +131,17 @@ export function SubmitFeaturePage() {
                   onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') navigate(`/submit-feature/${f.id}`); }}
                   aria-label={`View details for feature request ${f.id.slice(0, 8)}`}
                 >
-                  <div className="feature-list-description">{f.description}</div>
-                  <div className="feature-list-meta">
-                    <span className="feature-ticket">#{f.id.slice(0, 8)}</span>
-                    <span className={`feature-status-badge feature-badge-${f.currentStep || f.status}`}>
-                      {f.currentStep || f.status}
-                    </span>
-                    <span className="feature-date">{new Date(f.createdAt).toLocaleDateString()}</span>
+                  <div className="feature-list-item-content">
+                    <div className="feature-list-description">{f.description}</div>
+                    <div className="feature-list-meta">
+                      <span className="feature-ticket">#{f.id.slice(0, 8)}</span>
+                      <span className={`feature-status-badge feature-badge-${f.currentStep || f.status}`}>
+                        {f.currentStep || f.status}
+                      </span>
+                      <span className="feature-date">{new Date(f.createdAt).toLocaleDateString()}</span>
+                    </div>
                   </div>
+                  <span className="feature-list-arrow" aria-hidden="true">→</span>
                 </div>
               ))}
             </div>

@@ -26,6 +26,7 @@ export function FeatureDetailPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
+  const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
 
   const loadFeature = useCallback(async (showRefreshing = false) => {
     if (!featureId) return;
@@ -34,6 +35,7 @@ export function FeatureDetailPage() {
       const data = await featuresApi.getById(featureId);
       setFeature(data.feature || data);
       setError('');
+      setLastRefreshed(new Date());
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to load feature details');
     } finally {
@@ -55,6 +57,17 @@ export function FeatureDetailPage() {
     navigate('/login');
   };
 
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'completed':
+      case 'deployed': return 'success';
+      case 'failed': return 'error';
+      case 'in-progress':
+      case 'implementing': return 'active';
+      default: return 'pending';
+    }
+  };
+
   return (
     <div className="dashboard-container">
       <header className="dashboard-header">
@@ -73,33 +86,47 @@ export function FeatureDetailPage() {
       <main className="dashboard-main">
         <div className="feature-detail-header">
           <button onClick={() => navigate('/submit-feature')} className="btn-back" aria-label="Back to feature requests">
-            ← Back
+            ← Back to Requests
           </button>
           <h2>Feature Request Details</h2>
-          <button
-            onClick={handleRefresh}
-            className="btn-refresh"
-            disabled={refreshing}
-            aria-label="Refresh progress"
-          >
-            {refreshing ? '⟳ Refreshing...' : '⟳ Refresh'}
-          </button>
+          <div className="feature-detail-refresh-group">
+            {lastRefreshed && (
+              <span className="feature-last-refreshed">
+                Updated {lastRefreshed.toLocaleTimeString()}
+              </span>
+            )}
+            <button
+              onClick={handleRefresh}
+              className={`btn-refresh ${refreshing ? 'btn-refresh-spinning' : ''}`}
+              disabled={refreshing}
+              aria-label="Refresh progress"
+            >
+              {refreshing ? '↻ Refreshing...' : '↻ Refresh'}
+            </button>
+          </div>
         </div>
 
         {error && <div className="error-message">{error}</div>}
 
-        {loading && <div className="loading-message">Loading feature details...</div>}
+        {loading && (
+          <div className="feature-detail-loading">
+            <div className="feature-detail-spinner" />
+            <p>Loading feature details...</p>
+          </div>
+        )}
 
         {!loading && feature && (
           <div className="feature-detail-card">
             <div className="feature-detail-info">
               <div className="feature-detail-row">
                 <span className="feature-detail-label">Ticket</span>
-                <span className="feature-detail-value feature-ticket">#{feature.id.slice(0, 8)}</span>
+                <span className="feature-detail-value">
+                  <code className="feature-ticket-code">#{feature.id.slice(0, 8)}</code>
+                </span>
               </div>
               <div className="feature-detail-row">
                 <span className="feature-detail-label">Status</span>
-                <span className={`feature-status-badge feature-badge-${feature.currentStep || feature.status}`}>
+                <span className={`feature-status-badge feature-badge-${getStatusColor(feature.currentStep || feature.status)}`}>
                   {feature.currentStep || feature.status}
                 </span>
               </div>
@@ -109,17 +136,20 @@ export function FeatureDetailPage() {
               </div>
               <div className="feature-detail-row">
                 <span className="feature-detail-label">Description</span>
-                <span className="feature-detail-value">{feature.description}</span>
+                <span className="feature-detail-value feature-detail-description">{feature.description}</span>
               </div>
             </div>
 
             <div className="feature-detail-progress">
-              <h3>Progress History</h3>
+              <h3>📋 Progress History</h3>
               {feature.steps && feature.steps.length > 0 ? (
                 <div className="feature-timeline feature-timeline-full">
                   {feature.steps.map((step, idx) => (
-                    <div key={idx} className="feature-timeline-step">
-                      <span className="feature-timeline-dot" />
+                    <div
+                      key={idx}
+                      className={`feature-timeline-step ${idx === feature.steps!.length - 1 ? 'feature-timeline-step-latest' : ''}`}
+                    >
+                      <span className={`feature-timeline-dot ${idx === feature.steps!.length - 1 ? 'feature-timeline-dot-latest' : ''}`} />
                       <div className="feature-timeline-content">
                         <span className="feature-timeline-time">
                           {new Date(step.time).toLocaleString()}
@@ -130,7 +160,10 @@ export function FeatureDetailPage() {
                   ))}
                 </div>
               ) : (
-                <p className="feature-no-steps">No progress updates yet. Click Refresh to check for updates.</p>
+                <div className="feature-no-steps">
+                  <p>No progress updates yet.</p>
+                  <p className="feature-no-steps-hint">Click the <strong>Refresh</strong> button to check for new updates.</p>
+                </div>
               )}
             </div>
           </div>
