@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { devicesApi } from '../services/api';
 import { DarkModeToggle } from '../components/DarkModeToggle';
+import { ConfirmDialog } from '../components/ConfirmDialog';
 
 interface MonthlyEnergy {
   month: string;
@@ -50,6 +51,7 @@ export function DeviceDetailPage() {
   const [energy, setEnergy] = useState<EnergyData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [showToggleConfirm, setShowToggleConfirm] = useState(false);
 
   // Budget state
   const [budgetInput, setBudgetInput] = useState('');
@@ -176,6 +178,10 @@ export function DeviceDetailPage() {
   };
 
   const handleToggleStatus = async () => {
+    setShowToggleConfirm(true);
+  };
+
+  const confirmToggleStatus = async () => {
     if (!deviceId || !device) return;
     const newStatus = device.status === 'on' ? 'off' : 'on';
     try {
@@ -185,6 +191,7 @@ export function DeviceDetailPage() {
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to toggle device status');
     }
+    setShowToggleConfirm(false);
   };
 
   const handleLogout = () => {
@@ -477,6 +484,18 @@ export function DeviceDetailPage() {
           )}
         </div>
       </main>
+
+      {/* Toggle Status Confirmation */}
+      <ConfirmDialog
+        open={showToggleConfirm}
+        title={device?.status === 'on' ? 'Turn Off Device?' : 'Turn On Device?'}
+        message={device?.status === 'on'
+          ? 'Are you sure you want to turn off this device?'
+          : 'Are you sure you want to turn on this device?'}
+        confirmLabel={device?.status === 'on' ? 'Turn Off' : 'Turn On'}
+        onConfirm={confirmToggleStatus}
+        onCancel={() => setShowToggleConfirm(false)}
+      />
     </div>
   );
 }

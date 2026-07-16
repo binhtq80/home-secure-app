@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { devicesApi } from '../services/api';
 import { DarkModeToggle } from '../components/DarkModeToggle';
+import { ConfirmDialog } from '../components/ConfirmDialog';
 
 interface Device {
   id: string;
@@ -49,6 +50,7 @@ export function DevicesPage() {
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const [lightboxAlt, setLightboxAlt] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [toggleConfirm, setToggleConfirm] = useState<{ deviceId: string; currentStatus?: 'on' | 'off' } | null>(null);
 
   // Form fields
   const [deviceType, setDeviceType] = useState('');
@@ -173,6 +175,12 @@ export function DevicesPage() {
   };
 
   const handleToggleStatus = async (deviceId: string, currentStatus?: 'on' | 'off') => {
+    setToggleConfirm({ deviceId, currentStatus });
+  };
+
+  const confirmToggleStatus = async () => {
+    if (!toggleConfirm) return;
+    const { deviceId, currentStatus } = toggleConfirm;
     const newStatus = currentStatus === 'on' ? 'off' : 'on';
     try {
       await devicesApi.update(deviceId, { status: newStatus });
@@ -182,6 +190,7 @@ export function DevicesPage() {
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to toggle device status');
     }
+    setToggleConfirm(null);
   };
 
   const resetForm = () => {
@@ -511,6 +520,18 @@ export function DevicesPage() {
           />
         </div>
       )}
+
+      {/* Toggle Status Confirmation */}
+      <ConfirmDialog
+        open={toggleConfirm !== null}
+        title={toggleConfirm?.currentStatus === 'on' ? 'Turn Off Device?' : 'Turn On Device?'}
+        message={toggleConfirm?.currentStatus === 'on'
+          ? 'Are you sure you want to turn off this device?'
+          : 'Are you sure you want to turn on this device?'}
+        confirmLabel={toggleConfirm?.currentStatus === 'on' ? 'Turn Off' : 'Turn On'}
+        onConfirm={confirmToggleStatus}
+        onCancel={() => setToggleConfirm(null)}
+      />
     </div>
   );
 }
