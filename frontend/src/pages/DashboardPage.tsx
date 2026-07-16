@@ -159,7 +159,7 @@ export function DashboardPage() {
                 </div>
               </div>
 
-              <div className="stat-card">
+              <div className="stat-card" title="Total energy cost this month">
                 <div className="stat-icon">💰</div>
                 <div className="stat-content">
                   <h3>This Month&apos;s Cost</h3>
