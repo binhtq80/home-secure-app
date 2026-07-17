@@ -87,8 +87,9 @@ myapp-infra/
 │   │   │   └── ...
 │   │   └── common/middleware.js    Auth middleware (withAuth wrapper)
 │   ├── scripts/
-│   │   ├── build.js                src → dist copy
-│   │   └── prepare-lambda-packages.sh  Per-function zip packaging
+│   │   ├── build.js                src → dist copy (legacy)
+│   │   ├── build-bundle.js         Single bundle for all Lambda functions
+│   │   └── prepare-lambda-packages.sh  Per-function zip packaging (legacy)
 │   └── package.json
 │
 ├── infrastructure/              CDK v2 (TypeScript)
@@ -282,6 +283,21 @@ Base URL: `https://d2ok3vs29hr98h.cloudfront.net/api`
 - Environment-parameterized via `EnvironmentConfig`
 - `isProd` flag controls removal policies (RETAIN vs DESTROY)
 - Pipeline has `triggerOnPush: false` — only triggered for infra changes
+- **Lambda bundle**: All functions share a single `Code.fromAsset()` bundle built by `backend/scripts/build-bundle.js`. Handler format: `functions/<name>/index.handler`. Reduces CDK Pipeline Assets stage from ~33 to 5 CodeBuild tasks.
+
+### Role-Based Access Control (RBAC)
+
+| Role | Permissions |
+|------|-------------|
+| `user` | Submit feature requests, view devices, basic app access |
+| `technical` | Accept/override AI complexity classifications |
+| `product_manager` | Approve/reject feature requests in Pending Approval queue |
+| `admin` | Manage user roles via Admin panel, all permissions |
+
+- Roles stored in `users` table `role` field (default: `user`)
+- Bootstrap roles: `ENV_FILE=~/shared/myapp-envs/<env>.sh ./scripts/assign-role.sh <username> <role>`
+- Admin panel: `/admin` route, restricted to `admin` role
+- Admins cannot change their own role (self-protection)
 
 ---
 
@@ -372,7 +388,7 @@ This creates the GitHub OIDC trust so GitHub Actions can deploy.
 
 ```bash
 # Build everything first
-cd ../backend && npm install && node scripts/build.js && ./scripts/prepare-lambda-packages.sh && cd ..
+cd ../backend && npm install && node scripts/build-bundle.js && cd ..
 cd frontend && npm install && npm run build && cd ..
 cd infrastructure && npm install && npm run build
 
@@ -439,7 +455,7 @@ To add a production account:
 
 | Problem | Solution |
 |---------|----------|
-| `simulate-pipeline.sh` fails on CDK synth | Run `cd backend && node scripts/build.js && ./scripts/prepare-lambda-packages.sh` first |
+| `simulate-pipeline.sh` fails on CDK synth | Run `cd backend && node scripts/build-bundle.js` first |
 | Lambda deploy fails with wrong region | Ensure `~/.aws/config` has correct region or use `AWS_DEFAULT_REGION=ap-southeast-2` |
 | Deploy uses wrong AWS profile | Ensure `ENV_FILE` is set when starting the orchestrator, and that the profile name in the env file matches `~/.aws/config` exactly |
 | Frontend changes not visible | Hard refresh `Ctrl+Shift+R` (browser cache) |
