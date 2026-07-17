@@ -1,11 +1,13 @@
 import { useState, useEffect, useRef, FormEvent, ChangeEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 import { settingsApi, avatarApi } from '../services/api';
 import { DarkModeToggle } from '../components/DarkModeToggle';
 
 export function SettingsPage() {
   const { logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
   const [costPerKwh, setCostPerKwh] = useState('0.20');
@@ -176,6 +178,33 @@ export function SettingsPage() {
               style={{ display: 'none' }}
               aria-hidden="true"
             />
+          </div>
+        </div>
+
+        <div className="settings-card">
+          <h3>Appearance</h3>
+          <div className="settings-appearance">
+            <div className="settings-toggle-row">
+              <div className="settings-toggle-info">
+                <label htmlFor="darkModeToggle">Dark Mode</label>
+                <p className="form-help">
+                  Switch between light and dark theme. Your preference is saved locally.
+                </p>
+              </div>
+              <button
+                id="darkModeToggle"
+                onClick={toggleTheme}
+                className={`settings-toggle-switch ${theme === 'dark' ? 'active' : ''}`}
+                role="switch"
+                aria-checked={theme === 'dark'}
+                aria-label="Toggle dark mode"
+              >
+                <span className="settings-toggle-knob" />
+              </button>
+            </div>
+            <p className="settings-current-theme">
+              Current theme: <strong>{theme === 'dark' ? '🌙 Dark' : '☀️ Light'}</strong>
+            </p>
           </div>
         </div>
 
