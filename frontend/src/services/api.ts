@@ -142,6 +142,15 @@ export const devicesApi = {
       method: 'DELETE',
       body: JSON.stringify({ manualId }),
     }),
+
+  listNotes: (deviceId: string) =>
+    request(`/api/devices/${deviceId}/notes`),
+
+  createNote: (deviceId: string, text: string) =>
+    request(`/api/devices/${deviceId}/notes`, {
+      method: 'POST',
+      body: JSON.stringify({ text }),
+    }),
 };
 
 export const roomsApi = {

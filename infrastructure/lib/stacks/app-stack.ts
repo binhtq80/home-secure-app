@@ -102,6 +102,15 @@ export class AppStack extends cdk.Stack {
       removalPolicy: envConfig.isProd ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,
     });
 
+    // Device notes table
+    const deviceNotesTable = new dynamodb.Table(this, 'DeviceNotesTable', {
+      tableName: `${prefix}-device-notes`,
+      partitionKey: { name: 'deviceId', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'noteId', type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: envConfig.isProd ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,
+    });
+
     // Feature requests table
     const featureRequestsTable = new dynamodb.Table(this, 'FeatureRequestsTable', {
       tableName: `${prefix}-feature-requests`,
@@ -135,6 +144,7 @@ export class AppStack extends cdk.Stack {
       DEVICES_TABLE: devicesTable.tableName,
       DEVICE_ENERGY_TABLE: deviceEnergyTable.tableName,
       DEVICE_HISTORY_TABLE: deviceHistoryTable.tableName,
+      DEVICE_NOTES_TABLE: deviceNotesTable.tableName,
       FEATURE_REQUESTS_TABLE: featureRequestsTable.tableName,
       USER_POOL_ID: userPool.userPoolId,
       USER_POOL_CLIENT_ID: userPoolClient.userPoolClientId,
@@ -325,14 +335,28 @@ export class AppStack extends cdk.Stack {
       code: lambda.Code.fromAsset(path.join(lambdaDir, 'delete-room')),
     });
 
+    // Device notes functions
+    const createDeviceNoteFn = new lambda.Function(this, 'CreateDeviceNoteFn', {
+      ...commonProps,
+      functionName: `${prefix}-create-device-note`,
+      code: lambda.Code.fromAsset(path.join(lambdaDir, 'create-device-note')),
+    });
+
+    const listDeviceNotesFn = new lambda.Function(this, 'ListDeviceNotesFn', {
+      ...commonProps,
+      functionName: `${prefix}-list-device-notes`,
+      code: lambda.Code.fromAsset(path.join(lambdaDir, 'list-device-notes')),
+    });
+
     // Grant permissions
-    const allFunctions = [signUpFn, confirmSignUpFn, signInFn, getUserFn, recognizeDeviceFn, createDeviceFn, listDevicesFn, deleteDeviceFn, getDeviceEnergyFn, getUserSettingsFn, updateUserSettingsFn, getEnergyReportFn, updateDeviceBudgetFn, getDeviceStatsFn, getDeviceImageFn, updateDeviceFn, getDeviceHistoryFn, getDeviceLastActiveFn, createFeatureRequestFn, listFeatureRequestsFn, getFeatureRequestFn, getFeatureRequestStatsFn, approveFeatureRequestFn, uploadDeviceManualFn, getDeviceManualsFn, deleteDeviceManualFn, deleteRoomFn];
+    const allFunctions = [signUpFn, confirmSignUpFn, signInFn, getUserFn, recognizeDeviceFn, createDeviceFn, listDevicesFn, deleteDeviceFn, getDeviceEnergyFn, getUserSettingsFn, updateUserSettingsFn, getEnergyReportFn, updateDeviceBudgetFn, getDeviceStatsFn, getDeviceImageFn, updateDeviceFn, getDeviceHistoryFn, getDeviceLastActiveFn, createFeatureRequestFn, listFeatureRequestsFn, getFeatureRequestFn, getFeatureRequestStatsFn, approveFeatureRequestFn, uploadDeviceManualFn, getDeviceManualsFn, deleteDeviceManualFn, deleteRoomFn, createDeviceNoteFn, listDeviceNotesFn];
 
     for (const fn of allFunctions) {
       usersTable.grantReadWriteData(fn);
       devicesTable.grantReadWriteData(fn);
       deviceEnergyTable.grantReadWriteData(fn);
       deviceHistoryTable.grantReadWriteData(fn);
+      deviceNotesTable.grantReadWriteData(fn);
       featureRequestsTable.grantReadWriteData(fn);
       fn.addToRolePolicy(new iam.PolicyStatement({
         actions: [
@@ -414,6 +438,9 @@ export class AppStack extends cdk.Stack {
     manualsResource.addMethod('POST', new apigateway.LambdaIntegration(uploadDeviceManualFn));
     manualsResource.addMethod('GET', new apigateway.LambdaIntegration(getDeviceManualsFn));
     manualsResource.addMethod('DELETE', new apigateway.LambdaIntegration(deleteDeviceManualFn));
+    const notesResource = deviceResource.addResource('notes');
+    notesResource.addMethod('POST', new apigateway.LambdaIntegration(createDeviceNoteFn));
+    notesResource.addMethod('GET', new apigateway.LambdaIntegration(listDeviceNotesFn));
 
     // Settings routes
     const settingsResource = apiResource.addResource('settings');

@@ -1427,6 +1427,73 @@
   cursor: not-allowed;
 }
 
+/* ─── Device Notes ──────────────────────────────────────────────────────────── */
+
+.notes-card {
+  background: var(--color-surface);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.notes-card h3 {
+  margin: 0 0 1rem 0;
+}
+
+.note-input-section {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.note-input {
+  flex: 1;
+  padding: 0.6rem 1rem;
+  border: 1px solid var(--color-border, #ddd);
+  border-radius: 8px;
+  font-size: 0.95rem;
+  background: var(--color-background);
+  color: var(--color-text);
+}
+
+.note-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.btn-add-note {
+  padding: 0.6rem 1.2rem;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.notes-empty {
+  color: var(--color-text-secondary);
+  font-style: italic;
+}
+
+.notes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.note-item {
+  background: var(--color-background);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+}
+
+.note-text {
+  margin: 0 0 0.25rem 0;
+  line-height: 1.4;
+}
+
+.note-date {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+}
+
 /* ─── Change History ───────────────────────────────────────────────────────── */
 
 .history-card {

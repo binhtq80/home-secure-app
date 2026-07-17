@@ -51,6 +51,13 @@ interface DeviceManual {
   uploadedAt: string;
 }
 
+interface DeviceNote {
+  deviceId: string;
+  noteId: string;
+  text: string;
+  createdAt: string;
+}
+
 export function DeviceDetailPage() {
   const { deviceId } = useParams<{ deviceId: string }>();
   const { logout } = useAuth();
@@ -91,11 +98,19 @@ export function DeviceDetailPage() {
   const [manualSuccess, setManualSuccess] = useState('');
   const [deletingManualId, setDeletingManualId] = useState<string | null>(null);
 
+  // Notes state
+  const [notes, setNotes] = useState<DeviceNote[]>([]);
+  const [notesLoading, setNotesLoading] = useState(false);
+  const [noteText, setNoteText] = useState('');
+  const [savingNote, setSavingNote] = useState(false);
+  const [noteSuccess, setNoteSuccess] = useState('');
+
   useEffect(() => {
     if (deviceId) {
       loadEnergyData(deviceId);
       loadHistory(deviceId);
       loadManuals(deviceId);
+      loadNotes(deviceId);
     }
   }, [deviceId]);
 
@@ -136,6 +151,37 @@ export function DeviceDetailPage() {
       setManuals([]);
     } finally {
       setManualsLoading(false);
+    }
+  };
+
+  const loadNotes = async (id: string) => {
+    setNotesLoading(true);
+    try {
+      const data = await devicesApi.listNotes(id);
+      setNotes(data.notes || []);
+    } catch {
+      setNotes([]);
+    } finally {
+      setNotesLoading(false);
+    }
+  };
+
+  const handleAddNote = async () => {
+    if (!deviceId || !noteText.trim()) return;
+    setSavingNote(true);
+    setNoteSuccess('');
+    setError('');
+
+    try {
+      const data = await devicesApi.createNote(deviceId, noteText.trim());
+      setNotes([data.note, ...notes]);
+      setNoteText('');
+      setNoteSuccess('Note added!');
+      setTimeout(() => setNoteSuccess(''), 3000);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to add note');
+    } finally {
+      setSavingNote(false);
     }
   };
 
@@ -612,6 +658,44 @@ export function DeviceDetailPage() {
                       {deletingManualId === manual.id ? '...' : '🗑️'}
                     </button>
                   </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Device Notes */}
+        <div className="notes-card">
+          <h3>📝 Device Notes</h3>
+          {noteSuccess && <p className="success-message">{noteSuccess}</p>}
+          <div className="note-input-section">
+            <input
+              type="text"
+              className="note-input"
+              placeholder="Add a note..."
+              value={noteText}
+              onChange={(e) => setNoteText(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleAddNote(); }}
+              disabled={savingNote}
+            />
+            <button
+              className="btn-primary btn-add-note"
+              onClick={handleAddNote}
+              disabled={savingNote || !noteText.trim()}
+            >
+              {savingNote ? 'Adding...' : 'Add Note'}
+            </button>
+          </div>
+          {notesLoading ? (
+            <p className="loading-text">Loading notes...</p>
+          ) : notes.length === 0 ? (
+            <p className="notes-empty">No notes yet. Add a note above.</p>
+          ) : (
+            <div className="notes-list">
+              {notes.map((note) => (
+                <div key={note.noteId} className="note-item">
+                  <p className="note-text">{note.text}</p>
+                  <span className="note-date">{new Date(note.createdAt).toLocaleString()}</span>
                 </div>
               ))}
             </div>
