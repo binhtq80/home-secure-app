@@ -2921,6 +2921,66 @@
   color: var(--color-text);
 }
 
+/* ─── Device Power Consumption Bar Chart ────────────────────────────────────── */
+
+.device-bar-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.device-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.device-bar-label {
+  flex: 0 0 160px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  text-align: right;
+}
+
+.device-bar-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.device-bar-type {
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+}
+
+.device-bar-track {
+  flex: 1;
+  height: 28px;
+  background: var(--color-bg);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.device-bar-fill {
+  height: 100%;
+  background: var(--color-primary);
+  border-radius: 6px;
+  transition: width 0.4s ease;
+  min-width: 4px;
+}
+
+.device-bar-value {
+  flex: 0 0 80px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
 /* ─── Device Tags ───────────────────────────────────────────────────────────── */
 
 .device-tags-card {

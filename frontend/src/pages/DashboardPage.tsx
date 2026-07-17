@@ -26,12 +26,21 @@ interface RoomBreakdown {
   deviceCount: number;
 }
 
+interface TopDevice {
+  id: string;
+  name: string;
+  deviceType: string;
+  totalKwh: number;
+  totalCost: number;
+}
+
 export function DashboardPage() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [energySummary, setEnergySummary] = useState<EnergySummary | null>(null);
   const [currentMonthCost, setCurrentMonthCost] = useState<number | null>(null);
   const [roomBreakdown, setRoomBreakdown] = useState<RoomBreakdown[]>([]);
+  const [topDevices, setTopDevices] = useState<TopDevice[]>([]);
   const [energyLoading, setEnergyLoading] = useState(true);
 
   useEffect(() => {
@@ -43,6 +52,7 @@ export function DashboardPage() {
       const data = await reportsApi.getEnergyReport();
       setEnergySummary(data.summary);
       setRoomBreakdown(data.roomBreakdown || []);
+      setTopDevices(data.topDevices || []);
 
       // Get current month's cost from monthly data
       const now = new Date();
@@ -210,6 +220,35 @@ export function DashboardPage() {
                       </div>
                     </div>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {/* Device Power Consumption Bar Chart */}
+            {topDevices.length > 0 && (
+              <div className="energy-summary-section">
+                <h3>Device Power Consumption</h3>
+                <div className="device-bar-chart">
+                  {topDevices.map((device) => {
+                    const maxKwh = topDevices[0].totalKwh; // Already sorted by highest
+                    const barWidth = maxKwh > 0 ? (device.totalKwh / maxKwh) * 100 : 0;
+                    return (
+                      <div key={device.id} className="device-bar-row">
+                        <div className="device-bar-label">
+                          <span className="device-bar-name">{device.name}</span>
+                          <span className="device-bar-type">{device.deviceType}</span>
+                        </div>
+                        <div className="device-bar-track">
+                          <div
+                            className="device-bar-fill"
+                            style={{ width: `${barWidth}%` }}
+                            title={`${device.totalKwh} kWh — $${device.totalCost}`}
+                          />
+                        </div>
+                        <div className="device-bar-value">{device.totalKwh} kWh</div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
