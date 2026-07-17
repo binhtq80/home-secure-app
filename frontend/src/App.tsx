@@ -55,7 +55,7 @@ export default function App() {
           <div className="app">
             <AppRoutes />
             <footer className="app-footer">
-              Home Energy Management &copy; {new Date().getFullYear()}
+              Open Home Energy Management &copy; {new Date().getFullYear()}
             </footer>
           </div>
         </BrowserRouter>

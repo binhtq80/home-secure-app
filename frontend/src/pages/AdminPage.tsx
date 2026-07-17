@@ -71,7 +71,7 @@ export function AdminPage() {
   return (
     <div className="dashboard-container">
       <header className="dashboard-header">
-        <h1>Home Energy Management</h1>
+        <h1>Open Home Energy Management</h1>
         <nav className="header-nav">
           <button onClick={() => navigate('/dashboard')} className="btn-nav">Dashboard</button>
           <button onClick={() => navigate('/devices')} className="btn-nav">Devices</button>
