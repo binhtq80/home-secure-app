@@ -438,6 +438,19 @@ export class AppStack extends cdk.Stack {
       handler: 'functions/get-avatar/index.handler',
     });
 
+    // Admin functions
+    const listUsersFn = new lambda.Function(this, 'ListUsersFn', {
+      ...commonProps,
+      functionName: `${prefix}-list-users`,
+      handler: 'functions/list-users/index.handler',
+    });
+
+    const updateUserRoleFn = new lambda.Function(this, 'UpdateUserRoleFn', {
+      ...commonProps,
+      functionName: `${prefix}-update-user-role`,
+      handler: 'functions/update-user-role/index.handler',
+    });
+
     // Budget alert scheduled function (runs daily at 8am AEST)
     const budgetAlertFn = new lambda.Function(this, 'BudgetAlertFn', {
       ...commonProps,
@@ -467,7 +480,7 @@ export class AppStack extends cdk.Stack {
     budgetAlertRule.addTarget(new targets.LambdaFunction(budgetAlertFn));
 
     // Grant permissions
-    const allFunctions = [signUpFn, confirmSignUpFn, signInFn, getUserFn, recognizeDeviceFn, createDeviceFn, listDevicesFn, deleteDeviceFn, getDeviceEnergyFn, getUserSettingsFn, updateUserSettingsFn, getEnergyReportFn, updateDeviceBudgetFn, getDeviceStatsFn, getDeviceImageFn, updateDeviceFn, getDeviceHistoryFn, getDeviceLastActiveFn, createFeatureRequestFn, listFeatureRequestsFn, getFeatureRequestFn, getFeatureRequestStatsFn, approveFeatureRequestFn, confirmFeatureRequestFn, adminApproveFeatureFn, voteFeatureRequestFn, listFeatureVotesFn, uploadDeviceManualFn, getDeviceManualsFn, deleteDeviceManualFn, deleteRoomFn, createDeviceNoteFn, listDeviceNotesFn, toggleDeviceFavoriteFn, listDeviceFavoritesFn, manageDeviceTagsFn, updateAvatarFn, getAvatarFn, budgetAlertFn];
+    const allFunctions = [signUpFn, confirmSignUpFn, signInFn, getUserFn, recognizeDeviceFn, createDeviceFn, listDevicesFn, deleteDeviceFn, getDeviceEnergyFn, getUserSettingsFn, updateUserSettingsFn, getEnergyReportFn, updateDeviceBudgetFn, getDeviceStatsFn, getDeviceImageFn, updateDeviceFn, getDeviceHistoryFn, getDeviceLastActiveFn, createFeatureRequestFn, listFeatureRequestsFn, getFeatureRequestFn, getFeatureRequestStatsFn, approveFeatureRequestFn, confirmFeatureRequestFn, adminApproveFeatureFn, voteFeatureRequestFn, listFeatureVotesFn, uploadDeviceManualFn, getDeviceManualsFn, deleteDeviceManualFn, deleteRoomFn, createDeviceNoteFn, listDeviceNotesFn, toggleDeviceFavoriteFn, listDeviceFavoritesFn, manageDeviceTagsFn, updateAvatarFn, getAvatarFn, budgetAlertFn, listUsersFn, updateUserRoleFn];
 
     for (const fn of allFunctions) {
       usersTable.grantReadWriteData(fn);
@@ -549,7 +562,10 @@ export class AppStack extends cdk.Stack {
 
     // User routes
     const usersResource = apiResource.addResource('users');
-    usersResource.addResource('{userId}').addMethod('GET', new apigateway.LambdaIntegration(getUserFn));
+    usersResource.addMethod('GET', new apigateway.LambdaIntegration(listUsersFn));
+    const userResource = usersResource.addResource('{userId}');
+    userResource.addMethod('GET', new apigateway.LambdaIntegration(getUserFn));
+    userResource.addResource('role').addMethod('PUT', new apigateway.LambdaIntegration(updateUserRoleFn));
 
     // Device routes
     const devicesResource = apiResource.addResource('devices');

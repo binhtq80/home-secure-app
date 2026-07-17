@@ -3719,3 +3719,54 @@
   color: var(--color-text-secondary, #6b7280);
   margin: 0;
 }
+
+/* ─── Admin Panel ─────────────────────────────────────────────────────────── */
+
+.admin-users-table-wrapper {
+  overflow-x: auto;
+  margin-top: 1.5rem;
+}
+
+.admin-users-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--color-surface, #fff);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.admin-users-table th,
+.admin-users-table td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--color-border, #e5e7eb);
+}
+
+.admin-users-table th {
+  background: var(--color-surface-alt, #f9fafb);
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-secondary, #6b7280);
+}
+
+.admin-users-table td select {
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--color-border, #d1d5db);
+  border-radius: 4px;
+  background: var(--color-surface, #fff);
+  color: var(--color-text, #111);
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.admin-users-table td select:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.admin-users-table tr:last-child td {
+  border-bottom: none;
+}

@@ -28,7 +28,7 @@ interface FeatureStats {
 }
 
 export function FeatureRequestSummaryPage() {
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [stats, setStats] = useState<FeatureStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -72,6 +72,7 @@ export function FeatureRequestSummaryPage() {
           <span className="nav-divider" />
           <button onClick={() => navigate('/submit-feature')} className="btn-nav">Request Feature</button>
           <button onClick={() => navigate('/feature-summary')} className="btn-nav active">Feature Summary</button>
+          {user?.role === 'product_manager' && <button onClick={() => navigate('/admin')} className="btn-nav">Admin</button>}
           <button onClick={() => navigate('/profile')} className="btn-nav">Profile</button>
           <RoleBadge />
           <DarkModeToggle />

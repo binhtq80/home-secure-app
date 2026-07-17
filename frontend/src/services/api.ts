@@ -50,6 +50,14 @@ export const authApi = {
 
 export const usersApi = {
   getProfile: (userId: string) => request(`/api/users/${userId}`),
+
+  listAll: () => request('/api/users'),
+
+  updateRole: (userId: string, role: string) =>
+    request(`/api/users/${userId}/role`, {
+      method: 'PUT',
+      body: JSON.stringify({ role }),
+    }),
 };
 
 export const settingsApi = {

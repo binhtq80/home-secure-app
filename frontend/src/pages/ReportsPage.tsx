@@ -58,7 +58,7 @@ const DEVICE_COLORS = [
 ];
 
 export function ReportsPage() {
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
 
   const [summary, setSummary] = useState<Summary | null>(null);
@@ -169,6 +169,7 @@ export function ReportsPage() {
           <span className="nav-divider" />
           <button onClick={() => navigate('/submit-feature')} className="btn-nav">Request Feature</button>
           <button onClick={() => navigate('/feature-summary')} className="btn-nav">Feature Summary</button>
+          {user?.role === 'product_manager' && <button onClick={() => navigate('/admin')} className="btn-nav">Admin</button>}
           <button onClick={() => navigate('/profile')} className="btn-nav">Profile</button>
           <RoleBadge />
           <DarkModeToggle />
