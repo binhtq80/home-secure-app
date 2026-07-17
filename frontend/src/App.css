@@ -2638,6 +2638,66 @@
   color: var(--color-text);
 }
 
+.feature-summary-deliverer-chart {
+  margin-top: 1.5rem;
+  padding: 1.25rem;
+  background: var(--color-surface, #f9fafb);
+  border-radius: 0.75rem;
+  border: 1px solid var(--color-border, #e5e7eb);
+}
+
+.feature-summary-deliverer-chart h3 {
+  font-size: 1.1rem;
+  margin-bottom: 1rem;
+  color: var(--color-text);
+}
+
+.bar-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.bar-chart-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.bar-chart-label {
+  flex: 0 0 120px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--color-text);
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bar-chart-track {
+  flex: 1;
+  height: 1.5rem;
+  background: var(--color-border, #e5e7eb);
+  border-radius: 0.375rem;
+  overflow: hidden;
+}
+
+.bar-chart-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #3b82f6, #2563eb);
+  border-radius: 0.375rem;
+  transition: width 0.6s ease;
+  min-width: 4px;
+}
+
+.bar-chart-value {
+  flex: 0 0 40px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
 .table-container {
   overflow-x: auto;
   border-radius: var(--radius);

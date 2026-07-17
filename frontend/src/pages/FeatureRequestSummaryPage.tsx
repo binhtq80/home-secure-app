@@ -13,6 +13,11 @@ interface MonthlyStatEntry {
   rejected: number;
 }
 
+interface DelivererStatEntry {
+  deliverer: string;
+  count: number;
+}
+
 interface FeatureStats {
   total: number;
   delivered: {
@@ -25,6 +30,7 @@ interface FeatureStats {
   inProgress: number;
   avgPerDay: number;
   monthlyStats: MonthlyStatEntry[];
+  delivererStats: DelivererStatEntry[];
 }
 
 export function FeatureRequestSummaryPage() {
@@ -165,6 +171,30 @@ export function FeatureRequestSummaryPage() {
                       ))}
                     </tbody>
                   </table>
+                </div>
+              </div>
+            )}
+
+            {stats.delivererStats.length > 0 && (
+              <div className="feature-summary-deliverer-chart">
+                <h3>Requests Delivered by Each Deliverer</h3>
+                <div className="bar-chart">
+                  {stats.delivererStats.map((entry) => {
+                    const maxCount = stats.delivererStats[0].count;
+                    const widthPercent = maxCount > 0 ? Math.round((entry.count / maxCount) * 100) : 0;
+                    return (
+                      <div className="bar-chart-row" key={entry.deliverer}>
+                        <span className="bar-chart-label">{entry.deliverer}</span>
+                        <div className="bar-chart-track">
+                          <div
+                            className="bar-chart-fill"
+                            style={{ width: `${widthPercent}%` }}
+                          />
+                        </div>
+                        <span className="bar-chart-value">{entry.count}</span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}

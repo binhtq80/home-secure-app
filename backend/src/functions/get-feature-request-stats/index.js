@@ -40,6 +40,7 @@ exports.handler = withAuth(async (event) => {
     let inProgressCount = 0;
 
     const monthlyBreakdown = {};
+    const delivererCounts = {};
 
     for (const item of allItems) {
       const status = item.status || 'pending';
@@ -55,6 +56,9 @@ exports.handler = withAuth(async (event) => {
         if (createdMonth === currentMonth) {
           deliveredThisMonth++;
         }
+        // Track deliveries by approver (deliverer)
+        const deliverer = item.approvedBy || 'Unknown';
+        delivererCounts[deliverer] = (delivererCounts[deliverer] || 0) + 1;
       } else if (status === 'pending') {
         pendingCount++;
       } else if (status === 'rejected') {
@@ -86,6 +90,11 @@ exports.handler = withAuth(async (event) => {
       ...monthlyBreakdown[month],
     }));
 
+    // Build deliverer stats (sorted by count descending)
+    const delivererStats = Object.entries(delivererCounts)
+      .map(([deliverer, count]) => ({ deliverer, count }))
+      .sort((a, b) => b.count - a.count);
+
     // Average per day (over last 30 days)
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
     const recentItems = allItems.filter(item => {
@@ -109,6 +118,7 @@ exports.handler = withAuth(async (event) => {
         inProgress: inProgressCount,
         avgPerDay: parseFloat(avgPerDay),
         monthlyStats,
+        delivererStats,
       }),
     };
   } catch (error) {
