@@ -411,6 +411,21 @@ export class AppStack extends cdk.Stack {
       handler: 'functions/manage-device-tags/index.handler',
     });
 
+    // Avatar functions
+    const updateAvatarFn = new lambda.Function(this, 'UpdateAvatarFn', {
+      ...commonProps,
+      functionName: `${prefix}-update-avatar`,
+      handler: 'functions/update-avatar/index.handler',
+      timeout: cdk.Duration.seconds(60),
+      memorySize: 512,
+    });
+
+    const getAvatarFn = new lambda.Function(this, 'GetAvatarFn', {
+      ...commonProps,
+      functionName: `${prefix}-get-avatar`,
+      handler: 'functions/get-avatar/index.handler',
+    });
+
     // Budget alert scheduled function (runs daily at 8am AEST)
     const budgetAlertFn = new lambda.Function(this, 'BudgetAlertFn', {
       ...commonProps,
@@ -440,7 +455,7 @@ export class AppStack extends cdk.Stack {
     budgetAlertRule.addTarget(new targets.LambdaFunction(budgetAlertFn));
 
     // Grant permissions
-    const allFunctions = [signUpFn, confirmSignUpFn, signInFn, getUserFn, recognizeDeviceFn, createDeviceFn, listDevicesFn, deleteDeviceFn, getDeviceEnergyFn, getUserSettingsFn, updateUserSettingsFn, getEnergyReportFn, updateDeviceBudgetFn, getDeviceStatsFn, getDeviceImageFn, updateDeviceFn, getDeviceHistoryFn, getDeviceLastActiveFn, createFeatureRequestFn, listFeatureRequestsFn, getFeatureRequestFn, getFeatureRequestStatsFn, approveFeatureRequestFn, confirmFeatureRequestFn, adminApproveFeatureFn, uploadDeviceManualFn, getDeviceManualsFn, deleteDeviceManualFn, deleteRoomFn, createDeviceNoteFn, listDeviceNotesFn, toggleDeviceFavoriteFn, listDeviceFavoritesFn, manageDeviceTagsFn, budgetAlertFn];
+    const allFunctions = [signUpFn, confirmSignUpFn, signInFn, getUserFn, recognizeDeviceFn, createDeviceFn, listDevicesFn, deleteDeviceFn, getDeviceEnergyFn, getUserSettingsFn, updateUserSettingsFn, getEnergyReportFn, updateDeviceBudgetFn, getDeviceStatsFn, getDeviceImageFn, updateDeviceFn, getDeviceHistoryFn, getDeviceLastActiveFn, createFeatureRequestFn, listFeatureRequestsFn, getFeatureRequestFn, getFeatureRequestStatsFn, approveFeatureRequestFn, confirmFeatureRequestFn, adminApproveFeatureFn, uploadDeviceManualFn, getDeviceManualsFn, deleteDeviceManualFn, deleteRoomFn, createDeviceNoteFn, listDeviceNotesFn, toggleDeviceFavoriteFn, listDeviceFavoritesFn, manageDeviceTagsFn, updateAvatarFn, getAvatarFn, budgetAlertFn];
 
     for (const fn of allFunctions) {
       usersTable.grantReadWriteData(fn);
@@ -495,6 +510,8 @@ export class AppStack extends cdk.Stack {
     deviceImagesBucket.grantReadWrite(uploadDeviceManualFn);
     deviceImagesBucket.grantRead(getDeviceManualsFn);
     deviceImagesBucket.grantReadWrite(deleteDeviceManualFn);
+    deviceImagesBucket.grantReadWrite(updateAvatarFn);
+    deviceImagesBucket.grantRead(getAvatarFn);
 
     // ─── API Gateway ───────────────────────────────────────────────────────────
 
@@ -552,6 +569,11 @@ export class AppStack extends cdk.Stack {
     const settingsResource = apiResource.addResource('settings');
     settingsResource.addMethod('GET', new apigateway.LambdaIntegration(getUserSettingsFn));
     settingsResource.addMethod('PUT', new apigateway.LambdaIntegration(updateUserSettingsFn));
+
+    // Avatar routes
+    const avatarResource = apiResource.addResource('avatar');
+    avatarResource.addMethod('GET', new apigateway.LambdaIntegration(getAvatarFn));
+    avatarResource.addMethod('PUT', new apigateway.LambdaIntegration(updateAvatarFn));
 
     // Room routes
     const roomsResource = apiResource.addResource('rooms');

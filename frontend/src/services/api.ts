@@ -62,6 +62,16 @@ export const settingsApi = {
     }),
 };
 
+export const avatarApi = {
+  get: () => request('/api/avatar'),
+
+  update: (image: string, mimeType: string) =>
+    request('/api/avatar', {
+      method: 'PUT',
+      body: JSON.stringify({ image, mimeType }),
+    }),
+};
+
 export const reportsApi = {
   getEnergyReport: () => request('/api/reports/energy'),
 };
