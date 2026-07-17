@@ -12,7 +12,7 @@ interface UserRecord {
   role: string;
 }
 
-const VALID_ROLES = ['user', 'technical', 'product_manager'];
+const VALID_ROLES = ['user', 'technical', 'product_manager', 'admin'];
 
 export function AdminPage() {
   const { user, logout } = useAuth();
@@ -25,7 +25,7 @@ export function AdminPage() {
   const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (user?.role !== 'product_manager') {
+    if (user?.role !== 'admin') {
       navigate('/dashboard');
       return;
     }
@@ -64,7 +64,7 @@ export function AdminPage() {
     navigate('/login');
   };
 
-  if (user?.role !== 'product_manager') {
+  if (user?.role !== 'admin') {
     return null;
   }
 

@@ -12,17 +12,17 @@ if (!USERS_TABLE) {
 
 exports.handler = withAuth(async (event) => {
   try {
-    // Check that the caller has role=product_manager
+    // Check that the caller has role=admin
     const userResult = await ddbClient.send(new GetCommand({
       TableName: USERS_TABLE,
       Key: { id: event.user.id },
     }));
 
-    if (!userResult.Item || userResult.Item.role !== 'product_manager') {
+    if (!userResult.Item || userResult.Item.role !== 'admin') {
       return {
         statusCode: 403,
         headers,
-        body: JSON.stringify({ message: 'Forbidden: product_manager role required' }),
+        body: JSON.stringify({ message: 'Forbidden: admin role required' }),
       };
     }
 

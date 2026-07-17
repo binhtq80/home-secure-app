@@ -10,21 +10,21 @@ if (!USERS_TABLE) {
   throw new Error('Missing required environment variable: USERS_TABLE');
 }
 
-const VALID_ROLES = ['user', 'technical', 'product_manager'];
+const VALID_ROLES = ['user', 'technical', 'product_manager', 'admin'];
 
 exports.handler = withAuth(async (event) => {
   try {
-    // Check that the caller has role=product_manager
+    // Check that the caller has role=admin
     const callerResult = await ddbClient.send(new GetCommand({
       TableName: USERS_TABLE,
       Key: { id: event.user.id },
     }));
 
-    if (!callerResult.Item || callerResult.Item.role !== 'product_manager') {
+    if (!callerResult.Item || callerResult.Item.role !== 'admin') {
       return {
         statusCode: 403,
         headers,
-        body: JSON.stringify({ message: 'Forbidden: product_manager role required' }),
+        body: JSON.stringify({ message: 'Forbidden: admin role required' }),
       };
     }
 

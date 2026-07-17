@@ -4,7 +4,7 @@ interface User {
   id: string;
   username: string;
   email: string;
-  role: 'user' | 'technical' | 'product_manager';
+  role: 'user' | 'technical' | 'product_manager' | 'admin';
   lastLoginAt: string | null;
   loginCount: number;
   createdAt: string;
