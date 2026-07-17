@@ -738,13 +738,11 @@ export function DevicesPage() {
                         </div>
                       )}
                       <h4>{device.brand} {device.model !== 'Unknown' ? device.model : ''}</h4>
+                      <p className="device-last-seen">Last seen: {formatRelativeTime(device.lastActive)}</p>
                       <p className="device-description">{device.description}</p>
                       <div className="device-meta">
                         <span>Color: {device.color}</span>
                         <span>Condition: {device.condition}</span>
-                      </div>
-                      <div className="device-meta">
-                        <span>Last Active: {formatRelativeTime(device.lastActive)}</span>
                       </div>
                       {/* Room assignment dropdown */}
                       <div className="device-room-assign" onClick={(e) => e.stopPropagation()}>
