@@ -91,19 +91,32 @@ exports.handler = withAuth(async (event) => {
     await ddbClient.send(new UpdateCommand({
       TableName: FEATURE_REQUESTS_TABLE,
       Key: { id: featureId },
-      UpdateExpression: 'SET #votes.#userId = :voteEntry, #avgRating = :avgRating, #voteCount = :voteCount',
+      UpdateExpression: 'SET #votes = if_not_exists(#votes, :emptyMap), #avgRating = :avgRating, #voteCount = :voteCount',
       ExpressionAttributeNames: {
         '#votes': 'votes',
-        '#userId': userId,
         '#avgRating': 'averageRating',
         '#voteCount': 'voteCount',
       },
       ExpressionAttributeValues: {
-        ':voteEntry': voteEntry,
+        ':emptyMap': {},
         ':avgRating': averageRating,
         ':voteCount': voteCount,
       },
       ConditionExpression: 'attribute_exists(id)',
+    }));
+
+    // Now set the individual vote entry
+    await ddbClient.send(new UpdateCommand({
+      TableName: FEATURE_REQUESTS_TABLE,
+      Key: { id: featureId },
+      UpdateExpression: 'SET #votes.#userId = :voteEntry',
+      ExpressionAttributeNames: {
+        '#votes': 'votes',
+        '#userId': userId,
+      },
+      ExpressionAttributeValues: {
+        ':voteEntry': voteEntry,
+      },
     }));
 
     return {

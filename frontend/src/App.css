@@ -1199,6 +1199,13 @@
   border-color: #065f46;
 }
 
+[data-theme="dark"] .feature-vote-comment,
+[data-theme="dark"] .feature-reject-textarea {
+  background: var(--color-input-bg);
+  color: var(--color-text);
+  border-color: var(--color-border);
+}
+
 /* Device Comparison Table */
 .comparison-table-wrapper {
   overflow-x: auto;
