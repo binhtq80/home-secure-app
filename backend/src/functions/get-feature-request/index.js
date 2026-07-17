@@ -36,15 +36,6 @@ exports.handler = withAuth(async (event) => {
       };
     }
 
-    // Ensure the feature belongs to the requesting user
-    if (result.Item.createdBy !== userId) {
-      return {
-        statusCode: 403,
-        headers,
-        body: JSON.stringify({ message: 'Access denied' }),
-      };
-    }
-
     const feature = {
       ...result.Item,
       steps: result.Item.steps || [],
