@@ -37,6 +37,15 @@ exports.handler = withAuth(async (event) => {
       };
     }
 
+    // Prevent admin from changing their own role
+    if (targetUserId === event.user.id) {
+      return {
+        statusCode: 403,
+        headers,
+        body: JSON.stringify({ message: 'You cannot change your own role' }),
+      };
+    }
+
     const { role } = JSON.parse(event.body || '{}');
 
     if (!role || !VALID_ROLES.includes(role)) {

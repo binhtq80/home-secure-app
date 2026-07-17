@@ -113,18 +113,22 @@ export function AdminPage() {
                     <td>{u.username}</td>
                     <td>{u.email}</td>
                     <td>
-                      <select
-                        value={u.role}
-                        onChange={(e) => handleRoleChange(u.id, e.target.value)}
-                        disabled={updatingUserId === u.id}
-                        aria-label={`Role for ${u.username}`}
-                      >
-                        {VALID_ROLES.map((role) => (
-                          <option key={role} value={role}>
-                            {role.replace(/_/g, ' ')}
-                          </option>
-                        ))}
-                      </select>
+                      {u.id === user?.id ? (
+                        <span title="You cannot change your own role">{u.role.replace(/_/g, ' ')} (you)</span>
+                      ) : (
+                        <select
+                          value={u.role}
+                          onChange={(e) => handleRoleChange(u.id, e.target.value)}
+                          disabled={updatingUserId === u.id}
+                          aria-label={`Role for ${u.username}`}
+                        >
+                          {VALID_ROLES.map((role) => (
+                            <option key={role} value={role}>
+                              {role.replace(/_/g, ' ')}
+                            </option>
+                          ))}
+                        </select>
+                      )}
                     </td>
                   </tr>
                 ))}
