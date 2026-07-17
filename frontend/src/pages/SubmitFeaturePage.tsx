@@ -22,6 +22,7 @@ interface FeatureRequest {
   complexityJustification?: string;
   averageRating?: number;
   voteCount?: number;
+  claimedBy?: string;
 }
 
 type Tab = 'all' | 'mine' | 'pending_approval';
@@ -242,6 +243,11 @@ export function SubmitFeaturePage() {
                         {activeTab === 'all' && f.createdBy && (
                           <span className="feature-created-by" title={f.createdBy}>
                             by {f.createdBy.length > 12 ? f.createdBy.slice(0, 12) + '…' : f.createdBy}
+                          </span>
+                        )}
+                        {(f.currentStep === 'delivered' || f.status === 'delivered') && f.claimedBy && (
+                          <span className="feature-delivered-by-badge" title={`Delivered by ${f.claimedBy}`}>
+                            🚀 {f.claimedBy.length > 16 ? f.claimedBy.slice(0, 16) + '…' : f.claimedBy}
                           </span>
                         )}
                       </div>

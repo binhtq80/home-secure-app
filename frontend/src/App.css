@@ -1780,6 +1780,25 @@
   font-style: italic;
 }
 
+.feature-delivered-by-badge {
+  font-size: 0.75rem;
+  background: var(--color-success-bg, #e6f9ed);
+  color: var(--color-success, #1a7f37);
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.feature-delivered-by-code {
+  font-size: 0.85rem;
+  background: var(--color-success-bg, #e6f9ed);
+  color: var(--color-success, #1a7f37);
+  padding: 0.2rem 0.5rem;
+  border-radius: var(--radius, 4px);
+  font-family: monospace;
+}
+
 .feature-list {
   display: flex;
   flex-direction: column;

@@ -22,6 +22,7 @@ interface FeatureRequest {
   averageRating?: number;
   voteCount?: number;
   createdBy?: string;
+  claimedBy?: string;
 }
 
 const TERMINAL_STATUSES = ['delivered', 'failed', 'rejected'];
@@ -340,6 +341,14 @@ export function FeatureDetailPage() {
                   )}
                 </span>
               </div>
+              {(feature.currentStep === 'delivered' || feature.status === 'delivered') && feature.claimedBy && (
+                <div className="feature-detail-row">
+                  <span className="feature-detail-label">Delivered by</span>
+                  <span className="feature-detail-value">
+                    <code className="feature-delivered-by-code">{feature.claimedBy}</code>
+                  </span>
+                </div>
+              )}
               <div className="feature-detail-row">
                 <span className="feature-detail-label">Submitted</span>
                 <span className="feature-detail-value">{new Date(feature.createdAt).toLocaleString()}</span>
