@@ -37,22 +37,20 @@ exports.handler = withAuth(async (event) => {
       };
     }
 
-    // Only users with role=technical can override complexity
-    if (action === 'override') {
-      const userResult = await ddbClient.send(new GetCommand({
-        TableName: USERS_TABLE,
-        Key: { id: event.user.id },
-        ProjectionExpression: '#r',
-        ExpressionAttributeNames: { '#r': 'role' },
-      }));
-      const userRole = userResult.Item?.role || 'user';
-      if (userRole !== 'technical') {
-        return {
-          statusCode: 403,
-          headers,
-          body: JSON.stringify({ message: 'Only technical users can override complexity' }),
-        };
-      }
+    // Only users with role=technical can accept or override complexity
+    const userResult = await ddbClient.send(new GetCommand({
+      TableName: USERS_TABLE,
+      Key: { id: event.user.id },
+      ProjectionExpression: '#r',
+      ExpressionAttributeNames: { '#r': 'role' },
+    }));
+    const userRole = userResult.Item?.role || 'user';
+    if (userRole !== 'technical') {
+      return {
+        statusCode: 403,
+        headers,
+        body: JSON.stringify({ message: 'Only technical users can accept or override complexity' }),
+      };
     }
 
     const validLevels = ['simple', 'medium', 'complex', 'highly-complex'];

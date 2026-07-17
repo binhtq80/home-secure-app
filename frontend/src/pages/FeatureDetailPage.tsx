@@ -393,7 +393,8 @@ export function FeatureDetailPage() {
               <div className="feature-approval-section">
                 <h3>🤖 AI Complexity Classification</h3>
                 <p className="feature-approval-description">
-                  The AI has analyzed your feature request and suggested a complexity level. You can accept or override it.
+                  The AI has analyzed your feature request and suggested a complexity level.
+                  {user?.role === 'technical' ? ' You can accept or override it.' : ' Waiting for a technical reviewer to confirm.'}
                 </p>
                 <div className="feature-detail-row">
                   <span className="feature-detail-label">Suggested Complexity</span>
@@ -406,7 +407,7 @@ export function FeatureDetailPage() {
                   <span className="feature-detail-value">{feature.complexityJustification}</span>
                 </div>
 
-                {!showOverrideForm ? (
+                {user?.role === 'technical' && !showOverrideForm && (
                   <div className="feature-approval-actions">
                     <button
                       onClick={handleAcceptComplexity}
@@ -425,7 +426,8 @@ export function FeatureDetailPage() {
                       </button>
                     )}
                   </div>
-                ) : (
+                )}
+                {user?.role === 'technical' && showOverrideForm && (
                   <div className="feature-reject-form">
                     <label htmlFor="override-complexity" className="feature-reject-label">
                       Select complexity level:
