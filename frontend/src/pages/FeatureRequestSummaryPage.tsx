@@ -177,7 +177,7 @@ export function FeatureRequestSummaryPage() {
 
             {stats.delivererStats.length > 0 && (
               <div className="feature-summary-deliverer-chart">
-                <h3>Requests Delivered by Each Deliverer</h3>
+                <h3>Requests Delivered by DevSpace</h3>
                 <div className="bar-chart">
                   {stats.delivererStats.map((entry) => {
                     const maxCount = stats.delivererStats[0].count;

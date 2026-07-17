@@ -56,8 +56,8 @@ exports.handler = withAuth(async (event) => {
         if (createdMonth === currentMonth) {
           deliveredThisMonth++;
         }
-        // Track deliveries by approver (deliverer)
-        const deliverer = item.approvedBy || 'Unknown';
+        // Track deliveries by DevSpace (claimedBy)
+        const deliverer = item.claimedBy || 'Unknown';
         delivererCounts[deliverer] = (delivererCounts[deliverer] || 0) + 1;
       } else if (status === 'pending') {
         pendingCount++;
