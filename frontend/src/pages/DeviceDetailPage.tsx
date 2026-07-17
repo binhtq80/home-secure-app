@@ -691,6 +691,7 @@ export function DeviceDetailPage() {
                   <div
                     className="chart-bar"
                     style={{ height: `${(month.kwh / maxKwh) * 100}%` }}
+                    data-tooltip={`${month.kwh} kWh`}
                   />
                 </div>
                 <div className="chart-bar-label">{month.label}</div>
