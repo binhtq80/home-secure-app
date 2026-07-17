@@ -51,7 +51,7 @@ export default function App() {
           <div className="app">
             <AppRoutes />
             <footer className="app-footer">
-              MyApp &copy; {new Date().getFullYear()}
+              Home Energy Management &copy; {new Date().getFullYear()}
             </footer>
           </div>
         </BrowserRouter>

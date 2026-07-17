@@ -82,7 +82,7 @@ export function SubmitFeaturePage() {
   return (
     <div className="dashboard-container">
       <header className="dashboard-header">
-        <h1>MyApp</h1>
+        <h1>Home Energy Management</h1>
         <nav className="header-nav">
           <button onClick={() => navigate('/dashboard')} className="btn-nav">Dashboard</button>
           <button onClick={() => navigate('/devices')} className="btn-nav">Devices</button>
@@ -98,7 +98,7 @@ export function SubmitFeaturePage() {
 
       <main className="dashboard-main">
         <h2>Request a Feature</h2>
-        <p className="settings-subtitle">Submit your ideas to improve MyApp.</p>
+        <p className="settings-subtitle">Submit your ideas to improve Home Energy Management.</p>
 
         {error && <div className="error-message">{error}</div>}
         {successTicket && (

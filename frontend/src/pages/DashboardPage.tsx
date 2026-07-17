@@ -91,7 +91,7 @@ export function DashboardPage() {
   return (
     <div className="dashboard-container">
       <header className="dashboard-header">
-        <h1>MyApp - Smart Home Manager</h1>
+        <h1>Home Energy Management</h1>
         <nav className="header-nav">
           <button onClick={() => navigate('/dashboard')} className="btn-nav active">Dashboard</button>
           <button onClick={() => navigate('/devices')} className="btn-nav">Devices</button>
