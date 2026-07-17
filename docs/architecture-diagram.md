@@ -28,38 +28,30 @@ flowchart LR
     ORC -- "infra changes" --> Pipeline[CDK Pipeline]
 ```
 
-## Flow 2: User → Web App → Bridge → Orchestrator
+## Flow 2: User → Web App → DynamoDB → Orchestrator
 
-User submits a feature request through the web application. The bridge daemon picks it up and feeds it to the same orchestrator. Once in the queue, the orchestrator runs the same full implementation loop as Flow 1.
+User submits a feature request through the web application. The orchestrator polls DynamoDB directly for pending tasks (no bridge needed).
 
 ```mermaid
 flowchart LR
     User([👤 User]) -- "opens web app" --> S3[S3 + CloudFront]
     S3 -- "serves React app" --> Browser[Feature Request Page]
-    Browser -- "POST /api/feature-requests" --> FRLambda[create-feature-request<br/>Lambda]
-    FRLambda -- "writes status=pending" --> DDB[(DynamoDB<br/>feature-requests)]
+    Browser -- "POST /api/features" --> FRLambda[create-feature-request<br/>Lambda]
+    FRLambda -- "AI classifies complexity" --> Bedrock[Bedrock Claude]
+    FRLambda -- "writes status=pending_confirmation" --> DDB[(DynamoDB<br/>feature-requests)]
 
-    Bridge[feature-bridge.sh] -- "sources config" --> EnvFiles[~/shared/<br/>myapp-envs/*.sh]
-    Bridge -- "uses credentials" --> AWSCreds[~/shared/<br/>.aws/credentials]
-    Bridge -- "scans status=pending" --> DDB
-    Bridge -- "updates status→processing" --> DDB
-    Bridge -- "writes id∣∣description" --> Queue[("~/.feature-queue")]
+    Technical([role=technical]) -- "accept/override" --> ConfirmLambda[confirm-feature-request]
+    ConfirmLambda -- "status→pending_approval" --> DDB
 
-    ORC[orchestrator.sh] -- "reads task" --> Queue
-    ORC -- "sources config" --> EnvFiles
-    ORC -- "uses credentials" --> AWSCreds
-    ORC -- "writes state" --> Status[("~/.feature-status")]
-    ORC -- "git pull --rebase" --> Repo[(GitHub<br/>main branch)]
+    PM([role=product_manager]) -- "approve" --> ApproveLambda[approve-feature-request]
+    ApproveLambda -- "status→pending" --> DDB
+
+    ORC[orchestrator.sh] -- "polls status=pending" --> DDB
+    ORC -- "conditional write:<br/>claimedBy=devspace-id" --> DDB
     ORC -- "invokes" --> Kiro[kiro-cli]
-
-    Kiro -- "reads conventions" --> Steering[.kiro/steering.md]
-    Kiro -. "updates if new pattern" .-> Steering
-    Kiro -- "git commit + push" --> Repo
-
-    ORC -- "deploy-frontend.sh" --> S3
-    ORC -- "deploy-backend.sh" --> Lambda[Lambda Functions]
-    ORC -- "infra changes" --> Pipeline[CDK Pipeline]
-    ORC -- "updates status→delivered" --> DDB
+    Kiro -- "git commit + push" --> Repo[(GitHub<br/>main branch)]
+    ORC -- "deploy" --> AWS[Lambda / S3 / CDK]
+    ORC -- "status→delivered" --> DDB
 ```
 
 ## Persistence Model
@@ -69,10 +61,10 @@ What lives where and what survives a DevSpace restart.
 ```mermaid
 flowchart TB
     subgraph Ephemeral["♻️ Ephemeral (dies with DevSpace)"]
-        Q[~/.feature-queue]
         St[~/.feature-status]
         Git[~/.git-credentials]
-        Proc[Running processes:<br/>orchestrator / bridge]
+        Proc[Running processes:<br/>orchestrator]
+        Logs[~/.feature-orchestrator.log]
     end
 
     subgraph Shared["💾 Persistent (~/shared — survives restarts)"]
@@ -84,7 +76,13 @@ flowchart TB
     subgraph Repo["📦 In Git Repo (source of truth)"]
         Steer[.kiro/steering.md]
         Code[frontend/ backend/ infrastructure/]
-        Scripts[scripts/orchestrator.sh<br/>feature.sh / feature-bridge.sh]
+        Scripts[scripts/orchestrator.sh<br/>feature.sh / setup-*.sh]
+        Templates[scripts/env.custom.sh.template]
+    end
+
+    subgraph AWS["☁️ AWS (external state)"]
+        DDB[(DynamoDB feature-requests<br/>task queue + status)]
+        Cognito[Cognito User Pool<br/>users + roles]
     end
 ```
 

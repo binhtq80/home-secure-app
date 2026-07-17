@@ -7,15 +7,20 @@ set -e
 # Run this once after opening a new AgentSpaces workspace.
 #
 # Usage:
-#   ./scripts/setup-devspace.sh              # Setup for test environment (default)
-#   ENV=prod ./scripts/setup-devspace.sh     # Setup for production environment
+#   ENV_FILE=~/shared/myapp-envs/prod.sh ./scripts/setup-devspace.sh
+#   ENV_FILE=~/shared/myapp-envs/test.sh ./scripts/setup-devspace.sh
+#
+# Prerequisites:
+#   - AWS credentials in ~/shared/.aws/ (persists across DevSpaces)
+#   - Env file in ~/shared/myapp-envs/<name>.sh (copy from scripts/env.custom.sh.template)
+#   - GitHub token configured for git push
 #
 # What it does:
 #   1. Verifies prerequisites (Node, Git, AWS CLI, kiro-cli)
 #   2. Installs all npm dependencies
 #   3. Verifies AWS credentials
 #   4. Verifies Git push access
-#   5. Starts the orchestrator loop + bridge
+#   5. Starts the orchestrator loop
 #
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -143,7 +148,7 @@ echo ""
 echo "🔨 Step 6: Quick build validation..."
 
 BUILD_OK=true
-(cd "$ROOT_DIR/backend" && node scripts/build.js > /dev/null 2>&1) && echo "   ✓ Backend builds" || { echo "   ✗ Backend build failed"; BUILD_OK=false; }
+(cd "$ROOT_DIR/backend" && node scripts/build-bundle.js > /dev/null 2>&1) && echo "   ✓ Backend builds" || { echo "   ✗ Backend build failed"; BUILD_OK=false; }
 (cd "$ROOT_DIR/frontend" && npm run build --silent > /dev/null 2>&1) && echo "   ✓ Frontend builds" || { echo "   ✗ Frontend build failed"; BUILD_OK=false; }
 (cd "$ROOT_DIR/infrastructure" && npm run build --silent > /dev/null 2>&1) && echo "   ✓ Infrastructure builds" || { echo "   ✗ Infrastructure build failed"; BUILD_OK=false; }
 echo ""

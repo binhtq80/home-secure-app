@@ -1,0 +1,93 @@
+# MyApp Project Context
+
+## Last Updated
+<DATE> (Session: DevSpace <DEVSPACE_ID>)
+
+## Project Location
+/workspace/myapp-infra (git clone https://github.com/binhtq80/myapp-infra.git)
+
+## New Space Setup
+When starting a fresh DevSpace, the agent should:
+1. Point AWS CLI to persisted credentials:
+   ```bash
+   export AWS_CONFIG_FILE=~/shared/.aws/config
+   export AWS_SHARED_CREDENTIALS_FILE=~/shared/.aws/credentials
+   ```
+2. Clone the repo (requires GitHub token from user):
+   ```bash
+   git clone https://<TOKEN>@github.com/binhtq80/myapp-infra.git /workspace/myapp-infra
+   ```
+3. Run setup:
+   ```bash
+   ENV_FILE=~/shared/myapp-envs/<env>.sh ./scripts/setup-devspace.sh
+   ```
+
+### Persisted in ~/shared/ (survives DevSpace restarts)
+- `~/shared/.aws/config` — AWS CLI config (profile names + regions)
+- `~/shared/.aws/credentials` — AWS access keys
+- `~/shared/myapp-envs/*.sh` — per-account environment configs
+- `~/shared/myapp-context.md` — this file
+
+## Environments
+
+| Env | Account | Profile | App URL |
+|-----|---------|---------|---------|
+| <ENV_NAME> | <ACCOUNT_ID> | <PROFILE> | https://<CLOUDFRONT_DOMAIN> |
+
+### Environment Config Files (persist across DevSpaces)
+```
+~/shared/myapp-envs/
+├── <env>.sh    ← copy from scripts/env.custom.sh.template
+└── *.sh        ← add more accounts as needed
+```
+
+### Targeting a specific account
+```bash
+ENV_FILE=~/shared/myapp-envs/<env>.sh ./scripts/feature.sh start
+ENV_FILE=~/shared/myapp-envs/<env>.sh ./scripts/deploy-frontend.sh
+```
+
+## Key Files to Read First
+- `/workspace/myapp-infra/README.md` — full architecture, conventions, commands
+- `/workspace/myapp-infra/AGENT_PROTOCOL.md` — autonomous implementation loop spec
+- `/workspace/myapp-infra/scripts/env.sh` — centralized config (source of truth for env values)
+
+## Architecture Summary
+Full-stack home device management app:
+- Frontend: React 18 + Vite + TypeScript
+- Backend: Node.js Lambda (CommonJS), single bundle packaging
+- Infrastructure: CDK v2 TypeScript
+- AI: Bedrock Claude Haiku (device recognition + energy tips + complexity classification)
+- Auth: Cognito
+- DB: DynamoDB (users, devices, device-energy, device-history, device-notes, device-favorites, feature-requests)
+
+## RBAC Roles
+| Role | Permissions |
+|------|-------------|
+| user | Submit requests, view devices, basic access |
+| technical | Accept/override AI complexity classifications |
+| product_manager | Approve/reject feature requests |
+| admin | Manage user roles via Admin panel |
+
+Bootstrap: `ENV_FILE=~/shared/myapp-envs/<env>.sh ./scripts/assign-role.sh <username> <role>`
+
+## Automation Loop
+- `./scripts/feature.sh` — CLI for submitting features and managing orchestrator
+- `./scripts/orchestrator.sh` — background daemon that implements features via kiro-cli
+- DynamoDB `claimedBy` field enables multi-DevSpace parallel processing
+- Deploy routing: frontend-only → S3 sync (~30s), backend → Lambda update (~2min), infra → CDK Pipeline
+
+## How to Resume Work
+```bash
+# 1. Read this file and README.md for context
+cd /workspace/myapp-infra && ./scripts/feature.sh status
+git log --oneline -10
+
+# 2. Start orchestrator targeting your account
+ENV_FILE=~/shared/myapp-envs/<env>.sh ./scripts/feature.sh start
+```
+
+## User Preferences
+- Prefers using the orchestrator loop for changes when possible
+- Comfortable with direct pushes to main
+- Values fast iteration over ceremony

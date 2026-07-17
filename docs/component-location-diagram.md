@@ -10,7 +10,6 @@ flowchart TB
         subgraph Processes["Running Processes"]
             ChatAgent[Chat Agent<br/>responds to user]
             ORC[orchestrator.sh<br/>daemon]
-            Bridge[feature-bridge.sh<br/>daemon]
             KiroCLI[kiro-cli<br/>invoked per task]
         end
 
