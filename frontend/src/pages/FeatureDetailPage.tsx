@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useParams } from 'react-router-dom';
 import { featuresApi } from '../services/api';
@@ -18,6 +18,15 @@ interface FeatureRequest {
   createdAt: string;
 }
 
+const TERMINAL_STATUSES = ['delivered', 'failed', 'rejected'];
+const POLL_INTERVAL_MS = 5000;
+
+function isTerminalStatus(feature: FeatureRequest | null): boolean {
+  if (!feature) return false;
+  const effectiveStatus = feature.currentStep || feature.status;
+  return TERMINAL_STATUSES.includes(effectiveStatus);
+}
+
 export function FeatureDetailPage() {
   const { logout } = useAuth();
   const navigate = useNavigate();
@@ -30,6 +39,8 @@ export function FeatureDetailPage() {
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [rejectFeedback, setRejectFeedback] = useState('');
   const [approving, setApproving] = useState(false);
+  const [polling, setPolling] = useState(false);
+  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const loadFeature = useCallback(async (showRefreshing = false) => {
     if (!featureId) return;
@@ -50,6 +61,34 @@ export function FeatureDetailPage() {
   useEffect(() => {
     loadFeature();
   }, [loadFeature]);
+
+  // Auto-polling: refresh every 5 seconds while status is not terminal
+  useEffect(() => {
+    if (loading) return;
+
+    if (isTerminalStatus(feature)) {
+      // Stop polling when terminal state is reached
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
+      }
+      setPolling(false);
+      return;
+    }
+
+    // Start polling
+    setPolling(true);
+    pollIntervalRef.current = setInterval(() => {
+      loadFeature();
+    }, POLL_INTERVAL_MS);
+
+    return () => {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
+      }
+    };
+  }, [feature, loading, loadFeature]);
 
   const handleRefresh = () => {
     loadFeature(true);
@@ -164,8 +203,15 @@ export function FeatureDetailPage() {
               </div>
               <div className="feature-detail-row">
                 <span className="feature-detail-label">Status</span>
-                <span className={`feature-status-badge feature-badge-${getStatusColor(feature.currentStep || feature.status)}`}>
-                  {feature.currentStep || feature.status}
+                <span className="feature-status-badge-wrapper">
+                  <span className={`feature-status-badge feature-badge-${getStatusColor(feature.currentStep || feature.status)}`}>
+                    {feature.currentStep || feature.status}
+                  </span>
+                  {polling && (
+                    <span className="feature-polling-indicator" title="Live tracking active — refreshing every 5s">
+                      <span className="feature-polling-dot" />
+                    </span>
+                  )}
                 </span>
               </div>
               <div className="feature-detail-row">
