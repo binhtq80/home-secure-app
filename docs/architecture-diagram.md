@@ -30,14 +30,14 @@ flowchart LR
 
 ## Flow 2: User → Web App → Bridge → Orchestrator
 
-User submits a feature request through the web application. The bridge daemon picks it up and feeds it to the same orchestrator.
+User submits a feature request through the web application. The bridge daemon picks it up and feeds it to the same orchestrator. Once in the queue, the orchestrator runs the same full implementation loop as Flow 1.
 
 ```mermaid
 flowchart LR
     User([👤 User]) -- "opens web app" --> S3[S3 + CloudFront]
     S3 -- "serves React app" --> Browser[Feature Request Page]
-    Browser -- "POST /api/feature-requests" --> Lambda[create-feature-request<br/>Lambda]
-    Lambda -- "writes status=pending" --> DDB[(DynamoDB<br/>feature-requests)]
+    Browser -- "POST /api/feature-requests" --> FRLambda[create-feature-request<br/>Lambda]
+    FRLambda -- "writes status=pending" --> DDB[(DynamoDB<br/>feature-requests)]
 
     Bridge[feature-bridge.sh] -- "sources config" --> EnvFiles[~/shared/<br/>myapp-envs/*.sh]
     Bridge -- "uses credentials" --> AWSCreds[~/shared/<br/>.aws/credentials]
@@ -46,13 +46,20 @@ flowchart LR
     Bridge -- "writes id∣∣description" --> Queue[("~/.feature-queue")]
 
     ORC[orchestrator.sh] -- "reads task" --> Queue
+    ORC -- "sources config" --> EnvFiles
+    ORC -- "uses credentials" --> AWSCreds
+    ORC -- "writes state" --> Status[("~/.feature-status")]
+    ORC -- "git pull --rebase" --> Repo[(GitHub<br/>main branch)]
     ORC -- "invokes" --> Kiro[kiro-cli]
-    ORC -- "updates status→delivered" --> DDB
 
     Kiro -- "reads conventions" --> Steering[.kiro/steering.md]
-    Kiro -- "git commit + push" --> Repo[(GitHub<br/>main branch)]
+    Kiro -. "updates if new pattern" .-> Steering
+    Kiro -- "git commit + push" --> Repo
 
-    ORC -- "deploys changes" --> S3
+    ORC -- "deploy-frontend.sh" --> S3
+    ORC -- "deploy-backend.sh" --> Lambda[Lambda Functions]
+    ORC -- "infra changes" --> Pipeline[CDK Pipeline]
+    ORC -- "updates status→delivered" --> DDB
 ```
 
 ## Persistence Model
