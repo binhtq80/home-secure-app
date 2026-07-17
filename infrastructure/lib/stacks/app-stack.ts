@@ -145,8 +145,12 @@ export class AppStack extends cdk.Stack {
     });
 
     // ─── Lambda Functions ──────────────────────────────────────────────────────
+    // Single shared bundle: all functions share one asset to minimize CDK Pipeline
+    // Assets stage CodeBuild tasks (31 → 1 backend asset).
+    // Handler format: 'functions/<func-name>/index.handler'
 
-    const lambdaDir = path.join(__dirname, '../../../backend/dist/lambda-packages');
+    const bundleDir = path.join(__dirname, '../../../backend/dist/bundle');
+    const sharedCode = lambda.Code.fromAsset(bundleDir);
 
     const lambdaEnv: Record<string, string> = {
       USERS_TABLE: usersTable.tableName,
@@ -167,151 +171,150 @@ export class AppStack extends cdk.Stack {
       timeout: cdk.Duration.seconds(30),
       memorySize: 256,
       environment: lambdaEnv,
-      handler: 'index.handler',
+      code: sharedCode,
     };
 
     const signUpFn = new lambda.Function(this, 'SignUpFn', {
       ...commonProps,
       functionName: `${prefix}-signup`,
-      code: lambda.Code.fromAsset(path.join(lambdaDir, 'signup')),
+      handler: 'functions/signup/index.handler',
     });
 
     const confirmSignUpFn = new lambda.Function(this, 'ConfirmSignUpFn', {
       ...commonProps,
       functionName: `${prefix}-confirm-signup`,
-      code: lambda.Code.fromAsset(path.join(lambdaDir, 'confirm-signup')),
+      handler: 'functions/confirm-signup/index.handler',
     });
 
     const signInFn = new lambda.Function(this, 'SignInFn', {
       ...commonProps,
       functionName: `${prefix}-signin`,
-      code: lambda.Code.fromAsset(path.join(lambdaDir, 'signin')),
+      handler: 'functions/signin/index.handler',
     });
 
     const getUserFn = new lambda.Function(this, 'GetUserFn', {
       ...commonProps,
       functionName: `${prefix}-get-user`,
-      code: lambda.Code.fromAsset(path.join(lambdaDir, 'get-user')),
+      handler: 'functions/get-user/index.handler',
     });
 
     // Device functions
     const recognizeDeviceFn = new lambda.Function(this, 'RecognizeDeviceFn', {
       ...commonProps,
       functionName: `${prefix}-recognize-device`,
-      timeout: cdk.Duration.seconds(60), // Bedrock calls can be slow
+      timeout: cdk.Duration.seconds(60),
       memorySize: 512,
-      code: lambda.Code.fromAsset(path.join(lambdaDir, 'recognize-device')),
+      handler: 'functions/recognize-device/index.handler',
     });
 
     const createDeviceFn = new lambda.Function(this, 'CreateDeviceFn', {
       ...commonProps,
       functionName: `${prefix}-create-device`,
-      timeout: cdk.Duration.seconds(60), // Bedrock call for energy tips can be slow
+      timeout: cdk.Duration.seconds(60),
       memorySize: 512,
-      code: lambda.Code.fromAsset(path.join(lambdaDir, 'create-device')),
+      handler: 'functions/create-device/index.handler',
     });
 
     const listDevicesFn = new lambda.Function(this, 'ListDevicesFn', {
       ...commonProps,
       functionName: `${prefix}-list-devices`,
-      code: lambda.Code.fromAsset(path.join(lambdaDir, 'list-devices')),
+      handler: 'functions/list-devices/index.handler',
     });
 
     const deleteDeviceFn = new lambda.Function(this, 'DeleteDeviceFn', {
       ...commonProps,
       functionName: `${prefix}-delete-device`,
-      code: lambda.Code.fromAsset(path.join(lambdaDir, 'delete-device')),
+      handler: 'functions/delete-device/index.handler',
     });
 
     const getDeviceEnergyFn = new lambda.Function(this, 'GetDeviceEnergyFn', {
       ...commonProps,
       functionName: `${prefix}-get-device-energy`,
-      code: lambda.Code.fromAsset(path.join(lambdaDir, 'get-device-energy')),
+      handler: 'functions/get-device-energy/index.handler',
     });
 
     const getUserSettingsFn = new lambda.Function(this, 'GetUserSettingsFn', {
       ...commonProps,
       functionName: `${prefix}-get-user-settings`,
-      code: lambda.Code.fromAsset(path.join(lambdaDir, 'get-user-settings')),
+      handler: 'functions/get-user-settings/index.handler',
     });
 
     const updateUserSettingsFn = new lambda.Function(this, 'UpdateUserSettingsFn', {
       ...commonProps,
       functionName: `${prefix}-update-user-settings`,
-      code: lambda.Code.fromAsset(path.join(lambdaDir, 'update-user-settings')),
+      handler: 'functions/update-user-settings/index.handler',
     });
 
     const getEnergyReportFn = new lambda.Function(this, 'GetEnergyReportFn', {
       ...commonProps,
       functionName: `${prefix}-get-energy-report`,
-      timeout: cdk.Duration.seconds(30),
-      code: lambda.Code.fromAsset(path.join(lambdaDir, 'get-energy-report')),
+      handler: 'functions/get-energy-report/index.handler',
     });
 
     const updateDeviceBudgetFn = new lambda.Function(this, 'UpdateDeviceBudgetFn', {
       ...commonProps,
       functionName: `${prefix}-update-device-budget`,
-      code: lambda.Code.fromAsset(path.join(lambdaDir, 'update-device-budget')),
+      handler: 'functions/update-device-budget/index.handler',
     });
 
     const getDeviceStatsFn = new lambda.Function(this, 'GetDeviceStatsFn', {
       ...commonProps,
       functionName: `${prefix}-get-device-stats`,
-      code: lambda.Code.fromAsset(path.join(lambdaDir, 'get-device-stats')),
+      handler: 'functions/get-device-stats/index.handler',
     });
 
     const getDeviceImageFn = new lambda.Function(this, 'GetDeviceImageFn', {
       ...commonProps,
       functionName: `${prefix}-get-device-image`,
-      code: lambda.Code.fromAsset(path.join(lambdaDir, 'get-device-image')),
+      handler: 'functions/get-device-image/index.handler',
     });
 
     const updateDeviceFn = new lambda.Function(this, 'UpdateDeviceFn', {
       ...commonProps,
       functionName: `${prefix}-update-device`,
-      code: lambda.Code.fromAsset(path.join(lambdaDir, 'update-device')),
+      handler: 'functions/update-device/index.handler',
     });
 
     const getDeviceHistoryFn = new lambda.Function(this, 'GetDeviceHistoryFn', {
       ...commonProps,
       functionName: `${prefix}-get-device-history`,
-      code: lambda.Code.fromAsset(path.join(lambdaDir, 'get-device-history')),
+      handler: 'functions/get-device-history/index.handler',
     });
 
     const getDeviceLastActiveFn = new lambda.Function(this, 'GetDeviceLastActiveFn', {
       ...commonProps,
       functionName: `${prefix}-get-device-last-active`,
-      code: lambda.Code.fromAsset(path.join(lambdaDir, 'get-device-last-active')),
+      handler: 'functions/get-device-last-active/index.handler',
     });
 
     const createFeatureRequestFn = new lambda.Function(this, 'CreateFeatureRequestFn', {
       ...commonProps,
       functionName: `${prefix}-create-feature-request`,
-      code: lambda.Code.fromAsset(path.join(lambdaDir, 'create-feature-request')),
+      handler: 'functions/create-feature-request/index.handler',
     });
 
     const listFeatureRequestsFn = new lambda.Function(this, 'ListFeatureRequestsFn', {
       ...commonProps,
       functionName: `${prefix}-list-feature-requests`,
-      code: lambda.Code.fromAsset(path.join(lambdaDir, 'list-feature-requests')),
+      handler: 'functions/list-feature-requests/index.handler',
     });
 
     const getFeatureRequestFn = new lambda.Function(this, 'GetFeatureRequestFn', {
       ...commonProps,
       functionName: `${prefix}-get-feature-request`,
-      code: lambda.Code.fromAsset(path.join(lambdaDir, 'get-feature-request')),
+      handler: 'functions/get-feature-request/index.handler',
     });
 
     const getFeatureRequestStatsFn = new lambda.Function(this, 'GetFeatureRequestStatsFn', {
       ...commonProps,
       functionName: `${prefix}-get-feature-request-stats`,
-      code: lambda.Code.fromAsset(path.join(lambdaDir, 'get-feature-request-stats')),
+      handler: 'functions/get-feature-request-stats/index.handler',
     });
 
     const approveFeatureRequestFn = new lambda.Function(this, 'ApproveFeatureRequestFn', {
       ...commonProps,
       functionName: `${prefix}-approve-feature-request`,
-      code: lambda.Code.fromAsset(path.join(lambdaDir, 'approve-feature-request')),
+      handler: 'functions/approve-feature-request/index.handler',
       environment: {
         ...lambdaEnv,
         PIPELINE_NAME: `${prefix}-pipeline`,
@@ -324,51 +327,51 @@ export class AppStack extends cdk.Stack {
       functionName: `${prefix}-upload-device-manual`,
       timeout: cdk.Duration.seconds(60),
       memorySize: 512,
-      code: lambda.Code.fromAsset(path.join(lambdaDir, 'upload-device-manual')),
+      handler: 'functions/upload-device-manual/index.handler',
     });
 
     const getDeviceManualsFn = new lambda.Function(this, 'GetDeviceManualsFn', {
       ...commonProps,
       functionName: `${prefix}-get-device-manuals`,
-      code: lambda.Code.fromAsset(path.join(lambdaDir, 'get-device-manuals')),
+      handler: 'functions/get-device-manuals/index.handler',
     });
 
     const deleteDeviceManualFn = new lambda.Function(this, 'DeleteDeviceManualFn', {
       ...commonProps,
       functionName: `${prefix}-delete-device-manual`,
-      code: lambda.Code.fromAsset(path.join(lambdaDir, 'delete-device-manual')),
+      handler: 'functions/delete-device-manual/index.handler',
     });
 
     const deleteRoomFn = new lambda.Function(this, 'DeleteRoomFn', {
       ...commonProps,
       functionName: `${prefix}-delete-room`,
-      code: lambda.Code.fromAsset(path.join(lambdaDir, 'delete-room')),
+      handler: 'functions/delete-room/index.handler',
     });
 
     // Device notes functions
     const createDeviceNoteFn = new lambda.Function(this, 'CreateDeviceNoteFn', {
       ...commonProps,
       functionName: `${prefix}-create-device-note`,
-      code: lambda.Code.fromAsset(path.join(lambdaDir, 'create-device-note')),
+      handler: 'functions/create-device-note/index.handler',
     });
 
     const listDeviceNotesFn = new lambda.Function(this, 'ListDeviceNotesFn', {
       ...commonProps,
       functionName: `${prefix}-list-device-notes`,
-      code: lambda.Code.fromAsset(path.join(lambdaDir, 'list-device-notes')),
+      handler: 'functions/list-device-notes/index.handler',
     });
 
     // Device favorites functions
     const toggleDeviceFavoriteFn = new lambda.Function(this, 'ToggleDeviceFavoriteFn', {
       ...commonProps,
       functionName: `${prefix}-toggle-device-favorite`,
-      code: lambda.Code.fromAsset(path.join(lambdaDir, 'toggle-device-favorite')),
+      handler: 'functions/toggle-device-favorite/index.handler',
     });
 
     const listDeviceFavoritesFn = new lambda.Function(this, 'ListDeviceFavoritesFn', {
       ...commonProps,
       functionName: `${prefix}-list-device-favorites`,
-      code: lambda.Code.fromAsset(path.join(lambdaDir, 'list-device-favorites')),
+      handler: 'functions/list-device-favorites/index.handler',
     });
 
     // Grant permissions

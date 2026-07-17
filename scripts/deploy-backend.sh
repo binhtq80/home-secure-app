@@ -41,6 +41,7 @@ ALL_FUNCTIONS=(
   get-device-image
   get-device-stats
   get-device-history
+  get-device-last-active
   create-feature-request
   list-feature-requests
   get-feature-request
@@ -49,6 +50,11 @@ ALL_FUNCTIONS=(
   upload-device-manual
   get-device-manuals
   delete-device-manual
+  delete-room
+  create-device-note
+  list-device-notes
+  toggle-device-favorite
+  list-device-favorites
 )
 
 # If specific functions passed as args, only deploy those
@@ -64,12 +70,11 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "   Functions: ${FUNCTIONS[*]}"
 echo ""
 
-# Step 1: Build backend
-echo "📦 Building backend..."
+# Step 1: Build backend bundle
+echo "📦 Building backend bundle..."
 cd "$ROOT_DIR/backend"
 npm install --silent
-node scripts/build.js
-./scripts/prepare-lambda-packages.sh 2>&1 | grep -E "(Packaging|✅)"
+node scripts/build-bundle.js 2>&1 | grep -E "(Installing|✅|functions bundled)"
 echo ""
 
 # Step 2: Deploy each function
@@ -77,18 +82,20 @@ echo "☁️  Updating Lambda functions..."
 DEPLOYED=0
 FAILED=0
 
+BUNDLE_DIR="$ROOT_DIR/backend/dist/bundle"
+
 for func in "${FUNCTIONS[@]}"; do
   FUNC_NAME="${PREFIX}-${func}"
-  ZIP_DIR="$ROOT_DIR/backend/dist/lambda-packages/${func}"
+  FUNC_DIR="$BUNDLE_DIR/functions/${func}"
 
-  if [ ! -d "$ZIP_DIR" ]; then
-    echo "   ⚠️  ${func}: package directory not found, skipping"
+  if [ ! -d "$FUNC_DIR" ]; then
+    echo "   ⚠️  ${func}: function directory not found in bundle, skipping"
     continue
   fi
 
-  # Create zip
+  # Create zip from entire bundle (all functions share node_modules at root)
   ZIP_FILE="/tmp/${func}.zip"
-  (cd "$ZIP_DIR" && zip -qr "$ZIP_FILE" .)
+  (cd "$BUNDLE_DIR" && zip -qr "$ZIP_FILE" .)
 
   # Update function code
   deploy_output=$(aws lambda update-function-code \

@@ -54,8 +54,8 @@ export class PipelineStack extends cdk.Stack {
           'cd frontend && npm install --prefer-offline && cd ..',
           'cd backend && npm install --prefer-offline && cd ..',
 
-          // Build backend (always needed for CDK synth asset paths)
-          'cd backend && node scripts/build.js && ./scripts/prepare-lambda-packages.sh && cd ..',
+          // Build backend bundle (single asset for all Lambda functions)
+          'cd backend && node scripts/build-bundle.js && cd ..',
 
           // Build frontend (always needed for CDK synth asset paths)
           'cd frontend && npm run build && cd ..',

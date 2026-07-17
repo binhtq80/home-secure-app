@@ -41,8 +41,8 @@ echo "   ✓ Dependencies installed"
 
 # Step 2: Build backend
 echo ""
-echo "🔧 Step 2: Building backend Lambda packages..."
-(cd backend && node scripts/build.js && ./scripts/prepare-lambda-packages.sh)
+echo "🔧 Step 2: Building backend Lambda bundle..."
+(cd backend && node scripts/build-bundle.js)
 echo "   ✓ Backend built"
 
 # Step 3: Build frontend
@@ -68,8 +68,8 @@ if [ ! -d "frontend/dist" ]; then
   ERRORS=$((ERRORS + 1))
 fi
 
-if [ ! -d "backend/dist/lambda-packages" ]; then
-  echo "   ✗ backend/dist/lambda-packages missing"
+if [ ! -d "backend/dist/bundle" ]; then
+  echo "   ✗ backend/dist/bundle missing"
   ERRORS=$((ERRORS + 1))
 fi
 
@@ -78,8 +78,8 @@ if [ ! -d "infrastructure/cdk.out" ]; then
   ERRORS=$((ERRORS + 1))
 fi
 
-# Check all Lambda packages have index.js
-for dir in backend/dist/lambda-packages/*/; do
+# Check all Lambda functions have index.js in bundle
+for dir in backend/dist/bundle/functions/*/; do
   if [ ! -f "$dir/index.js" ]; then
     echo "   ✗ $dir missing index.js"
     ERRORS=$((ERRORS + 1))

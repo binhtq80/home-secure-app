@@ -69,7 +69,7 @@ if [ "$START_STEP" -le 2 ]; then
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
   echo "🔨 Step 2/7: Building all packages..."
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  cd "$ROOT_DIR/backend" && npm install --silent && node scripts/build.js && ./scripts/prepare-lambda-packages.sh
+  cd "$ROOT_DIR/backend" && npm install --silent && node scripts/build-bundle.js
   cd "$ROOT_DIR/frontend" && npm install --silent && npm run build --silent
   cd "$ROOT_DIR/infrastructure" && npm install --silent && npm run build --silent
   echo "   ✓ All packages built"
