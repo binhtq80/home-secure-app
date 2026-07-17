@@ -8,6 +8,8 @@ import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
 import * as s3deploy from 'aws-cdk-lib/aws-s3-deployment';
 import * as iam from 'aws-cdk-lib/aws-iam';
+import * as events from 'aws-cdk-lib/aws-events';
+import * as targets from 'aws-cdk-lib/aws-events-targets';
 import { Construct } from 'constructs';
 import * as path from 'path';
 import { EnvironmentConfig } from '../config/environments';
@@ -409,8 +411,36 @@ export class AppStack extends cdk.Stack {
       handler: 'functions/manage-device-tags/index.handler',
     });
 
+    // Budget alert scheduled function (runs daily at 8am AEST)
+    const budgetAlertFn = new lambda.Function(this, 'BudgetAlertFn', {
+      ...commonProps,
+      functionName: `${prefix}-budget-alert`,
+      handler: 'functions/budget-alert/index.handler',
+      timeout: cdk.Duration.minutes(5),
+      memorySize: 512,
+      environment: {
+        ...lambdaEnv,
+        SENDER_EMAIL: `noreply@myapp.${envConfig.name}.local`,
+      },
+    });
+
+    // SES permissions for budget alert
+    budgetAlertFn.addToRolePolicy(new iam.PolicyStatement({
+      actions: ['ses:SendEmail', 'ses:SendRawEmail'],
+      resources: ['*'],
+    }));
+
+    // EventBridge rule: 8am AEST = 10pm UTC previous day (AEST = UTC+10)
+    const budgetAlertRule = new events.Rule(this, 'BudgetAlertSchedule', {
+      ruleName: `${prefix}-budget-alert-schedule`,
+      schedule: events.Schedule.cron({ minute: '0', hour: '22' }),
+      description: 'Triggers budget alert Lambda daily at 8am AEST (22:00 UTC)',
+    });
+
+    budgetAlertRule.addTarget(new targets.LambdaFunction(budgetAlertFn));
+
     // Grant permissions
-    const allFunctions = [signUpFn, confirmSignUpFn, signInFn, getUserFn, recognizeDeviceFn, createDeviceFn, listDevicesFn, deleteDeviceFn, getDeviceEnergyFn, getUserSettingsFn, updateUserSettingsFn, getEnergyReportFn, updateDeviceBudgetFn, getDeviceStatsFn, getDeviceImageFn, updateDeviceFn, getDeviceHistoryFn, getDeviceLastActiveFn, createFeatureRequestFn, listFeatureRequestsFn, getFeatureRequestFn, getFeatureRequestStatsFn, approveFeatureRequestFn, confirmFeatureRequestFn, adminApproveFeatureFn, uploadDeviceManualFn, getDeviceManualsFn, deleteDeviceManualFn, deleteRoomFn, createDeviceNoteFn, listDeviceNotesFn, toggleDeviceFavoriteFn, listDeviceFavoritesFn, manageDeviceTagsFn];
+    const allFunctions = [signUpFn, confirmSignUpFn, signInFn, getUserFn, recognizeDeviceFn, createDeviceFn, listDevicesFn, deleteDeviceFn, getDeviceEnergyFn, getUserSettingsFn, updateUserSettingsFn, getEnergyReportFn, updateDeviceBudgetFn, getDeviceStatsFn, getDeviceImageFn, updateDeviceFn, getDeviceHistoryFn, getDeviceLastActiveFn, createFeatureRequestFn, listFeatureRequestsFn, getFeatureRequestFn, getFeatureRequestStatsFn, approveFeatureRequestFn, confirmFeatureRequestFn, adminApproveFeatureFn, uploadDeviceManualFn, getDeviceManualsFn, deleteDeviceManualFn, deleteRoomFn, createDeviceNoteFn, listDeviceNotesFn, toggleDeviceFavoriteFn, listDeviceFavoritesFn, manageDeviceTagsFn, budgetAlertFn];
 
     for (const fn of allFunctions) {
       usersTable.grantReadWriteData(fn);

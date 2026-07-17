@@ -44,6 +44,7 @@
 - `USER_POOL_ID`, `USER_POOL_CLIENT_ID`
 - `BEDROCK_MODEL_ID`
 - `FEATURE_REQUESTS_TABLE`
+- `SENDER_EMAIL` (budget-alert Lambda only — SES verified sender address)
 
 ## Project Structure (quick reference)
 

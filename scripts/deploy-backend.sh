@@ -55,6 +55,7 @@ ALL_FUNCTIONS=(
   list-device-notes
   toggle-device-favorite
   list-device-favorites
+  budget-alert
 )
 
 # If specific functions passed as args, only deploy those
