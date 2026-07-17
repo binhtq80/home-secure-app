@@ -87,6 +87,7 @@ export function ProfilePage() {
           <span className="nav-divider" />
           <button onClick={() => navigate('/submit-feature')} className="btn-nav">Request Feature</button>
           <button onClick={() => navigate('/feature-summary')} className="btn-nav">Feature Summary</button>
+          <button onClick={() => navigate('/profile')} className="btn-nav active">Profile</button>
           <DarkModeToggle />
           <button onClick={handleLogout} className="btn-logout">Sign Out</button>
         </nav>
