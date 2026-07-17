@@ -20,6 +20,8 @@ interface FeatureRequest {
   createdBy?: string;
   complexity?: string;
   complexityJustification?: string;
+  averageRating?: number;
+  voteCount?: number;
 }
 
 type Tab = 'all' | 'mine' | 'pending_approval';
@@ -53,6 +55,13 @@ export function SubmitFeaturePage() {
         filtered = mineData.features;
       } else if (activeTab === 'pending_approval') {
         filtered = data.features.filter((f: FeatureRequest) => f.status === 'pending_approval');
+        // Sort pending_approval by average rating (highest first)
+        filtered.sort((a: FeatureRequest, b: FeatureRequest) => {
+          const aRating = a.averageRating || 0;
+          const bRating = b.averageRating || 0;
+          if (bRating !== aRating) return bRating - aRating;
+          return (b.createdAt || '').localeCompare(a.createdAt || '');
+        });
       }
       setFeatures(filtered);
     } catch {
@@ -222,6 +231,11 @@ export function SubmitFeaturePage() {
                           {f.currentStep || f.status}
                         </span>
                         <span className="feature-date">{new Date(f.createdAt).toLocaleDateString()}</span>
+                        {(f.voteCount !== undefined && f.voteCount > 0) && (
+                          <span className="feature-rating-badge" title={`${f.voteCount} vote${f.voteCount === 1 ? '' : 's'}`}>
+                            ⭐ {f.averageRating?.toFixed(1)} ({f.voteCount})
+                          </span>
+                        )}
                         {activeTab === 'all' && f.source && (
                           <span className="feature-source-badge">{f.source}</span>
                         )}

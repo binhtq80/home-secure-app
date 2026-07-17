@@ -12,8 +12,8 @@ if (!FEATURE_REQUESTS_TABLE) {
 
 exports.handler = withAuth(async (event) => {
   try {
-    const userId = event.user.id;
     const featureId = event.pathParameters?.featureId;
+    const userId = event.user.id;
 
     if (!featureId) {
       return {
@@ -36,29 +36,37 @@ exports.handler = withAuth(async (event) => {
       };
     }
 
-    const feature = {
-      ...result.Item,
-      steps: result.Item.steps || [],
-      currentStep: result.Item.currentStep || result.Item.status,
-      averageRating: result.Item.averageRating || 0,
-      voteCount: result.Item.voteCount || 0,
-    };
+    const votes = result.Item.votes || {};
+    const voteEntries = Object.entries(votes).map(([oderId, vote]) => ({
+      oderId,
+      rating: vote.rating,
+      comment: vote.comment || null,
+      createdAt: vote.createdAt,
+    }));
+
+    // Sort by most recent first
+    voteEntries.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
 
     // Check if current user has voted
-    const votes = result.Item.votes || {};
-    const userVote = votes[userId] ? { rating: votes[userId].rating, comment: votes[userId].comment || null } : null;
+    const userVote = votes[userId] || null;
 
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify({ feature, userVote }),
+      body: JSON.stringify({
+        featureId,
+        votes: voteEntries,
+        voteCount: voteEntries.length,
+        averageRating: result.Item.averageRating || 0,
+        userVote: userVote ? { rating: userVote.rating, comment: userVote.comment || null } : null,
+      }),
     };
   } catch (error) {
-    console.error('Get feature request error:', error);
+    console.error('List feature votes error:', error);
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({ message: 'Failed to get feature request' }),
+      body: JSON.stringify({ message: 'Failed to list votes' }),
     };
   }
 });

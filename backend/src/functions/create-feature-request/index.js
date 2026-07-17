@@ -94,6 +94,9 @@ exports.handler = withAuth(async (event) => {
       createdAt: now,
       createdBy: userId,
       currentStep: 'classifying',
+      votes: {},
+      voteCount: 0,
+      averageRating: 0,
       steps: [
         { time: now, detail: 'Submitted via web' },
         { time: now, detail: 'AI complexity classification in progress' },

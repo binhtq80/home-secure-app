@@ -19,6 +19,9 @@ interface FeatureRequest {
   suggestedComplexity?: string;
   complexityJustification?: string;
   complexity?: string;
+  averageRating?: number;
+  voteCount?: number;
+  createdBy?: string;
 }
 
 const TERMINAL_STATUSES = ['delivered', 'failed', 'rejected'];
@@ -31,7 +34,7 @@ function isTerminalStatus(feature: FeatureRequest | null): boolean {
 }
 
 export function FeatureDetailPage() {
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const navigate = useNavigate();
   const { featureId } = useParams<{ featureId: string }>();
   const [feature, setFeature] = useState<FeatureRequest | null>(null);
@@ -48,12 +51,25 @@ export function FeatureDetailPage() {
   const [overrideLevel, setOverrideLevel] = useState('');
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // Voting state
+  const [userVote, setUserVote] = useState<{ rating: number; comment: string | null } | null>(null);
+  const [voteRating, setVoteRating] = useState(0);
+  const [voteHover, setVoteHover] = useState(0);
+  const [voteComment, setVoteComment] = useState('');
+  const [submittingVote, setSubmittingVote] = useState(false);
+  const [voteError, setVoteError] = useState('');
+  const [voteSuccess, setVoteSuccess] = useState(false);
+  const [votes, setVotes] = useState<Array<{ rating: number; comment: string | null; createdAt: string }>>([]);
+
   const loadFeature = useCallback(async (showRefreshing = false) => {
     if (!featureId) return;
     if (showRefreshing) setRefreshing(true);
     try {
       const data = await featuresApi.getById(featureId);
       setFeature(data.feature || data);
+      if (data.userVote) {
+        setUserVote(data.userVote);
+      }
       setError('');
       setLastRefreshed(new Date());
     } catch (err: unknown) {
@@ -98,6 +114,46 @@ export function FeatureDetailPage() {
 
   const handleRefresh = () => {
     loadFeature(true);
+  };
+
+  // Load votes
+  const loadVotes = useCallback(async () => {
+    if (!featureId) return;
+    try {
+      const data = await featuresApi.listVotes(featureId);
+      setVotes(data.votes || []);
+      if (data.userVote) {
+        setUserVote(data.userVote);
+      }
+    } catch {
+      // silently fail
+    }
+  }, [featureId]);
+
+  useEffect(() => {
+    if (!loading && feature) {
+      loadVotes();
+    }
+  }, [loading, feature, loadVotes]);
+
+  const handleVoteSubmit = async () => {
+    if (!featureId || voteRating === 0) return;
+    setSubmittingVote(true);
+    setVoteError('');
+    setVoteSuccess(false);
+    try {
+      await featuresApi.vote(featureId, voteRating, voteComment || undefined);
+      setUserVote({ rating: voteRating, comment: voteComment || null });
+      setVoteSuccess(true);
+      setVoteComment('');
+      setVoteRating(0);
+      await loadFeature();
+      await loadVotes();
+    } catch (err: unknown) {
+      setVoteError(err instanceof Error ? err.message : 'Failed to submit vote');
+    } finally {
+      setSubmittingVote(false);
+    }
   };
 
   const handleLogout = () => {
@@ -401,6 +457,83 @@ export function FeatureDetailPage() {
                 </span>
               </div>
             )}
+
+            {/* Voting Section */}
+            <div className="feature-voting-section">
+              <h3>⭐ Community Rating</h3>
+              <div className="feature-voting-summary">
+                <span className="feature-voting-avg">
+                  {feature.averageRating ? feature.averageRating.toFixed(1) : '0.0'} / 5
+                </span>
+                <span className="feature-voting-count">
+                  ({feature.voteCount || 0} vote{(feature.voteCount || 0) !== 1 ? 's' : ''})
+                </span>
+              </div>
+
+              {userVote ? (
+                <div className="feature-vote-submitted">
+                  <p className="feature-vote-submitted-text">
+                    ✅ You rated this <strong>{userVote.rating}/5</strong>
+                    {userVote.comment && <span> — "{userVote.comment}"</span>}
+                  </p>
+                  <p className="feature-vote-submitted-hint">Votes cannot be changed.</p>
+                </div>
+              ) : feature.createdBy === user?.id ? (
+                <p className="feature-vote-own-hint">You cannot vote on your own feature request.</p>
+              ) : (
+                <div className="feature-vote-form">
+                  <div className="feature-vote-stars">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        className={`feature-vote-star ${star <= (voteHover || voteRating) ? 'feature-vote-star-active' : ''}`}
+                        onClick={() => setVoteRating(star)}
+                        onMouseEnter={() => setVoteHover(star)}
+                        onMouseLeave={() => setVoteHover(0)}
+                        aria-label={`Rate ${star} star${star > 1 ? 's' : ''}`}
+                      >
+                        ★
+                      </button>
+                    ))}
+                    {voteRating > 0 && <span className="feature-vote-rating-text">{voteRating}/5</span>}
+                  </div>
+                  <textarea
+                    className="feature-vote-comment"
+                    value={voteComment}
+                    onChange={(e) => setVoteComment(e.target.value)}
+                    placeholder="Add an optional comment..."
+                    rows={2}
+                  />
+                  {voteError && <div className="error-message">{voteError}</div>}
+                  {voteSuccess && <div className="success-message">Vote submitted!</div>}
+                  <button
+                    className="btn-primary btn-vote-submit"
+                    onClick={handleVoteSubmit}
+                    disabled={submittingVote || voteRating === 0}
+                  >
+                    {submittingVote ? 'Submitting...' : 'Submit Vote'}
+                  </button>
+                </div>
+              )}
+
+              {votes.length > 0 && (
+                <div className="feature-votes-list">
+                  <h4>Recent Votes</h4>
+                  {votes.slice(0, 10).map((v, idx) => (
+                    <div key={idx} className="feature-vote-item">
+                      <span className="feature-vote-item-stars">
+                        {'★'.repeat(v.rating)}{'☆'.repeat(5 - v.rating)}
+                      </span>
+                      {v.comment && <span className="feature-vote-item-comment">{v.comment}</span>}
+                      <span className="feature-vote-item-date">
+                        {new Date(v.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
 
             {(feature.currentStep === 'awaiting_approval' || feature.status === 'awaiting_approval') && (
               <div className="feature-approval-section">

@@ -44,7 +44,28 @@ exports.handler = withAuth(async (event) => {
       ...item,
       steps: item.steps || [],
       currentStep: item.currentStep || item.status,
+      averageRating: item.averageRating || 0,
+      voteCount: item.voteCount || 0,
     }));
+
+    // Sort pending_approval items by average rating (highest first)
+    if (scope === 'all') {
+      features.sort((a, b) => {
+        const aIsPending = a.status === 'pending_approval' || a.currentStep === 'pending_approval';
+        const bIsPending = b.status === 'pending_approval' || b.currentStep === 'pending_approval';
+
+        // If both are pending_approval, sort by average rating descending
+        if (aIsPending && bIsPending) {
+          if (b.averageRating !== a.averageRating) {
+            return b.averageRating - a.averageRating;
+          }
+          return (b.createdAt || '').localeCompare(a.createdAt || '');
+        }
+
+        // Keep pending_approval items grouped but non-pending sorted by date
+        return (b.createdAt || '').localeCompare(a.createdAt || '');
+      });
+    }
 
     return {
       statusCode: 200,

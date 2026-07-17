@@ -221,4 +221,12 @@ export const featuresApi = {
       method: 'POST',
       body: JSON.stringify({ action, reason }),
     }),
+
+  vote: (id: string, rating: number, comment?: string) =>
+    request(`/api/features/${id}/votes`, {
+      method: 'POST',
+      body: JSON.stringify({ rating, comment }),
+    }),
+
+  listVotes: (id: string) => request(`/api/features/${id}/votes`),
 };
