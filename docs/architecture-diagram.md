@@ -87,3 +87,51 @@ flowchart TB
         Scripts[scripts/orchestrator.sh<br/>feature.sh / feature-bridge.sh]
     end
 ```
+
+## Multi-DevSpace Parallel Processing
+
+Multiple DevSpaces can target the same AWS account. Each orchestrator claims tasks atomically via DynamoDB conditional writes (no duplicates).
+
+```mermaid
+flowchart TB
+    subgraph DDB["DynamoDB (feature-requests table)"]
+        Pending["status=pending<br/>tasks"]
+    end
+
+    subgraph DS1["DevSpace A (ds-srunp40m)"]
+        ORC1[orchestrator.sh]
+    end
+
+    subgraph DS2["DevSpace B (ds-ivkss8j1)"]
+        ORC2[orchestrator.sh]
+    end
+
+    ORC1 -- "conditional update:<br/>set claimedBy=ds-srunp40m<br/>if status=pending" --> DDB
+    ORC2 -- "conditional update:<br/>set claimedBy=ds-ivkss8j1<br/>if status=pending" --> DDB
+
+    DDB -- "task A claimed" --> ORC1
+    DDB -- "task B claimed" --> ORC2
+
+    ORC1 -- "git push" --> Repo[(GitHub main)]
+    ORC2 -- "git push" --> Repo
+
+    ORC1 -- "deploy" --> AWS[AWS Account]
+    ORC2 -- "deploy" --> AWS
+```
+
+## Role-Based Access Control
+
+```mermaid
+flowchart LR
+    User([User]) -- "submits request" --> Submit[Create Feature Request]
+    Submit -- "AI classifies" --> Pending[pending_confirmation]
+
+    Pending -- "role=technical" --> Confirm[Accept/Override Complexity]
+    Confirm --> Approval[pending_approval]
+
+    Approval -- "role=product_manager" --> Approve[Approve/Reject]
+    Approve -- "approved" --> Queue[pending → orchestrator picks up]
+    Approve -- "rejected" --> Rejected[rejected]
+
+    Admin([role=admin]) -- "manages roles" --> AdminPanel[Admin Panel<br/>assign roles to users]
+```
