@@ -22,6 +22,7 @@ interface Device {
   hasImage?: boolean;
   imageKey?: string;
   room?: string | null;
+  lastActive?: string | null;
 }
 
 interface RecognizedDevice {
@@ -35,6 +36,24 @@ interface RecognizedDevice {
 }
 
 const DEFAULT_ROOMS = ['Kitchen', 'Living Room', 'Bedroom', 'Office', 'Bathroom', 'Garage', 'Garden'];
+
+function formatRelativeTime(dateStr: string | null | undefined): string {
+  if (!dateStr) return 'Never';
+  const now = new Date();
+  const date = new Date(dateStr);
+  const diffMs = now.getTime() - date.getTime();
+  const diffSeconds = Math.floor(diffMs / 1000);
+  const diffMinutes = Math.floor(diffSeconds / 60);
+  const diffHours = Math.floor(diffMinutes / 60);
+  const diffDays = Math.floor(diffHours / 24);
+  const diffMonths = Math.floor(diffDays / 30);
+
+  if (diffSeconds < 60) return 'Just now';
+  if (diffMinutes < 60) return `${diffMinutes} minute${diffMinutes !== 1 ? 's' : ''} ago`;
+  if (diffHours < 24) return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
+  if (diffDays < 30) return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
+  return `${diffMonths} month${diffMonths !== 1 ? 's' : ''} ago`;
+}
 
 export function DevicesPage() {
   const { logout } = useAuth();
@@ -686,6 +705,9 @@ export function DevicesPage() {
                       <div className="device-meta">
                         <span>Color: {device.color}</span>
                         <span>Condition: {device.condition}</span>
+                      </div>
+                      <div className="device-meta">
+                        <span>Last Active: {formatRelativeTime(device.lastActive)}</span>
                       </div>
                       {/* Room assignment dropdown */}
                       <div className="device-room-assign" onClick={(e) => e.stopPropagation()}>

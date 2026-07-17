@@ -258,6 +258,12 @@ export class AppStack extends cdk.Stack {
       code: lambda.Code.fromAsset(path.join(lambdaDir, 'get-device-history')),
     });
 
+    const getDeviceLastActiveFn = new lambda.Function(this, 'GetDeviceLastActiveFn', {
+      ...commonProps,
+      functionName: `${prefix}-get-device-last-active`,
+      code: lambda.Code.fromAsset(path.join(lambdaDir, 'get-device-last-active')),
+    });
+
     const createFeatureRequestFn = new lambda.Function(this, 'CreateFeatureRequestFn', {
       ...commonProps,
       functionName: `${prefix}-create-feature-request`,
@@ -320,7 +326,7 @@ export class AppStack extends cdk.Stack {
     });
 
     // Grant permissions
-    const allFunctions = [signUpFn, confirmSignUpFn, signInFn, getUserFn, recognizeDeviceFn, createDeviceFn, listDevicesFn, deleteDeviceFn, getDeviceEnergyFn, getUserSettingsFn, updateUserSettingsFn, getEnergyReportFn, updateDeviceBudgetFn, getDeviceStatsFn, getDeviceImageFn, updateDeviceFn, getDeviceHistoryFn, createFeatureRequestFn, listFeatureRequestsFn, getFeatureRequestFn, getFeatureRequestStatsFn, approveFeatureRequestFn, uploadDeviceManualFn, getDeviceManualsFn, deleteDeviceManualFn, deleteRoomFn];
+    const allFunctions = [signUpFn, confirmSignUpFn, signInFn, getUserFn, recognizeDeviceFn, createDeviceFn, listDevicesFn, deleteDeviceFn, getDeviceEnergyFn, getUserSettingsFn, updateUserSettingsFn, getEnergyReportFn, updateDeviceBudgetFn, getDeviceStatsFn, getDeviceImageFn, updateDeviceFn, getDeviceHistoryFn, getDeviceLastActiveFn, createFeatureRequestFn, listFeatureRequestsFn, getFeatureRequestFn, getFeatureRequestStatsFn, approveFeatureRequestFn, uploadDeviceManualFn, getDeviceManualsFn, deleteDeviceManualFn, deleteRoomFn];
 
     for (const fn of allFunctions) {
       usersTable.grantReadWriteData(fn);
@@ -403,6 +409,7 @@ export class AppStack extends cdk.Stack {
     deviceResource.addResource('budget').addMethod('PUT', new apigateway.LambdaIntegration(updateDeviceBudgetFn));
     deviceResource.addResource('image').addMethod('GET', new apigateway.LambdaIntegration(getDeviceImageFn));
     deviceResource.addResource('history').addMethod('GET', new apigateway.LambdaIntegration(getDeviceHistoryFn));
+    deviceResource.addResource('last-active').addMethod('GET', new apigateway.LambdaIntegration(getDeviceLastActiveFn));
     const manualsResource = deviceResource.addResource('manuals');
     manualsResource.addMethod('POST', new apigateway.LambdaIntegration(uploadDeviceManualFn));
     manualsResource.addMethod('GET', new apigateway.LambdaIntegration(getDeviceManualsFn));

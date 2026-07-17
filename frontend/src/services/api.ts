@@ -122,6 +122,9 @@ export const devicesApi = {
   getHistory: (deviceId: string) =>
     request(`/api/devices/${deviceId}/history`),
 
+  getLastActive: (deviceId: string) =>
+    request(`/api/devices/${deviceId}/last-active`),
+
   getManuals: (deviceId: string) =>
     request(`/api/devices/${deviceId}/manuals`),
 
