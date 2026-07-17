@@ -1,103 +1,80 @@
 ```mermaid
-flowchart TB
-    %% ─── User Entry Points ───
+flowchart LR
+    %% ─── Nodes ───
     User([👤 User])
+    Me[Chat Agent<br/>this session]
+    ORC[orchestrator.sh]
+    Bridge[feature-bridge.sh]
+    Kiro[kiro-cli]
+    Queue[("~/.feature-queue")]
+    Status[("~/.feature-status")]
+    Steering[.kiro/steering.md]
+    Context[~/shared/myapp-context.md]
+    EnvFiles[~/shared/myapp-envs/*.sh]
+    AWSCreds[~/shared/.aws/credentials]
+    Repo[(GitHub<br/>main branch)]
+    DDB[(DynamoDB<br/>feature-requests)]
+    S3[S3 + CloudFront]
+    Lambda[Lambda Functions]
+    Pipeline[CDK Pipeline]
 
-    %% ─── DevSpace boundary ───
-    subgraph DevSpace["🖥️ DevSpace (ephemeral)"]
-        direction TB
+    %% ─── Flow 1: User submits via Chat Agent ───
+    User -- "chat" --> Me
+    Me -- "reads project context" --> Context
+    Me -- "feature.sh submit" --> Queue
+    Me -- "feature.sh status" --> Status
+    Me -- "feature.sh start (ENV_FILE=)" --> ORC
 
-        subgraph ChatAgent["Chat Agent (me)"]
-            Me[Chat Session<br/>monitor, submit, configure]
-        end
+    %% ─── Flow 2: User submits via Web App ───
+    User -- "submits feature on web" --> S3
+    S3 -- "API call writes request" --> DDB
 
-        subgraph Orchestrator["Orchestrator Daemon (background)"]
-            direction TB
-            ORC[orchestrator.sh<br/>picks tasks from queue<br/>retries up to 3x]
-            Bridge[feature-bridge.sh<br/>polls DynamoDB every 30s]
-        end
+    %% ─── Flow 3: Bridge polls DynamoDB ───
+    Bridge -- "sources config from" --> EnvFiles
+    Bridge -- "uses credentials from" --> AWSCreds
+    Bridge -- "scans pending requests" --> DDB
+    Bridge -- "updates status to processing" --> DDB
+    Bridge -- "writes task to" --> Queue
 
-        subgraph KiroCLI["kiro-cli (per-feature invocation)"]
-            Kiro[kiro-cli --no-interactive<br/>reads .kiro/steering.md<br/>implements → validates → commits]
-        end
+    %% ─── Flow 4: Orchestrator processes queue ───
+    ORC -- "sources config from" --> EnvFiles
+    ORC -- "uses credentials from" --> AWSCreds
+    ORC -- "reads next task from" --> Queue
+    ORC -- "writes state to" --> Status
+    ORC -- "git pull before attempt" --> Repo
+    ORC -- "invokes" --> Kiro
+    ORC -- "updates request status" --> DDB
+    ORC -- "deploy-frontend.sh" --> S3
+    ORC -- "deploy-backend.sh" --> Lambda
+    ORC -- "infra changes trigger" --> Pipeline
 
-        subgraph LocalFiles["Local Workspace Files"]
-            Queue[("~/.feature-queue")]
-            Status[("~/.feature-status")]
-            Steering[".kiro/steering.md<br/>(project conventions)"]
-            WorkingTree["Working Tree<br/>/workspace/myapp-infra"]
-        end
+    %% ─── Flow 5: kiro-cli implements feature ───
+    Kiro -- "reads conventions" --> Steering
+    Kiro -. "updates if new pattern" .-> Steering
+    Kiro -- "git commit + push" --> Repo
+```
 
+---
+
+```mermaid
+flowchart TB
+    %% ─── Persistence Diagram ───
+    subgraph Ephemeral["Dies with DevSpace"]
+        Queue2[~/.feature-queue]
+        Status2[~/.feature-status]
+        GitCreds2[~/.git-credentials]
+        Processes2[orchestrator.sh / bridge / kiro-cli]
     end
 
-    %% ─── Persistent Layer ───
-    subgraph Persistent["~/shared (persists across DevSpaces)"]
-        Context[myapp-context.md<br/>project context for agent]
-        EnvFiles[myapp-envs/*.sh<br/>account configs]
-        AWSCreds[.aws/config + credentials]
+    subgraph Persists["Survives across DevSpaces (~/shared)"]
+        Context2[myapp-context.md]
+        EnvFiles2[myapp-envs/*.sh]
+        AWSCreds2[.aws/config + credentials]
     end
 
-    %% ─── External Systems ───
-    subgraph GitHub["GitHub"]
-        Repo[binhtq80/myapp-infra<br/>main branch]
+    subgraph InRepo["Lives in Git repo"]
+        Steering2[.kiro/steering.md]
+        Code2[frontend/ backend/ infrastructure/]
+        Scripts2[scripts/orchestrator.sh etc.]
     end
-
-    subgraph AWS["AWS Account (test or prod)"]
-        DDB[(DynamoDB<br/>feature-requests table)]
-        S3[S3 + CloudFront<br/>Frontend hosting]
-        Lambda[Lambda Functions<br/>Backend]
-        Pipeline[CDK Pipeline<br/>Infrastructure changes]
-    end
-
-    %% ─── User interactions ───
-    User -->|"chat"| Me
-    User -->|"submits feature via web app"| S3
-    S3 -->|"web app writes request"| DDB
-
-    %% ─── Chat Agent interactions ───
-    Me -->|"reads on new session"| Context
-    Me -->|"feature.sh start<br/>(passes ENV_FILE=)"| ORC
-    Me -->|"feature.sh submit<br/>(appends task)"| Queue
-    Me -->|"feature.sh status<br/>(reads state)"| Status
-
-    %% ─── Orchestrator interactions ───
-    ORC -->|"sources env.sh<br/>(reads account config)"| EnvFiles
-    ORC -->|"reads next task"| Queue
-    ORC -->|"writes current state"| Status
-    ORC -->|"invokes per task"| Kiro
-    ORC -->|"git pull --rebase<br/>before each attempt"| Repo
-    ORC -->|"deploy-frontend.sh<br/>(aws s3 sync + invalidation)"| S3
-    ORC -->|"deploy-backend.sh<br/>(aws lambda update-function-code)"| Lambda
-    ORC -->|"triggers on infra changes"| Pipeline
-    ORC -->|"updates request status"| DDB
-
-    %% ─── Bridge interactions ───
-    Bridge -->|"sources env.sh<br/>(reads account config)"| EnvFiles
-    Bridge -->|"scans for status=pending"| DDB
-    Bridge -->|"writes id∣∣description"| Queue
-    Bridge -->|"updates status→processing"| DDB
-
-    %% ─── kiro-cli interactions ───
-    Kiro -->|"reads patterns + rules"| Steering
-    Kiro -->|"reads + modifies code"| WorkingTree
-    Kiro -->|"runs simulate-pipeline.sh"| WorkingTree
-    Kiro -->|"git add + commit + push"| Repo
-    Kiro -.->|"updates if new pattern"| Steering
-
-    %% ─── AWS auth ───
-    ORC -->|"uses AWS credentials"| AWSCreds
-    Bridge -->|"uses AWS credentials"| AWSCreds
-
-    %% ─── Styling ───
-    classDef persistent fill:#f9f3e3,stroke:#d4a843
-    classDef ephemeral fill:#e3f2fd,stroke:#1976d2
-    classDef external fill:#e8f5e9,stroke:#388e3c
-    classDef agent fill:#fce4ec,stroke:#c62828
-    classDef localfile fill:#f3e5f5,stroke:#7b1fa2
-
-    class Context,EnvFiles,AWSCreds persistent
-    class Queue,Status ephemeral
-    class DDB,S3,Lambda,Pipeline,Repo external
-    class Me,Kiro agent
-    class Steering,WorkingTree localfile
 ```
