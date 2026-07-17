@@ -151,6 +151,13 @@ export const devicesApi = {
       method: 'POST',
       body: JSON.stringify({ text }),
     }),
+
+  toggleFavorite: (deviceId: string) =>
+    request(`/api/devices/${deviceId}/favorite`, {
+      method: 'POST',
+    }),
+
+  listFavorites: () => request('/api/devices/favorites'),
 };
 
 export const roomsApi = {

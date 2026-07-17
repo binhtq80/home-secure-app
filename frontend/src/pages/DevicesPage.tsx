@@ -75,6 +75,7 @@ export function DevicesPage() {
   const [toggleConfirm, setToggleConfirm] = useState<{ deviceId: string; currentStatus?: 'on' | 'off' } | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ deviceId: string; deviceName: string } | null>(null);
   const [roomDeleteConfirm, setRoomDeleteConfirm] = useState<string | null>(null);
+  const [favorites, setFavorites] = useState<Set<string>>(new Set());
 
   // Room state
   const [rooms, setRooms] = useState<string[]>([]);
@@ -94,6 +95,7 @@ export function DevicesPage() {
 
   useEffect(() => {
     loadDevices();
+    loadFavorites();
   }, []);
 
   // Derive rooms from devices
@@ -133,6 +135,32 @@ export function DevicesPage() {
       setError(err instanceof Error ? err.message : 'Failed to load devices');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadFavorites = async () => {
+    try {
+      const data = await devicesApi.listFavorites();
+      setFavorites(new Set(data.favorites));
+    } catch {
+      // Non-critical — don't block page load
+    }
+  };
+
+  const handleToggleFavorite = async (deviceId: string) => {
+    try {
+      const data = await devicesApi.toggleFavorite(deviceId);
+      setFavorites((prev) => {
+        const next = new Set(prev);
+        if (data.isFavorite) {
+          next.add(deviceId);
+        } else {
+          next.delete(deviceId);
+        }
+        return next;
+      });
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to toggle favorite');
     }
   };
 
@@ -657,6 +685,14 @@ export function DevicesPage() {
                       <div className="device-card-header">
                         <span className="device-type-badge">{device.deviceType}</span>
                         <div className="device-card-actions">
+                          <button
+                            className={`btn-favorite ${favorites.has(device.id) ? 'is-favorite' : ''}`}
+                            onClick={(e) => { e.stopPropagation(); handleToggleFavorite(device.id); }}
+                            aria-label={favorites.has(device.id) ? 'Remove from favorites' : 'Add to favorites'}
+                            title={favorites.has(device.id) ? 'Remove from favorites' : 'Add to favorites'}
+                          >
+                            {favorites.has(device.id) ? '★' : '☆'}
+                          </button>
                           <button
                             className={`btn-status-toggle ${device.status === 'on' ? 'status-on' : 'status-off'}`}
                             onClick={(e) => { e.stopPropagation(); handleToggleStatus(device.id, device.status); }}

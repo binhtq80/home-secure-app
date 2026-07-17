@@ -111,6 +111,15 @@ export class AppStack extends cdk.Stack {
       removalPolicy: envConfig.isProd ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,
     });
 
+    // Device favorites table
+    const deviceFavoritesTable = new dynamodb.Table(this, 'DeviceFavoritesTable', {
+      tableName: `${prefix}-device-favorites`,
+      partitionKey: { name: 'userId', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'deviceId', type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: envConfig.isProd ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,
+    });
+
     // Feature requests table
     const featureRequestsTable = new dynamodb.Table(this, 'FeatureRequestsTable', {
       tableName: `${prefix}-feature-requests`,
@@ -145,6 +154,7 @@ export class AppStack extends cdk.Stack {
       DEVICE_ENERGY_TABLE: deviceEnergyTable.tableName,
       DEVICE_HISTORY_TABLE: deviceHistoryTable.tableName,
       DEVICE_NOTES_TABLE: deviceNotesTable.tableName,
+      DEVICE_FAVORITES_TABLE: deviceFavoritesTable.tableName,
       FEATURE_REQUESTS_TABLE: featureRequestsTable.tableName,
       USER_POOL_ID: userPool.userPoolId,
       USER_POOL_CLIENT_ID: userPoolClient.userPoolClientId,
@@ -348,8 +358,21 @@ export class AppStack extends cdk.Stack {
       code: lambda.Code.fromAsset(path.join(lambdaDir, 'list-device-notes')),
     });
 
+    // Device favorites functions
+    const toggleDeviceFavoriteFn = new lambda.Function(this, 'ToggleDeviceFavoriteFn', {
+      ...commonProps,
+      functionName: `${prefix}-toggle-device-favorite`,
+      code: lambda.Code.fromAsset(path.join(lambdaDir, 'toggle-device-favorite')),
+    });
+
+    const listDeviceFavoritesFn = new lambda.Function(this, 'ListDeviceFavoritesFn', {
+      ...commonProps,
+      functionName: `${prefix}-list-device-favorites`,
+      code: lambda.Code.fromAsset(path.join(lambdaDir, 'list-device-favorites')),
+    });
+
     // Grant permissions
-    const allFunctions = [signUpFn, confirmSignUpFn, signInFn, getUserFn, recognizeDeviceFn, createDeviceFn, listDevicesFn, deleteDeviceFn, getDeviceEnergyFn, getUserSettingsFn, updateUserSettingsFn, getEnergyReportFn, updateDeviceBudgetFn, getDeviceStatsFn, getDeviceImageFn, updateDeviceFn, getDeviceHistoryFn, getDeviceLastActiveFn, createFeatureRequestFn, listFeatureRequestsFn, getFeatureRequestFn, getFeatureRequestStatsFn, approveFeatureRequestFn, uploadDeviceManualFn, getDeviceManualsFn, deleteDeviceManualFn, deleteRoomFn, createDeviceNoteFn, listDeviceNotesFn];
+    const allFunctions = [signUpFn, confirmSignUpFn, signInFn, getUserFn, recognizeDeviceFn, createDeviceFn, listDevicesFn, deleteDeviceFn, getDeviceEnergyFn, getUserSettingsFn, updateUserSettingsFn, getEnergyReportFn, updateDeviceBudgetFn, getDeviceStatsFn, getDeviceImageFn, updateDeviceFn, getDeviceHistoryFn, getDeviceLastActiveFn, createFeatureRequestFn, listFeatureRequestsFn, getFeatureRequestFn, getFeatureRequestStatsFn, approveFeatureRequestFn, uploadDeviceManualFn, getDeviceManualsFn, deleteDeviceManualFn, deleteRoomFn, createDeviceNoteFn, listDeviceNotesFn, toggleDeviceFavoriteFn, listDeviceFavoritesFn];
 
     for (const fn of allFunctions) {
       usersTable.grantReadWriteData(fn);
@@ -357,6 +380,7 @@ export class AppStack extends cdk.Stack {
       deviceEnergyTable.grantReadWriteData(fn);
       deviceHistoryTable.grantReadWriteData(fn);
       deviceNotesTable.grantReadWriteData(fn);
+      deviceFavoritesTable.grantReadWriteData(fn);
       featureRequestsTable.grantReadWriteData(fn);
       fn.addToRolePolicy(new iam.PolicyStatement({
         actions: [
@@ -441,6 +465,10 @@ export class AppStack extends cdk.Stack {
     const notesResource = deviceResource.addResource('notes');
     notesResource.addMethod('POST', new apigateway.LambdaIntegration(createDeviceNoteFn));
     notesResource.addMethod('GET', new apigateway.LambdaIntegration(listDeviceNotesFn));
+    deviceResource.addResource('favorite').addMethod('POST', new apigateway.LambdaIntegration(toggleDeviceFavoriteFn));
+
+    // Device favorites list route (all favorites for user)
+    devicesResource.addResource('favorites').addMethod('GET', new apigateway.LambdaIntegration(listDeviceFavoritesFn));
 
     // Settings routes
     const settingsResource = apiResource.addResource('settings');

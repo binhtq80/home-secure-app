@@ -430,6 +430,27 @@
   background: #fef2f2;
 }
 
+.btn-favorite {
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: 1.25rem;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 4px;
+  transition: color 0.2s, transform 0.2s;
+  line-height: 1;
+}
+
+.btn-favorite:hover {
+  color: #f59e0b;
+  transform: scale(1.2);
+}
+
+.btn-favorite.is-favorite {
+  color: #f59e0b;
+}
+
 .btn-status-toggle {
   padding: 0.25rem 0.5rem;
   border-radius: 0.375rem;
