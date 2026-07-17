@@ -4,6 +4,7 @@ interface User {
   id: string;
   username: string;
   email: string;
+  role: 'user' | 'technical' | 'product_manager';
   lastLoginAt: string | null;
   loginCount: number;
   createdAt: string;

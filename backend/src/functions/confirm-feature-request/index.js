@@ -5,9 +5,14 @@ const { withAuth, headers } = require('./common/middleware');
 const ddbClient = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 
 const FEATURE_REQUESTS_TABLE = process.env.FEATURE_REQUESTS_TABLE;
+const USERS_TABLE = process.env.USERS_TABLE;
 
 if (!FEATURE_REQUESTS_TABLE) {
   throw new Error('Missing required environment variable: FEATURE_REQUESTS_TABLE');
+}
+
+if (!USERS_TABLE) {
+  throw new Error('Missing required environment variable: USERS_TABLE');
 }
 
 exports.handler = withAuth(async (event) => {
@@ -30,6 +35,24 @@ exports.handler = withAuth(async (event) => {
         headers,
         body: JSON.stringify({ message: 'action must be "accept" or "override"' }),
       };
+    }
+
+    // Only users with role=technical can override complexity
+    if (action === 'override') {
+      const userResult = await ddbClient.send(new GetCommand({
+        TableName: USERS_TABLE,
+        Key: { id: event.user.id },
+        ProjectionExpression: '#r',
+        ExpressionAttributeNames: { '#r': 'role' },
+      }));
+      const userRole = userResult.Item?.role || 'user';
+      if (userRole !== 'technical') {
+        return {
+          statusCode: 403,
+          headers,
+          body: JSON.stringify({ message: 'Only technical users can override complexity' }),
+        };
+      }
     }
 
     const validLevels = ['simple', 'medium', 'complex', 'highly-complex'];

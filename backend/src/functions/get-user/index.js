@@ -57,6 +57,7 @@ exports.handler = withAuth(async (event) => {
           id: result.Item.id,
           username: result.Item.username,
           email: result.Item.email,
+          role: result.Item.role || 'user',
           createdAt: result.Item.createdAt,
           lastLoginAt: result.Item.lastLoginAt,
           previousLoginAt: result.Item.previousLoginAt,

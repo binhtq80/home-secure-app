@@ -115,6 +115,7 @@ exports.handler = async (event) => {
           id: user?.id,
           username: user?.username,
           email: user?.email,
+          role: user?.role || 'user',
           lastLoginAt: previousLoginAt,
           loginCount: (user?.loginCount || 0) + 1,
           createdAt: user?.createdAt,

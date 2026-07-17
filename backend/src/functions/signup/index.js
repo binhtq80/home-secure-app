@@ -53,6 +53,7 @@ exports.handler = async (event) => {
         id: userId,
         username,
         email,
+        role: 'user',
         createdAt: now,
         lastLoginAt: null,
         loginCount: 0,

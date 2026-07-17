@@ -412,13 +412,15 @@ export function FeatureDetailPage() {
                     >
                       {confirming ? 'Processing...' : '✓ Accept'}
                     </button>
-                    <button
-                      onClick={() => setShowOverrideForm(true)}
-                      disabled={confirming}
-                      className="btn-reject"
-                    >
-                      ✎ Override
-                    </button>
+                    {user?.role === 'technical' && (
+                      <button
+                        onClick={() => setShowOverrideForm(true)}
+                        disabled={confirming}
+                        className="btn-reject"
+                      >
+                        ✎ Override
+                      </button>
+                    )}
                   </div>
                 ) : (
                   <div className="feature-reject-form">
