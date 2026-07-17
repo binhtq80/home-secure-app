@@ -331,11 +331,18 @@ DO THE FOLLOWING (no questions, just execute):
       update_status "MONITORING PIPELINE: $task (attempt $retries/$MAX_RETRIES)"
       update_feature_request_status_by_id "$task_id" "deploying" "Deploying via CDK Pipeline (infrastructure change)"
 
-      # Manually trigger the pipeline since triggerOnPush is disabled
-      aws codepipeline start-pipeline-execution \
-        --name "$PIPELINE_NAME" \
-        --profile "$AWS_PROFILE" \
-        --region "$AWS_REGION" > /dev/null 2>&1
+      # Only trigger pipeline if not already running (avoids queue buildup)
+      local current_pipeline_status
+      current_pipeline_status=$(get_pipeline_status)
+      if [ "$current_pipeline_status" = "InProgress" ]; then
+        log "   ⏳ Pipeline already running — waiting for it to finish instead of triggering new execution"
+      else
+        aws codepipeline start-pipeline-execution \
+          --name "$PIPELINE_NAME" \
+          --profile "$AWS_PROFILE" \
+          --region "$AWS_REGION" > /dev/null 2>&1
+        log "   🚀 Pipeline triggered"
+      fi
 
       log "📡 Monitoring pipeline (full deploy)..."
 
@@ -383,8 +390,23 @@ DO THE FOLLOWING (no questions, just execute):
             ;;
           Failed)
             pipeline_done=true
-            feedback=$(get_pipeline_error)
-            log "   ❌ Pipeline failed: $feedback"
+            local pipeline_error
+            pipeline_error=$(get_pipeline_error)
+            # If failure is due to CodeBuild queue limit, retry the pipeline (not the implementation)
+            if echo "$pipeline_error" | grep -q "AccountLimitExceededException\|builds in queue"; then
+              log "   ⚠️ Pipeline failed due to CodeBuild queue limit — waiting 2 min and retrying pipeline"
+              update_feature_request_status_by_id "$task_id" "deploying" "CodeBuild queue full — retrying pipeline"
+              sleep 120
+              aws codepipeline start-pipeline-execution \
+                --name "$PIPELINE_NAME" \
+                --profile "$AWS_PROFILE" \
+                --region "$AWS_REGION" > /dev/null 2>&1
+              pipeline_done=false
+              poll_count=0
+            else
+              feedback="$pipeline_error"
+              log "   ❌ Pipeline failed: $feedback"
+            fi
             ;;
           Cancelled|Superseded)
             log "   ↻ Pipeline restarted, continuing to poll..."
