@@ -591,6 +591,49 @@
   font-size: 0.875rem;
 }
 
+.device-detail-id {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.device-id-label {
+  font-weight: 500;
+}
+
+.device-id-value {
+  background: var(--color-bg-secondary, #f3f4f6);
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.8rem;
+  user-select: all;
+}
+
+.btn-copy-id {
+  background: none;
+  border: 1px solid var(--color-border, #d1d5db);
+  border-radius: 4px;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.btn-copy-id:hover {
+  background: var(--color-bg-secondary, #f3f4f6);
+  border-color: var(--color-primary, #3b82f6);
+  color: var(--color-primary, #3b82f6);
+}
+
+.btn-copy-id:active {
+  transform: scale(0.95);
+}
+
 .energy-stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));

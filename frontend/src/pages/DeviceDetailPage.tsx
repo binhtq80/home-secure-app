@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { devicesApi } from '../services/api';
@@ -110,6 +110,30 @@ export function DeviceDetailPage() {
   const [tagsLoading, setTagsLoading] = useState(false);
   const [tagInput, setTagInput] = useState('');
   const [savingTag, setSavingTag] = useState(false);
+
+  // Copy ID state
+  const [copiedId, setCopiedId] = useState(false);
+
+  const handleCopyId = useCallback(async () => {
+    if (!deviceId) return;
+    try {
+      await navigator.clipboard.writeText(deviceId);
+      setCopiedId(true);
+      setTimeout(() => setCopiedId(false), 2000);
+    } catch {
+      // Fallback for older browsers
+      const textarea = document.createElement('textarea');
+      textarea.value = deviceId;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+      setCopiedId(true);
+      setTimeout(() => setCopiedId(false), 2000);
+    }
+  }, [deviceId]);
 
   useEffect(() => {
     if (deviceId) {
@@ -460,6 +484,18 @@ export function DeviceDetailPage() {
             <span className="device-type-badge">{device?.deviceType}</span>
             <span>Color: {device?.color}</span>
             <span>Condition: {device?.condition}</span>
+          </p>
+          <p className="device-detail-id">
+            <span className="device-id-label">ID:</span>
+            <code className="device-id-value">{deviceId}</code>
+            <button
+              className="btn-copy-id"
+              onClick={handleCopyId}
+              aria-label="Copy device ID to clipboard"
+              title="Copy device ID"
+            >
+              {copiedId ? '✓ Copied' : '📋 Copy'}
+            </button>
           </p>
         </div>
 
