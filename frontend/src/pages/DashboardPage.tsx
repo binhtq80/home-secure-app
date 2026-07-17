@@ -112,6 +112,7 @@ export function DashboardPage() {
             {user?.lastLoginAt
               ? `Your last visit was ${getTimeSinceLastLogin(user.lastLoginAt)}`
               : "Great to see you! This is your first login."}
+            {' '}<button onClick={() => navigate('/profile')} className="btn-link">View Profile</button>
           </p>
         </div>
 
