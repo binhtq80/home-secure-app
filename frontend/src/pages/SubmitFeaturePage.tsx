@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { featuresApi } from '../services/api';
 import { DarkModeToggle } from '../components/DarkModeToggle';
+import { RoleBadge } from '../components/RoleBadge';
 
 interface FeatureStep {
   time: string;
@@ -28,7 +29,7 @@ interface FeatureRequest {
 type Tab = 'all' | 'mine' | 'pending_approval';
 
 export function SubmitFeaturePage() {
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const navigate = useNavigate();
   const [description, setDescription] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -143,6 +144,7 @@ export function SubmitFeaturePage() {
           <button onClick={() => navigate('/submit-feature')} className="btn-nav active">Request Feature</button>
           <button onClick={() => navigate('/feature-summary')} className="btn-nav">Feature Summary</button>
           <button onClick={() => navigate('/profile')} className="btn-nav">Profile</button>
+          <RoleBadge />
           <DarkModeToggle />
           <button onClick={handleLogout} className="btn-logout">Sign Out</button>
         </nav>
@@ -265,45 +267,51 @@ export function SubmitFeaturePage() {
                               </span>
                             )}
                           </div>
-                          {rejectId === f.id ? (
-                            <div className="feature-reject-inline-form">
-                              <input
-                                type="text"
-                                className="feature-reject-inline-input"
-                                placeholder="Reason for rejection (optional)"
-                                value={rejectReason}
-                                onChange={(e) => setRejectReason(e.target.value)}
-                              />
-                              <button
-                                className="btn-reject btn-sm"
-                                disabled={actionInProgress === f.id}
-                                onClick={() => handleAdminReject(f.id)}
-                              >
-                                {actionInProgress === f.id ? '...' : 'Confirm Reject'}
-                              </button>
-                              <button
-                                className="btn-cancel btn-sm"
-                                onClick={() => { setRejectId(null); setRejectReason(''); }}
-                              >
-                                Cancel
-                              </button>
-                            </div>
+                          {user?.role === 'product_manager' ? (
+                            rejectId === f.id ? (
+                              <div className="feature-reject-inline-form">
+                                <input
+                                  type="text"
+                                  className="feature-reject-inline-input"
+                                  placeholder="Reason for rejection (optional)"
+                                  value={rejectReason}
+                                  onChange={(e) => setRejectReason(e.target.value)}
+                                />
+                                <button
+                                  className="btn-reject btn-sm"
+                                  disabled={actionInProgress === f.id}
+                                  onClick={() => handleAdminReject(f.id)}
+                                >
+                                  {actionInProgress === f.id ? '...' : 'Confirm Reject'}
+                                </button>
+                                <button
+                                  className="btn-cancel btn-sm"
+                                  onClick={() => { setRejectId(null); setRejectReason(''); }}
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="feature-approval-actions-inline">
+                                <button
+                                  className="btn-approve btn-sm"
+                                  disabled={actionInProgress === f.id}
+                                  onClick={() => handleAdminApprove(f.id)}
+                                >
+                                  {actionInProgress === f.id ? '...' : '✓ Approve'}
+                                </button>
+                                <button
+                                  className="btn-reject btn-sm"
+                                  disabled={actionInProgress === f.id}
+                                  onClick={() => setRejectId(f.id)}
+                                >
+                                  ✗ Reject
+                                </button>
+                              </div>
+                            )
                           ) : (
-                            <div className="feature-approval-actions-inline">
-                              <button
-                                className="btn-approve btn-sm"
-                                disabled={actionInProgress === f.id}
-                                onClick={() => handleAdminApprove(f.id)}
-                              >
-                                {actionInProgress === f.id ? '...' : '✓ Approve'}
-                              </button>
-                              <button
-                                className="btn-reject btn-sm"
-                                disabled={actionInProgress === f.id}
-                                onClick={() => setRejectId(f.id)}
-                              >
-                                ✗ Reject
-                              </button>
+                            <div className="feature-approval-readonly">
+                              <span className="feature-approval-readonly-label">Awaiting product manager approval</span>
                             </div>
                           )}
                         </div>

@@ -121,6 +121,7 @@ exports.handler = async (event) => {
           createdAt: user?.createdAt,
           deviceCount,
           lastSeenAgo: formatLastSeenAgo(previousLoginAt),
+          role: user?.role || null,
         },
       }),
     };

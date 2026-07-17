@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useParams } from 'react-router-dom';
 import { featuresApi } from '../services/api';
 import { DarkModeToggle } from '../components/DarkModeToggle';
+import { RoleBadge } from '../components/RoleBadge';
 
 interface FeatureStep {
   time: string;
@@ -282,6 +283,7 @@ export function FeatureDetailPage() {
           <button onClick={() => navigate('/submit-feature')} className="btn-nav">Request Feature</button>
           <button onClick={() => navigate('/feature-summary')} className="btn-nav">Feature Summary</button>
           <button onClick={() => navigate('/profile')} className="btn-nav">Profile</button>
+          <RoleBadge />
           <DarkModeToggle />
           <button onClick={handleLogout} className="btn-logout">Sign Out</button>
         </nav>
@@ -626,52 +628,58 @@ export function FeatureDetailPage() {
                   </div>
                 )}
 
-                {!showRejectForm ? (
-                  <div className="feature-approval-actions">
-                    <button
-                      onClick={handleAdminApproveAction}
-                      disabled={approving}
-                      className="btn-approve"
-                    >
-                      {approving ? 'Processing...' : '✓ Approve'}
-                    </button>
-                    <button
-                      onClick={() => setShowRejectForm(true)}
-                      disabled={approving}
-                      className="btn-reject"
-                    >
-                      ✗ Reject
-                    </button>
-                  </div>
-                ) : (
-                  <div className="feature-reject-form">
-                    <label htmlFor="reject-feedback" className="feature-reject-label">
-                      Rejection reason (optional):
-                    </label>
-                    <textarea
-                      id="reject-feedback"
-                      className="feature-reject-textarea"
-                      value={rejectFeedback}
-                      onChange={(e) => setRejectFeedback(e.target.value)}
-                      placeholder="Explain why this feature request is being rejected..."
-                      rows={4}
-                    />
+                {user?.role === 'product_manager' ? (
+                  !showRejectForm ? (
                     <div className="feature-approval-actions">
                       <button
-                        onClick={handleAdminRejectAction}
+                        onClick={handleAdminApproveAction}
+                        disabled={approving}
+                        className="btn-approve"
+                      >
+                        {approving ? 'Processing...' : '✓ Approve'}
+                      </button>
+                      <button
+                        onClick={() => setShowRejectForm(true)}
                         disabled={approving}
                         className="btn-reject"
                       >
-                        {approving ? 'Processing...' : '✗ Confirm Rejection'}
-                      </button>
-                      <button
-                        onClick={() => { setShowRejectForm(false); setRejectFeedback(''); }}
-                        disabled={approving}
-                        className="btn-cancel"
-                      >
-                        Cancel
+                        ✗ Reject
                       </button>
                     </div>
+                  ) : (
+                    <div className="feature-reject-form">
+                      <label htmlFor="reject-feedback" className="feature-reject-label">
+                        Rejection reason (optional):
+                      </label>
+                      <textarea
+                        id="reject-feedback"
+                        className="feature-reject-textarea"
+                        value={rejectFeedback}
+                        onChange={(e) => setRejectFeedback(e.target.value)}
+                        placeholder="Explain why this feature request is being rejected..."
+                        rows={4}
+                      />
+                      <div className="feature-approval-actions">
+                        <button
+                          onClick={handleAdminRejectAction}
+                          disabled={approving}
+                          className="btn-reject"
+                        >
+                          {approving ? 'Processing...' : '✗ Confirm Rejection'}
+                        </button>
+                        <button
+                          onClick={() => { setShowRejectForm(false); setRejectFeedback(''); }}
+                          disabled={approving}
+                          className="btn-cancel"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )
+                ) : (
+                  <div className="feature-approval-readonly">
+                    <span className="feature-approval-readonly-label">Awaiting product manager approval</span>
                   </div>
                 )}
               </div>

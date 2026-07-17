@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { reportsApi } from '../services/api';
 import { DarkModeToggle } from '../components/DarkModeToggle';
+import { RoleBadge } from '../components/RoleBadge';
 import { DashboardSkeleton } from '../components/DashboardSkeleton';
 
 interface EnergySummary {
@@ -112,6 +113,7 @@ export function DashboardPage() {
           <button onClick={() => navigate('/submit-feature')} className="btn-nav">Request Feature</button>
           <button onClick={() => navigate('/feature-summary')} className="btn-nav">Feature Summary</button>
           <button onClick={() => navigate('/profile')} className="btn-nav">Profile</button>
+          <RoleBadge />
           <DarkModeToggle />
           <button onClick={handleLogout} className="btn-logout">Sign Out</button>
         </nav>

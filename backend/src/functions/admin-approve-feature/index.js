@@ -5,13 +5,32 @@ const { withAuth, headers } = require('./common/middleware');
 const ddbClient = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 
 const FEATURE_REQUESTS_TABLE = process.env.FEATURE_REQUESTS_TABLE;
+const USERS_TABLE = process.env.USERS_TABLE;
 
 if (!FEATURE_REQUESTS_TABLE) {
   throw new Error('Missing required environment variable: FEATURE_REQUESTS_TABLE');
 }
 
+if (!USERS_TABLE) {
+  throw new Error('Missing required environment variable: USERS_TABLE');
+}
+
 exports.handler = withAuth(async (event) => {
   try {
+    // Check that the caller has role=product_manager
+    const userResult = await ddbClient.send(new GetCommand({
+      TableName: USERS_TABLE,
+      Key: { id: event.user.id },
+    }));
+
+    if (!userResult.Item || userResult.Item.role !== 'product_manager') {
+      return {
+        statusCode: 403,
+        headers,
+        body: JSON.stringify({ message: 'Only product managers can approve or reject feature requests' }),
+      };
+    }
+
     const featureId = event.pathParameters?.featureId;
     if (!featureId) {
       return {

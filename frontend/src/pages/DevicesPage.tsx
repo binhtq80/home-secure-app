@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { devicesApi, roomsApi } from '../services/api';
 import { DarkModeToggle } from '../components/DarkModeToggle';
+import { RoleBadge } from '../components/RoleBadge';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 
 interface Device {
@@ -422,6 +423,7 @@ export function DevicesPage() {
           <button onClick={() => navigate('/submit-feature')} className="btn-nav">Request Feature</button>
           <button onClick={() => navigate('/feature-summary')} className="btn-nav">Feature Summary</button>
           <button onClick={() => navigate('/profile')} className="btn-nav">Profile</button>
+          <RoleBadge />
           <DarkModeToggle />
           <button onClick={handleLogout} className="btn-logout">Sign Out</button>
         </nav>

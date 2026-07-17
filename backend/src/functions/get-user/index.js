@@ -64,6 +64,7 @@ exports.handler = withAuth(async (event) => {
           loginCount: result.Item.loginCount || 0,
           memberDays,
           lastSeenAgo,
+          role: result.Item.role || null,
         },
       }),
     };
