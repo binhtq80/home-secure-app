@@ -9,7 +9,6 @@ interface User {
   loginCount: number;
   createdAt: string;
   lastSeenAgo: string | null;
-  role: string | null;
 }
 
 interface AuthContextType {
