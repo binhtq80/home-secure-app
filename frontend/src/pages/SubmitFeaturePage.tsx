@@ -16,7 +16,11 @@ interface FeatureRequest {
   currentStep?: string;
   steps?: FeatureStep[];
   createdAt: string;
+  source?: string;
+  createdBy?: string;
 }
+
+type Tab = 'all' | 'mine';
 
 export function SubmitFeaturePage() {
   const { logout } = useAuth();
@@ -27,14 +31,16 @@ export function SubmitFeaturePage() {
   const [error, setError] = useState('');
   const [features, setFeatures] = useState<FeatureRequest[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<Tab>('all');
 
   useEffect(() => {
     loadFeatures();
-  }, []);
+  }, [activeTab]);
 
   const loadFeatures = async () => {
+    setLoading(true);
     try {
-      const data = await featuresApi.list();
+      const data = await featuresApi.list(activeTab);
       setFeatures(data.features);
     } catch {
       // silently fail
@@ -118,37 +124,67 @@ export function SubmitFeaturePage() {
           </form>
         </div>
 
-        {!loading && features.length > 0 && (
-          <div className="feature-list-section">
-            <h3>Your Previous Requests</h3>
-            <p className="feature-list-hint">Click on a request to view full progress history</p>
-            <div className="feature-list">
-              {features.map((f) => (
-                <div
-                  key={f.id}
-                  className="feature-list-item feature-list-item-clickable"
-                  onClick={() => navigate(`/submit-feature/${f.id}`)}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') navigate(`/submit-feature/${f.id}`); }}
-                  aria-label={`View details for feature request ${f.id.slice(0, 8)}`}
-                >
-                  <div className="feature-list-item-content">
-                    <div className="feature-list-description">{f.description}</div>
-                    <div className="feature-list-meta">
-                      <span className="feature-ticket">#{f.id.slice(0, 8)}</span>
-                      <span className={`feature-status-badge feature-badge-${f.currentStep || f.status}`}>
-                        {f.currentStep || f.status}
-                      </span>
-                      <span className="feature-date">{new Date(f.createdAt).toLocaleDateString()}</span>
-                    </div>
-                  </div>
-                  <span className="feature-list-arrow" aria-hidden="true">→</span>
-                </div>
-              ))}
-            </div>
+        <div className="feature-list-section">
+          <div className="feature-tabs">
+            <button
+              className={`feature-tab ${activeTab === 'all' ? 'feature-tab-active' : ''}`}
+              onClick={() => setActiveTab('all')}
+            >
+              All Requests
+            </button>
+            <button
+              className={`feature-tab ${activeTab === 'mine' ? 'feature-tab-active' : ''}`}
+              onClick={() => setActiveTab('mine')}
+            >
+              My Requests
+            </button>
           </div>
-        )}
+
+          {loading && <p>Loading requests...</p>}
+
+          {!loading && features.length === 0 && (
+            <p className="feature-list-hint">No feature requests found.</p>
+          )}
+
+          {!loading && features.length > 0 && (
+            <>
+              <p className="feature-list-hint">Click on a request to view full progress history</p>
+              <div className="feature-list">
+                {features.map((f) => (
+                  <div
+                    key={f.id}
+                    className="feature-list-item feature-list-item-clickable"
+                    onClick={() => navigate(`/submit-feature/${f.id}`)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') navigate(`/submit-feature/${f.id}`); }}
+                    aria-label={`View details for feature request ${f.id.slice(0, 8)}`}
+                  >
+                    <div className="feature-list-item-content">
+                      <div className="feature-list-description">{f.description}</div>
+                      <div className="feature-list-meta">
+                        <span className="feature-ticket">#{f.id.slice(0, 8)}</span>
+                        <span className={`feature-status-badge feature-badge-${f.currentStep || f.status}`}>
+                          {f.currentStep || f.status}
+                        </span>
+                        <span className="feature-date">{new Date(f.createdAt).toLocaleDateString()}</span>
+                        {activeTab === 'all' && f.source && (
+                          <span className="feature-source-badge">{f.source}</span>
+                        )}
+                        {activeTab === 'all' && f.createdBy && (
+                          <span className="feature-created-by" title={f.createdBy}>
+                            by {f.createdBy.length > 12 ? f.createdBy.slice(0, 12) + '…' : f.createdBy}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <span className="feature-list-arrow" aria-hidden="true">→</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
       </main>
     </div>
   );

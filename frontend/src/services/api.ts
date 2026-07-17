@@ -187,7 +187,8 @@ export const featuresApi = {
       body: JSON.stringify({ description }),
     }),
 
-  list: () => request('/api/features'),
+  list: (scope?: 'mine' | 'all') =>
+    request(`/api/features${scope ? `?scope=${scope}` : ''}`),
 
   getById: (id: string) => request(`/api/features/${id}`),
 
