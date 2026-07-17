@@ -205,4 +205,10 @@ export const featuresApi = {
       method: 'POST',
       body: JSON.stringify({ action, overrideComplexity }),
     }),
+
+  adminApprove: (id: string, action: 'approve' | 'reject', reason?: string) =>
+    request(`/api/features/${id}/admin-approve`, {
+      method: 'POST',
+      body: JSON.stringify({ action, reason }),
+    }),
 };

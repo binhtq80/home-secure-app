@@ -18,9 +18,11 @@ interface FeatureRequest {
   createdAt: string;
   source?: string;
   createdBy?: string;
+  complexity?: string;
+  complexityJustification?: string;
 }
 
-type Tab = 'all' | 'mine';
+type Tab = 'all' | 'mine' | 'pending_approval';
 
 export function SubmitFeaturePage() {
   const { logout } = useAuth();
@@ -32,6 +34,9 @@ export function SubmitFeaturePage() {
   const [features, setFeatures] = useState<FeatureRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<Tab>('all');
+  const [actionInProgress, setActionInProgress] = useState<string | null>(null);
+  const [rejectId, setRejectId] = useState<string | null>(null);
+  const [rejectReason, setRejectReason] = useState('');
 
   useEffect(() => {
     loadFeatures();
@@ -40,8 +45,16 @@ export function SubmitFeaturePage() {
   const loadFeatures = async () => {
     setLoading(true);
     try {
-      const data = await featuresApi.list(activeTab);
-      setFeatures(data.features);
+      const data = await featuresApi.list('all');
+      let filtered = data.features;
+      if (activeTab === 'mine') {
+        // Re-fetch with mine scope
+        const mineData = await featuresApi.list('mine');
+        filtered = mineData.features;
+      } else if (activeTab === 'pending_approval') {
+        filtered = data.features.filter((f: FeatureRequest) => f.status === 'pending_approval');
+      }
+      setFeatures(filtered);
     } catch {
       // silently fail
     } finally {
@@ -77,6 +90,34 @@ export function SubmitFeaturePage() {
   const handleLogout = () => {
     logout();
     navigate('/login');
+  };
+
+  const handleAdminApprove = async (featureId: string) => {
+    setActionInProgress(featureId);
+    setError('');
+    try {
+      await featuresApi.adminApprove(featureId, 'approve');
+      await loadFeatures();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to approve feature');
+    } finally {
+      setActionInProgress(null);
+    }
+  };
+
+  const handleAdminReject = async (featureId: string) => {
+    setActionInProgress(featureId);
+    setError('');
+    try {
+      await featuresApi.adminApprove(featureId, 'reject', rejectReason || undefined);
+      setRejectId(null);
+      setRejectReason('');
+      await loadFeatures();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to reject feature');
+    } finally {
+      setActionInProgress(null);
+    }
   };
 
   return (
@@ -140,6 +181,12 @@ export function SubmitFeaturePage() {
             >
               My Requests
             </button>
+            <button
+              className={`feature-tab ${activeTab === 'pending_approval' ? 'feature-tab-active' : ''}`}
+              onClick={() => setActiveTab('pending_approval')}
+            >
+              Pending Approval
+            </button>
           </div>
 
           {loading && <p>Loading requests...</p>}
@@ -150,17 +197,21 @@ export function SubmitFeaturePage() {
 
           {!loading && features.length > 0 && (
             <>
-              <p className="feature-list-hint">Click on a request to view full progress history</p>
+              <p className="feature-list-hint">
+                {activeTab === 'pending_approval'
+                  ? 'Review and approve or reject these feature requests'
+                  : 'Click on a request to view full progress history'}
+              </p>
               <div className="feature-list">
                 {features.map((f) => (
                   <div
                     key={f.id}
-                    className="feature-list-item feature-list-item-clickable"
-                    onClick={() => navigate(`/submit-feature/${f.id}`)}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') navigate(`/submit-feature/${f.id}`); }}
-                    aria-label={`View details for feature request ${f.id.slice(0, 8)}`}
+                    className={`feature-list-item ${activeTab !== 'pending_approval' ? 'feature-list-item-clickable' : ''}`}
+                    onClick={activeTab !== 'pending_approval' ? () => navigate(`/submit-feature/${f.id}`) : undefined}
+                    role={activeTab !== 'pending_approval' ? 'button' : undefined}
+                    tabIndex={activeTab !== 'pending_approval' ? 0 : undefined}
+                    onKeyDown={activeTab !== 'pending_approval' ? (e) => { if (e.key === 'Enter' || e.key === ' ') navigate(`/submit-feature/${f.id}`); } : undefined}
+                    aria-label={activeTab !== 'pending_approval' ? `View details for feature request ${f.id.slice(0, 8)}` : undefined}
                   >
                     <div className="feature-list-item-content">
                       <div className="feature-list-description">{f.description}</div>
@@ -179,8 +230,67 @@ export function SubmitFeaturePage() {
                           </span>
                         )}
                       </div>
+                      {activeTab === 'pending_approval' && (
+                        <div className="feature-approval-inline">
+                          <div className="feature-approval-details">
+                            {f.complexity && (
+                              <span className="feature-approval-complexity">
+                                Complexity: <strong>{f.complexity}</strong>
+                              </span>
+                            )}
+                            {f.complexityJustification && (
+                              <span className="feature-approval-justification">
+                                {f.complexityJustification}
+                              </span>
+                            )}
+                          </div>
+                          {rejectId === f.id ? (
+                            <div className="feature-reject-inline-form">
+                              <input
+                                type="text"
+                                className="feature-reject-inline-input"
+                                placeholder="Reason for rejection (optional)"
+                                value={rejectReason}
+                                onChange={(e) => setRejectReason(e.target.value)}
+                              />
+                              <button
+                                className="btn-reject btn-sm"
+                                disabled={actionInProgress === f.id}
+                                onClick={() => handleAdminReject(f.id)}
+                              >
+                                {actionInProgress === f.id ? '...' : 'Confirm Reject'}
+                              </button>
+                              <button
+                                className="btn-cancel btn-sm"
+                                onClick={() => { setRejectId(null); setRejectReason(''); }}
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="feature-approval-actions-inline">
+                              <button
+                                className="btn-approve btn-sm"
+                                disabled={actionInProgress === f.id}
+                                onClick={() => handleAdminApprove(f.id)}
+                              >
+                                {actionInProgress === f.id ? '...' : '✓ Approve'}
+                              </button>
+                              <button
+                                className="btn-reject btn-sm"
+                                disabled={actionInProgress === f.id}
+                                onClick={() => setRejectId(f.id)}
+                              >
+                                ✗ Reject
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
-                    <span className="feature-list-arrow" aria-hidden="true">→</span>
+                    {activeTab !== 'pending_approval' && (
+                      <span className="feature-list-arrow" aria-hidden="true">→</span>
+                    )}
                   </div>
                 ))}
               </div>

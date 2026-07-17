@@ -343,6 +343,12 @@ export class AppStack extends cdk.Stack {
       handler: 'functions/confirm-feature-request/index.handler',
     });
 
+    const adminApproveFeatureFn = new lambda.Function(this, 'AdminApproveFeatureFn', {
+      ...commonProps,
+      functionName: `${prefix}-admin-approve-feature`,
+      handler: 'functions/admin-approve-feature/index.handler',
+    });
+
     // Device manuals functions
     const uploadDeviceManualFn = new lambda.Function(this, 'UploadDeviceManualFn', {
       ...commonProps,
@@ -404,7 +410,7 @@ export class AppStack extends cdk.Stack {
     });
 
     // Grant permissions
-    const allFunctions = [signUpFn, confirmSignUpFn, signInFn, getUserFn, recognizeDeviceFn, createDeviceFn, listDevicesFn, deleteDeviceFn, getDeviceEnergyFn, getUserSettingsFn, updateUserSettingsFn, getEnergyReportFn, updateDeviceBudgetFn, getDeviceStatsFn, getDeviceImageFn, updateDeviceFn, getDeviceHistoryFn, getDeviceLastActiveFn, createFeatureRequestFn, listFeatureRequestsFn, getFeatureRequestFn, getFeatureRequestStatsFn, approveFeatureRequestFn, confirmFeatureRequestFn, uploadDeviceManualFn, getDeviceManualsFn, deleteDeviceManualFn, deleteRoomFn, createDeviceNoteFn, listDeviceNotesFn, toggleDeviceFavoriteFn, listDeviceFavoritesFn, manageDeviceTagsFn];
+    const allFunctions = [signUpFn, confirmSignUpFn, signInFn, getUserFn, recognizeDeviceFn, createDeviceFn, listDevicesFn, deleteDeviceFn, getDeviceEnergyFn, getUserSettingsFn, updateUserSettingsFn, getEnergyReportFn, updateDeviceBudgetFn, getDeviceStatsFn, getDeviceImageFn, updateDeviceFn, getDeviceHistoryFn, getDeviceLastActiveFn, createFeatureRequestFn, listFeatureRequestsFn, getFeatureRequestFn, getFeatureRequestStatsFn, approveFeatureRequestFn, confirmFeatureRequestFn, adminApproveFeatureFn, uploadDeviceManualFn, getDeviceManualsFn, deleteDeviceManualFn, deleteRoomFn, createDeviceNoteFn, listDeviceNotesFn, toggleDeviceFavoriteFn, listDeviceFavoritesFn, manageDeviceTagsFn];
 
     for (const fn of allFunctions) {
       usersTable.grantReadWriteData(fn);
@@ -535,6 +541,7 @@ export class AppStack extends cdk.Stack {
     featureResource.addMethod('GET', new apigateway.LambdaIntegration(getFeatureRequestFn));
     featureResource.addResource('approve').addMethod('POST', new apigateway.LambdaIntegration(approveFeatureRequestFn));
     featureResource.addResource('confirm').addMethod('POST', new apigateway.LambdaIntegration(confirmFeatureRequestFn));
+    featureResource.addResource('admin-approve').addMethod('POST', new apigateway.LambdaIntegration(adminApproveFeatureFn));
 
     // ─── Frontend Hosting ──────────────────────────────────────────────────────
 

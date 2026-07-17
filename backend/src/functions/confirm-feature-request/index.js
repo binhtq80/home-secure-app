@@ -46,15 +46,18 @@ exports.handler = withAuth(async (event) => {
       ? 'User accepted AI complexity classification'
       : `User overrode complexity to "${overrideComplexity}"`;
 
-    // Build update expression
+    // Build update expression — after confirmation, go to pending_approval for admin review
     let updateExpression = 'SET #s = :status, currentStep = :step, confirmedAt = :now, #steps = list_append(if_not_exists(#steps, :emptyList), :newStep), complexity = :finalComplexity';
     const expressionAttributeNames = { '#s': 'status', '#steps': 'steps' };
     const expressionAttributeValues = {
-      ':status': 'pending',
-      ':step': 'pending',
+      ':status': 'pending_approval',
+      ':step': 'pending_approval',
       ':now': now,
       ':emptyList': [],
-      ':newStep': [{ time: now, detail: stepDetail }],
+      ':newStep': [
+        { time: now, detail: stepDetail },
+        { time: now, detail: 'Awaiting admin approval' },
+      ],
       ':pendingConfirmation': 'pending_confirmation',
       ':finalComplexity': action === 'override' ? overrideComplexity : null,
     };
@@ -83,7 +86,7 @@ exports.handler = withAuth(async (event) => {
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify({ message: 'Feature request confirmed', status: 'pending' }),
+      body: JSON.stringify({ message: 'Feature request confirmed — awaiting admin approval', status: 'pending_approval' }),
     };
   } catch (error) {
     console.error('Confirm feature request error:', error);

@@ -135,6 +135,36 @@ export function FeatureDetailPage() {
     }
   };
 
+  const handleAdminApproveAction = async () => {
+    if (!featureId) return;
+    setApproving(true);
+    setError('');
+    try {
+      await featuresApi.adminApprove(featureId, 'approve');
+      await loadFeature();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to approve feature');
+    } finally {
+      setApproving(false);
+    }
+  };
+
+  const handleAdminRejectAction = async () => {
+    if (!featureId) return;
+    setApproving(true);
+    setError('');
+    try {
+      await featuresApi.adminApprove(featureId, 'reject', rejectFeedback || undefined);
+      setShowRejectForm(false);
+      setRejectFeedback('');
+      await loadFeature();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to reject feature');
+    } finally {
+      setApproving(false);
+    }
+  };
+
   const handleAcceptComplexity = async () => {
     if (!featureId) return;
     setConfirming(true);
@@ -175,7 +205,8 @@ export function FeatureDetailPage() {
       case 'in-progress':
       case 'implementing': return 'active';
       case 'awaiting_approval':
-      case 'pending_confirmation': return 'warning';
+      case 'pending_confirmation':
+      case 'pending_approval': return 'warning';
       case 'classifying': return 'active';
       default: return 'pending';
     }
@@ -410,6 +441,73 @@ export function FeatureDetailPage() {
                     <div className="feature-approval-actions">
                       <button
                         onClick={handleReject}
+                        disabled={approving}
+                        className="btn-reject"
+                      >
+                        {approving ? 'Processing...' : '✗ Confirm Rejection'}
+                      </button>
+                      <button
+                        onClick={() => { setShowRejectForm(false); setRejectFeedback(''); }}
+                        disabled={approving}
+                        className="btn-cancel"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {(feature.currentStep === 'pending_approval' || feature.status === 'pending_approval') && (
+              <div className="feature-approval-section">
+                <h3>🛡️ Admin Approval Required</h3>
+                <p className="feature-approval-description">
+                  This feature request has been classified and confirmed. An admin must approve it before the orchestrator picks it up.
+                </p>
+
+                {feature.complexity && (
+                  <div className="feature-detail-row">
+                    <span className="feature-detail-label">Complexity</span>
+                    <span className={`feature-status-badge feature-badge-complexity-${feature.complexity}`}>
+                      {feature.complexity}
+                    </span>
+                  </div>
+                )}
+
+                {!showRejectForm ? (
+                  <div className="feature-approval-actions">
+                    <button
+                      onClick={handleAdminApproveAction}
+                      disabled={approving}
+                      className="btn-approve"
+                    >
+                      {approving ? 'Processing...' : '✓ Approve'}
+                    </button>
+                    <button
+                      onClick={() => setShowRejectForm(true)}
+                      disabled={approving}
+                      className="btn-reject"
+                    >
+                      ✗ Reject
+                    </button>
+                  </div>
+                ) : (
+                  <div className="feature-reject-form">
+                    <label htmlFor="reject-feedback" className="feature-reject-label">
+                      Rejection reason (optional):
+                    </label>
+                    <textarea
+                      id="reject-feedback"
+                      className="feature-reject-textarea"
+                      value={rejectFeedback}
+                      onChange={(e) => setRejectFeedback(e.target.value)}
+                      placeholder="Explain why this feature request is being rejected..."
+                      rows={4}
+                    />
+                    <div className="feature-approval-actions">
+                      <button
+                        onClick={handleAdminRejectAction}
                         disabled={approving}
                         className="btn-reject"
                       >
