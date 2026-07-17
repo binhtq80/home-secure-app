@@ -501,7 +501,10 @@ export class AppStack extends cdk.Stack {
     // CodePipeline access for feature approval
     approveFeatureRequestFn.addToRolePolicy(new iam.PolicyStatement({
       actions: ['codepipeline:GetPipelineState', 'codepipeline:PutApprovalResult'],
-      resources: [`arn:aws:codepipeline:${this.region}:${this.account}:${prefix}-pipeline`],
+      resources: [
+        `arn:aws:codepipeline:${this.region}:${this.account}:${prefix}-pipeline`,
+        `arn:aws:codepipeline:${this.region}:${this.account}:${prefix}-pipeline/*`,
+      ],
     }));
 
     // S3 access for device images
