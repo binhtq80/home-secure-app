@@ -3494,3 +3494,70 @@
   color: #d97706;
   font-weight: 500;
 }
+
+/* ===== Dashboard Skeleton Loading Animation ===== */
+@keyframes skeleton-pulse {
+  0% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 0.3;
+  }
+  100% {
+    opacity: 0.6;
+  }
+}
+
+.skeleton-pulse {
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+  background: var(--color-border, #e2e8f0);
+  border-radius: 4px;
+}
+
+.skeleton-card {
+  pointer-events: none;
+}
+
+.skeleton-icon {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.skeleton-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.skeleton-line {
+  height: 0.75rem;
+}
+
+.skeleton-line-short {
+  width: 40%;
+}
+
+.skeleton-line-medium {
+  width: 65%;
+  height: 1rem;
+}
+
+.skeleton-line-tiny {
+  width: 50%;
+  height: 0.6rem;
+}
+
+.skeleton-line-heading {
+  width: 30%;
+  height: 1.2rem;
+  margin-bottom: 1rem;
+}
+
+.dashboard-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}

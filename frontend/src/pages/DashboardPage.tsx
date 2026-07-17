@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { reportsApi } from '../services/api';
 import { DarkModeToggle } from '../components/DarkModeToggle';
+import { DashboardSkeleton } from '../components/DashboardSkeleton';
 
 interface EnergySummary {
   totalKwh: number;
@@ -146,69 +147,73 @@ export function DashboardPage() {
         </div>
 
         {/* Energy Summary Card */}
-        <div className="energy-summary-section">
-          <h3>Energy Overview</h3>
-          {energyLoading ? (
-            <p className="loading-text">Loading energy data...</p>
-          ) : energySummary ? (
-            <div className="stats-grid">
-              <div className="stat-card">
-                <div className="stat-icon">📱</div>
-                <div className="stat-content">
-                  <h3>Devices Tracked</h3>
-                  <p className="stat-value">{energySummary.deviceCount}</p>
-                  <p className="stat-subtitle">Active devices</p>
-                </div>
-              </div>
-
-              <div className="stat-card" title="Total energy cost this month">
-                <div className="stat-icon">💰</div>
-                <div className="stat-content">
-                  <h3>This Month&apos;s Cost</h3>
-                  <p className="stat-value">${currentMonthCost?.toFixed(2) ?? '0.00'}</p>
-                  <p className="stat-subtitle">@ ${energySummary.costPerKwh}/kWh</p>
-                </div>
-              </div>
-
-              <div className="stat-card">
-                <div className="stat-icon">⚡</div>
-                <div className="stat-content">
-                  <h3>Total Energy (12 mo)</h3>
-                  <p className="stat-value">{energySummary.totalKwh} kWh</p>
-                  <p className="stat-subtitle">${energySummary.totalCost} total cost</p>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <p className="stat-subtitle">No energy data available. Add devices to start tracking.</p>
-          )}
-        </div>
-
-        {/* Per-Room Energy Breakdown */}
-        {!energyLoading && roomBreakdown.length > 0 && (
-          <div className="energy-summary-section">
-            <h3>Energy by Room / Zone</h3>
-            <div className="room-breakdown-grid">
-              {roomBreakdown.map((room) => (
-                <div key={room.room} className="room-breakdown-card">
-                  <div className="room-breakdown-header">
-                    <span className="room-breakdown-name">{room.room}</span>
-                    <span className="room-breakdown-devices">{room.deviceCount} device{room.deviceCount !== 1 ? 's' : ''}</span>
-                  </div>
-                  <div className="room-breakdown-stats">
-                    <div className="room-breakdown-stat">
-                      <span className="room-stat-label">Energy (12 mo)</span>
-                      <span className="room-stat-value">{room.totalKwh} kWh</span>
+        {energyLoading ? (
+          <DashboardSkeleton />
+        ) : (
+          <>
+            <div className="energy-summary-section">
+              <h3>Energy Overview</h3>
+              {energySummary ? (
+                <div className="stats-grid">
+                  <div className="stat-card">
+                    <div className="stat-icon">📱</div>
+                    <div className="stat-content">
+                      <h3>Devices Tracked</h3>
+                      <p className="stat-value">{energySummary.deviceCount}</p>
+                      <p className="stat-subtitle">Active devices</p>
                     </div>
-                    <div className="room-breakdown-stat">
-                      <span className="room-stat-label">Cost (12 mo)</span>
-                      <span className="room-stat-value">${room.totalCost.toFixed(2)}</span>
+                  </div>
+
+                  <div className="stat-card" title="Total energy cost this month">
+                    <div className="stat-icon">💰</div>
+                    <div className="stat-content">
+                      <h3>This Month&apos;s Cost</h3>
+                      <p className="stat-value">${currentMonthCost?.toFixed(2) ?? '0.00'}</p>
+                      <p className="stat-subtitle">@ ${energySummary.costPerKwh}/kWh</p>
+                    </div>
+                  </div>
+
+                  <div className="stat-card">
+                    <div className="stat-icon">⚡</div>
+                    <div className="stat-content">
+                      <h3>Total Energy (12 mo)</h3>
+                      <p className="stat-value">{energySummary.totalKwh} kWh</p>
+                      <p className="stat-subtitle">${energySummary.totalCost} total cost</p>
                     </div>
                   </div>
                 </div>
-              ))}
+              ) : (
+                <p className="stat-subtitle">No energy data available. Add devices to start tracking.</p>
+              )}
             </div>
-          </div>
+
+            {/* Per-Room Energy Breakdown */}
+            {roomBreakdown.length > 0 && (
+              <div className="energy-summary-section">
+                <h3>Energy by Room / Zone</h3>
+                <div className="room-breakdown-grid">
+                  {roomBreakdown.map((room) => (
+                    <div key={room.room} className="room-breakdown-card">
+                      <div className="room-breakdown-header">
+                        <span className="room-breakdown-name">{room.room}</span>
+                        <span className="room-breakdown-devices">{room.deviceCount} device{room.deviceCount !== 1 ? 's' : ''}</span>
+                      </div>
+                      <div className="room-breakdown-stats">
+                        <div className="room-breakdown-stat">
+                          <span className="room-stat-label">Energy (12 mo)</span>
+                          <span className="room-stat-value">{room.totalKwh} kWh</span>
+                        </div>
+                        <div className="room-breakdown-stat">
+                          <span className="room-stat-label">Cost (12 mo)</span>
+                          <span className="room-stat-value">${room.totalCost.toFixed(2)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
         )}
       </main>
     </div>
