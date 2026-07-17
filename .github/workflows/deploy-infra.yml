@@ -34,7 +34,7 @@ jobs:
 
       - name: Build all (required for CDK synth)
         run: |
-          cd backend && node scripts/build.js && ./scripts/prepare-lambda-packages.sh && cd ..
+          cd backend && node scripts/build-bundle.js && cd ..
           cd frontend && npm run build && cd ..
           cd infrastructure && npm run build && cd ..
 
