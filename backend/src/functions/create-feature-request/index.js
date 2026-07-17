@@ -31,8 +31,11 @@ exports.handler = withAuth(async (event) => {
       id,
       description: description.trim(),
       status: 'pending',
+      source: 'web',
       createdAt: now,
       createdBy: userId,
+      currentStep: 'pending',
+      steps: [{ time: now, detail: 'Submitted via web' }],
     };
 
     await ddbClient.send(new PutCommand({

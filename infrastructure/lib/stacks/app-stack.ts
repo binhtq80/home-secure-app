@@ -143,6 +143,12 @@ export class AppStack extends cdk.Stack {
       sortKey: { name: 'createdAt', type: dynamodb.AttributeType.STRING },
     });
 
+    featureRequestsTable.addGlobalSecondaryIndex({
+      indexName: 'status-createdAt-index',
+      partitionKey: { name: 'status', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'createdAt', type: dynamodb.AttributeType.STRING },
+    });
+
     // ─── S3 Bucket for Device Images ──────────────────────────────────────────
 
     const deviceImagesBucket = new s3.Bucket(this, 'DeviceImagesBucket', {
