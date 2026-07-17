@@ -403,9 +403,15 @@ export function FeatureDetailPage() {
 
             {(feature.currentStep === 'awaiting_approval' || feature.status === 'awaiting_approval') && (
               <div className="feature-approval-section">
-                <h3>🔒 Pipeline Approval Required</h3>
+                <h3>🚀 Pipeline E2EApproval Required</h3>
+                <div className="feature-pipeline-status-context">
+                  <span className="feature-pipeline-status-icon">⏳</span>
+                  <span className="feature-pipeline-status-text">
+                    Pipeline deployed and waiting for approval — the CDK Pipeline has completed deployment and is paused at the <strong>E2EApproval</strong> manual approval step.
+                  </span>
+                </div>
                 <p className="feature-approval-description">
-                  The deployment pipeline is waiting for manual approval. Review the changes and approve or reject.
+                  Review the deployed changes and approve or reject the pipeline to continue.
                 </p>
 
                 {!showRejectForm ? (
@@ -415,14 +421,14 @@ export function FeatureDetailPage() {
                       disabled={approving}
                       className="btn-approve"
                     >
-                      {approving ? 'Processing...' : '✓ Approve'}
+                      {approving ? 'Processing...' : '✓ Approve Pipeline Deploy'}
                     </button>
                     <button
                       onClick={() => setShowRejectForm(true)}
                       disabled={approving}
                       className="btn-reject"
                     >
-                      ✗ Reject
+                      ✗ Reject Pipeline Deploy
                     </button>
                   </div>
                 ) : (
@@ -435,7 +441,7 @@ export function FeatureDetailPage() {
                       className="feature-reject-textarea"
                       value={rejectFeedback}
                       onChange={(e) => setRejectFeedback(e.target.value)}
-                      placeholder="Explain why this feature is being rejected..."
+                      placeholder="Explain why this pipeline deploy is being rejected..."
                       rows={4}
                     />
                     <div className="feature-approval-actions">
