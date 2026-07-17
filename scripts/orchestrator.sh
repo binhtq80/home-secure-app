@@ -174,14 +174,32 @@ main() {
     # Remove task from queue
     sed -i '1d' "$QUEUE_FILE"
 
-    # Parse id||description format (bridge writes this)
-    # Falls back to treating entire line as description if no || found (manual submit)
+    # Parse queue format:
+    #   id||complexity||description  (bridge with complexity)
+    #   id||description              (bridge without complexity — legacy)
+    #   description                  (manual submit without id)
     local task_id=""
     local task=""
-    if [[ "$queue_line" == *"||"* ]]; then
+    local complexity="complex"  # default: require approval if unknown
+
+    local field_count
+    field_count=$(echo "$queue_line" | awk -F'\\|\\|' '{print NF}')
+
+    if [ "$field_count" -ge 3 ]; then
+      # id||complexity||description (or _||complexity||description from CLI)
+      task_id=$(echo "$queue_line" | awk -F'\\|\\|' '{print $1}')
+      complexity=$(echo "$queue_line" | awk -F'\\|\\|' '{print $2}')
+      task=$(echo "$queue_line" | awk -F'\\|\\|' '{for(i=3;i<=NF;i++) printf "%s%s",$i,(i<NF?"||":""); print ""}')
+      # _ means no ID (submitted via CLI, not bridge)
+      if [ "$task_id" = "_" ]; then
+        task_id=""
+      fi
+    elif [ "$field_count" -eq 2 ]; then
+      # id||description (legacy format)
       task_id="${queue_line%%||*}"
       task="${queue_line#*||}"
     else
+      # plain description (manual submit)
       task="$queue_line"
     fi
 
@@ -190,6 +208,7 @@ main() {
     if [ -n "$task_id" ]; then
       log "   ID: $task_id"
     fi
+    log "   Complexity: $complexity"
     log "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
     # Mark as picked up
@@ -377,9 +396,46 @@ DO THE FOLLOWING (no questions, just execute):
             --query 'stageStates[*].actionStates[?actionName==`E2EApproval`].latestExecution.status' \
             --output text 2>/dev/null | head -1)
           if [ "$approval_status" = "InProgress" ]; then
-            log "   ⏸️  Pipeline waiting at E2EApproval — setting status to awaiting_approval"
-            update_feature_request_status_by_id "$task_id" "awaiting_approval" "Pipeline waiting for manual approval"
             awaiting_approval_set=true
+
+            if [ "$complexity" = "highly-complex" ]; then
+              # Highly complex: require manual approval (current behavior)
+              log "   ⏸️  Pipeline waiting at E2EApproval — highly-complex, waiting for manual approval"
+              update_feature_request_status_by_id "$task_id" "awaiting_approval" "Pipeline waiting for manual approval (highly-complex)"
+            else
+              # Simple/Medium/Complex: auto-approve
+              log "   ✅ Pipeline waiting at E2EApproval — auto-approving (complexity: $complexity)"
+              update_feature_request_status_by_id "$task_id" "deploying" "Auto-approved (complexity: $complexity)"
+
+              # Get the pipeline execution ID for the approval token
+              local exec_id
+              exec_id=$(get_pipeline_execution_id)
+
+              # Find the stage name that contains E2EApproval
+              local stage_name
+              stage_name=$(aws codepipeline get-pipeline-state \
+                --name "$PIPELINE_NAME" \
+                --profile "$AWS_PROFILE" \
+                --region "$AWS_REGION" \
+                --query 'stageStates[?actionStates[?actionName==`E2EApproval`]].stageName' \
+                --output text 2>/dev/null | head -1)
+
+              aws codepipeline put-approval-result \
+                --pipeline-name "$PIPELINE_NAME" \
+                --stage-name "$stage_name" \
+                --action-name "E2EApproval" \
+                --result "summary=Auto-approved (complexity: $complexity),status=Approved" \
+                --token "$(aws codepipeline get-pipeline-state \
+                  --name "$PIPELINE_NAME" \
+                  --profile "$AWS_PROFILE" \
+                  --region "$AWS_REGION" \
+                  --query 'stageStates[*].actionStates[?actionName==`E2EApproval`].latestExecution.token | [0][0]' \
+                  --output text 2>/dev/null)" \
+                --profile "$AWS_PROFILE" \
+                --region "$AWS_REGION" > /dev/null 2>&1
+
+              log "   ✅ Auto-approval sent"
+            fi
           fi
         fi
 

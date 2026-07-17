@@ -5,12 +5,20 @@
 #
 # Usage:
 #   ./scripts/feature.sh submit "add search to devices page"
+#   ./scripts/feature.sh submit --complexity simple "change button color to blue"
+#   ./scripts/feature.sh submit --complexity highly-complex "add WebSocket notifications"
 #   ./scripts/feature.sh status
 #   ./scripts/feature.sh result
 #   ./scripts/feature.sh log
 #   ./scripts/feature.sh queue
 #   ./scripts/feature.sh stop
 #   ./scripts/feature.sh start
+#
+# Complexity levels (affects pipeline approval):
+#   simple         — frontend only (auto-approve)
+#   medium         — backend changes, no new infra (auto-approve)
+#   complex        — new infrastructure resources (auto-approve)
+#   highly-complex — risky/multi-system changes (requires manual approval)
 #
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -24,12 +32,21 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 case "$1" in
   submit)
     shift
+    # Parse --complexity flag
+    local complexity="complex"  # default
+    if [ "$1" = "--complexity" ]; then
+      complexity="$2"
+      shift 2
+    fi
     if [ -z "$*" ]; then
-      echo "Usage: feature.sh submit \"feature description\""
+      echo "Usage: feature.sh submit [--complexity simple|medium|complex|highly-complex] \"feature description\""
       exit 1
     fi
-    echo "$*" >> "$QUEUE_FILE"
+    # Write as: _||complexity||description (no ID, orchestrator parses 3 fields)
+    echo "_||${complexity}||$*" >> "$QUEUE_FILE"
     echo "✅ Submitted: $*"
+    echo "   Complexity: $complexity"
+    echo "   Pipeline approval: $([ "$complexity" = "highly-complex" ] && echo "REQUIRED" || echo "auto-skip")"
     echo "   Queue position: $(wc -l < "$QUEUE_FILE")"
 
     # Auto-start orchestrator and bridge if not running
