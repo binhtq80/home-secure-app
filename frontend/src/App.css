@@ -2750,3 +2750,110 @@
   font-weight: 600;
   color: var(--color-text);
 }
+
+/* ─── Device Tags ───────────────────────────────────────────────────────────── */
+
+.device-tags-card {
+  background: var(--card-bg, #ffffff);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.device-tags-card h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1.1rem;
+}
+
+.device-tags-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  min-height: 32px;
+  align-items: center;
+}
+
+.tags-empty {
+  color: var(--text-muted, #888);
+  font-size: 0.9rem;
+  font-style: italic;
+}
+
+.device-tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: var(--tag-bg, #e8f4fd);
+  color: var(--tag-color, #1a73e8);
+  border: 1px solid var(--tag-border, #bee3f8);
+  border-radius: 16px;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+
+.device-tag-chip:nth-child(3n+1) {
+  background: var(--tag-bg-1, #e8f4fd);
+  color: var(--tag-color-1, #1a73e8);
+  border-color: var(--tag-border-1, #bee3f8);
+}
+
+.device-tag-chip:nth-child(3n+2) {
+  background: var(--tag-bg-2, #f0fdf4);
+  color: var(--tag-color-2, #16a34a);
+  border-color: var(--tag-border-2, #bbf7d0);
+}
+
+.device-tag-chip:nth-child(3n) {
+  background: var(--tag-bg-3, #fef3f2);
+  color: var(--tag-color-3, #dc2626);
+  border-color: var(--tag-border-3, #fecaca);
+}
+
+.tag-remove-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.1rem;
+  line-height: 1;
+  padding: 0 0.15rem;
+  color: inherit;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+
+.tag-remove-btn:hover {
+  opacity: 1;
+}
+
+.tag-input-section {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.tag-input {
+  flex: 1;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border-color, #ddd);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  background: var(--input-bg, #fff);
+  color: var(--text-color, #333);
+}
+
+.tag-input:focus {
+  outline: none;
+  border-color: var(--primary-color, #1a73e8);
+  box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.15);
+}
+
+.btn-add-tag {
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}

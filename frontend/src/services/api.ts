@@ -158,6 +158,21 @@ export const devicesApi = {
     }),
 
   listFavorites: () => request('/api/devices/favorites'),
+
+  getTags: (deviceId: string) =>
+    request(`/api/devices/${deviceId}/tags`),
+
+  addTag: (deviceId: string, tag: string) =>
+    request(`/api/devices/${deviceId}/tags`, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'add', tag }),
+    }),
+
+  removeTag: (deviceId: string, tag: string) =>
+    request(`/api/devices/${deviceId}/tags`, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'remove', tag }),
+    }),
 };
 
 export const roomsApi = {

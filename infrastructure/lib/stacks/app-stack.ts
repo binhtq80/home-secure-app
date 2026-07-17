@@ -120,6 +120,15 @@ export class AppStack extends cdk.Stack {
       removalPolicy: envConfig.isProd ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,
     });
 
+    // Device tags table
+    const deviceTagsTable = new dynamodb.Table(this, 'DeviceTagsTable', {
+      tableName: `${prefix}-device-tags`,
+      partitionKey: { name: 'deviceId', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'tag', type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: envConfig.isProd ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,
+    });
+
     // Feature requests table
     const featureRequestsTable = new dynamodb.Table(this, 'FeatureRequestsTable', {
       tableName: `${prefix}-feature-requests`,
@@ -159,6 +168,7 @@ export class AppStack extends cdk.Stack {
       DEVICE_HISTORY_TABLE: deviceHistoryTable.tableName,
       DEVICE_NOTES_TABLE: deviceNotesTable.tableName,
       DEVICE_FAVORITES_TABLE: deviceFavoritesTable.tableName,
+      DEVICE_TAGS_TABLE: deviceTagsTable.tableName,
       FEATURE_REQUESTS_TABLE: featureRequestsTable.tableName,
       USER_POOL_ID: userPool.userPoolId,
       USER_POOL_CLIENT_ID: userPoolClient.userPoolClientId,
@@ -374,8 +384,15 @@ export class AppStack extends cdk.Stack {
       handler: 'functions/list-device-favorites/index.handler',
     });
 
+    // Device tags function
+    const manageDeviceTagsFn = new lambda.Function(this, 'ManageDeviceTagsFn', {
+      ...commonProps,
+      functionName: `${prefix}-manage-device-tags`,
+      handler: 'functions/manage-device-tags/index.handler',
+    });
+
     // Grant permissions
-    const allFunctions = [signUpFn, confirmSignUpFn, signInFn, getUserFn, recognizeDeviceFn, createDeviceFn, listDevicesFn, deleteDeviceFn, getDeviceEnergyFn, getUserSettingsFn, updateUserSettingsFn, getEnergyReportFn, updateDeviceBudgetFn, getDeviceStatsFn, getDeviceImageFn, updateDeviceFn, getDeviceHistoryFn, getDeviceLastActiveFn, createFeatureRequestFn, listFeatureRequestsFn, getFeatureRequestFn, getFeatureRequestStatsFn, approveFeatureRequestFn, uploadDeviceManualFn, getDeviceManualsFn, deleteDeviceManualFn, deleteRoomFn, createDeviceNoteFn, listDeviceNotesFn, toggleDeviceFavoriteFn, listDeviceFavoritesFn];
+    const allFunctions = [signUpFn, confirmSignUpFn, signInFn, getUserFn, recognizeDeviceFn, createDeviceFn, listDevicesFn, deleteDeviceFn, getDeviceEnergyFn, getUserSettingsFn, updateUserSettingsFn, getEnergyReportFn, updateDeviceBudgetFn, getDeviceStatsFn, getDeviceImageFn, updateDeviceFn, getDeviceHistoryFn, getDeviceLastActiveFn, createFeatureRequestFn, listFeatureRequestsFn, getFeatureRequestFn, getFeatureRequestStatsFn, approveFeatureRequestFn, uploadDeviceManualFn, getDeviceManualsFn, deleteDeviceManualFn, deleteRoomFn, createDeviceNoteFn, listDeviceNotesFn, toggleDeviceFavoriteFn, listDeviceFavoritesFn, manageDeviceTagsFn];
 
     for (const fn of allFunctions) {
       usersTable.grantReadWriteData(fn);
@@ -384,6 +401,7 @@ export class AppStack extends cdk.Stack {
       deviceHistoryTable.grantReadWriteData(fn);
       deviceNotesTable.grantReadWriteData(fn);
       deviceFavoritesTable.grantReadWriteData(fn);
+      deviceTagsTable.grantReadWriteData(fn);
       featureRequestsTable.grantReadWriteData(fn);
       fn.addToRolePolicy(new iam.PolicyStatement({
         actions: [
@@ -468,6 +486,9 @@ export class AppStack extends cdk.Stack {
     const notesResource = deviceResource.addResource('notes');
     notesResource.addMethod('POST', new apigateway.LambdaIntegration(createDeviceNoteFn));
     notesResource.addMethod('GET', new apigateway.LambdaIntegration(listDeviceNotesFn));
+    const tagsResource = deviceResource.addResource('tags');
+    tagsResource.addMethod('GET', new apigateway.LambdaIntegration(manageDeviceTagsFn));
+    tagsResource.addMethod('POST', new apigateway.LambdaIntegration(manageDeviceTagsFn));
     deviceResource.addResource('favorite').addMethod('POST', new apigateway.LambdaIntegration(toggleDeviceFavoriteFn));
 
     // Device favorites list route (all favorites for user)

@@ -105,12 +105,19 @@ export function DeviceDetailPage() {
   const [savingNote, setSavingNote] = useState(false);
   const [noteSuccess, setNoteSuccess] = useState('');
 
+  // Tags state
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagsLoading, setTagsLoading] = useState(false);
+  const [tagInput, setTagInput] = useState('');
+  const [savingTag, setSavingTag] = useState(false);
+
   useEffect(() => {
     if (deviceId) {
       loadEnergyData(deviceId);
       loadHistory(deviceId);
       loadManuals(deviceId);
       loadNotes(deviceId);
+      loadTags(deviceId);
     }
   }, [deviceId]);
 
@@ -182,6 +189,44 @@ export function DeviceDetailPage() {
       setError(err instanceof Error ? err.message : 'Failed to add note');
     } finally {
       setSavingNote(false);
+    }
+  };
+
+  const loadTags = async (id: string) => {
+    setTagsLoading(true);
+    try {
+      const data = await devicesApi.getTags(id);
+      setTags(data.tags || []);
+    } catch {
+      setTags([]);
+    } finally {
+      setTagsLoading(false);
+    }
+  };
+
+  const handleAddTag = async () => {
+    if (!deviceId || !tagInput.trim()) return;
+    setSavingTag(true);
+    setError('');
+
+    try {
+      const data = await devicesApi.addTag(deviceId, tagInput.trim());
+      setTags(data.tags || [...tags, tagInput.trim().toLowerCase()]);
+      setTagInput('');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to add tag');
+    } finally {
+      setSavingTag(false);
+    }
+  };
+
+  const handleRemoveTag = async (tag: string) => {
+    if (!deviceId) return;
+    try {
+      await devicesApi.removeTag(deviceId, tag);
+      setTags(tags.filter(t => t !== tag));
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to remove tag');
     }
   };
 
@@ -416,6 +461,51 @@ export function DeviceDetailPage() {
             <span>Color: {device?.color}</span>
             <span>Condition: {device?.condition}</span>
           </p>
+        </div>
+
+        {/* Device Tags */}
+        <div className="device-tags-card">
+          <h3>🏷️ Tags</h3>
+          <div className="device-tags-list">
+            {tagsLoading ? (
+              <span className="loading-text">Loading tags...</span>
+            ) : tags.length === 0 ? (
+              <span className="tags-empty">No tags yet</span>
+            ) : (
+              tags.map((tag) => (
+                <span key={tag} className="device-tag-chip">
+                  {tag}
+                  <button
+                    className="tag-remove-btn"
+                    onClick={() => handleRemoveTag(tag)}
+                    aria-label={`Remove tag ${tag}`}
+                    title={`Remove "${tag}"`}
+                  >
+                    ×
+                  </button>
+                </span>
+              ))
+            )}
+          </div>
+          <div className="tag-input-section">
+            <input
+              type="text"
+              className="tag-input"
+              placeholder="Add a tag (e.g. kitchen, high-power)..."
+              value={tagInput}
+              onChange={(e) => setTagInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleAddTag(); }}
+              disabled={savingTag}
+              maxLength={30}
+            />
+            <button
+              className="btn-primary btn-add-tag"
+              onClick={handleAddTag}
+              disabled={savingTag || !tagInput.trim()}
+            >
+              {savingTag ? '...' : '+ Add'}
+            </button>
+          </div>
         </div>
 
         {/* Edit Form */}
