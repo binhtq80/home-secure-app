@@ -65,6 +65,8 @@ export function SubmitFeaturePage() {
       setSuccessTicket(data.id);
       setDescription('');
       loadFeatures();
+      // Navigate to detail page so user can confirm the complexity
+      navigate(`/submit-feature/${data.id}`);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to submit feature request');
     } finally {

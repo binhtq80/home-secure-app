@@ -199,4 +199,10 @@ export const featuresApi = {
       method: 'POST',
       body: JSON.stringify({ action, feedback }),
     }),
+
+  confirm: (id: string, action: 'accept' | 'override', overrideComplexity?: string) =>
+    request(`/api/features/${id}/confirm`, {
+      method: 'POST',
+      body: JSON.stringify({ action, overrideComplexity }),
+    }),
 };

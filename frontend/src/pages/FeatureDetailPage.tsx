@@ -16,6 +16,9 @@ interface FeatureRequest {
   currentStep?: string;
   steps?: FeatureStep[];
   createdAt: string;
+  suggestedComplexity?: string;
+  complexityJustification?: string;
+  complexity?: string;
 }
 
 const TERMINAL_STATUSES = ['delivered', 'failed', 'rejected'];
@@ -40,6 +43,9 @@ export function FeatureDetailPage() {
   const [rejectFeedback, setRejectFeedback] = useState('');
   const [approving, setApproving] = useState(false);
   const [polling, setPolling] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  const [showOverrideForm, setShowOverrideForm] = useState(false);
+  const [overrideLevel, setOverrideLevel] = useState('');
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const loadFeature = useCallback(async (showRefreshing = false) => {
@@ -129,6 +135,36 @@ export function FeatureDetailPage() {
     }
   };
 
+  const handleAcceptComplexity = async () => {
+    if (!featureId) return;
+    setConfirming(true);
+    setError('');
+    try {
+      await featuresApi.confirm(featureId, 'accept');
+      await loadFeature();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to confirm complexity');
+    } finally {
+      setConfirming(false);
+    }
+  };
+
+  const handleOverrideComplexity = async () => {
+    if (!featureId || !overrideLevel) return;
+    setConfirming(true);
+    setError('');
+    try {
+      await featuresApi.confirm(featureId, 'override', overrideLevel);
+      setShowOverrideForm(false);
+      setOverrideLevel('');
+      await loadFeature();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to override complexity');
+    } finally {
+      setConfirming(false);
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'completed':
@@ -138,7 +174,9 @@ export function FeatureDetailPage() {
       case 'rejected': return 'error';
       case 'in-progress':
       case 'implementing': return 'active';
-      case 'awaiting_approval': return 'warning';
+      case 'awaiting_approval':
+      case 'pending_confirmation': return 'warning';
+      case 'classifying': return 'active';
       default: return 'pending';
     }
   };
@@ -250,6 +288,87 @@ export function FeatureDetailPage() {
                 </div>
               )}
             </div>
+
+            {(feature.currentStep === 'pending_confirmation' || feature.status === 'pending_confirmation') && feature.suggestedComplexity && (
+              <div className="feature-approval-section">
+                <h3>🤖 AI Complexity Classification</h3>
+                <p className="feature-approval-description">
+                  The AI has analyzed your feature request and suggested a complexity level. You can accept or override it.
+                </p>
+                <div className="feature-detail-row">
+                  <span className="feature-detail-label">Suggested Complexity</span>
+                  <span className={`feature-status-badge feature-badge-complexity-${feature.suggestedComplexity}`}>
+                    {feature.suggestedComplexity}
+                  </span>
+                </div>
+                <div className="feature-detail-row">
+                  <span className="feature-detail-label">Justification</span>
+                  <span className="feature-detail-value">{feature.complexityJustification}</span>
+                </div>
+
+                {!showOverrideForm ? (
+                  <div className="feature-approval-actions">
+                    <button
+                      onClick={handleAcceptComplexity}
+                      disabled={confirming}
+                      className="btn-approve"
+                    >
+                      {confirming ? 'Processing...' : '✓ Accept'}
+                    </button>
+                    <button
+                      onClick={() => setShowOverrideForm(true)}
+                      disabled={confirming}
+                      className="btn-reject"
+                    >
+                      ✎ Override
+                    </button>
+                  </div>
+                ) : (
+                  <div className="feature-reject-form">
+                    <label htmlFor="override-complexity" className="feature-reject-label">
+                      Select complexity level:
+                    </label>
+                    <select
+                      id="override-complexity"
+                      className="feature-override-select"
+                      value={overrideLevel}
+                      onChange={(e) => setOverrideLevel(e.target.value)}
+                    >
+                      <option value="">-- Select --</option>
+                      <option value="simple">Simple</option>
+                      <option value="medium">Medium</option>
+                      <option value="complex">Complex</option>
+                      <option value="highly-complex">Highly Complex</option>
+                    </select>
+                    <div className="feature-approval-actions">
+                      <button
+                        onClick={handleOverrideComplexity}
+                        disabled={confirming || !overrideLevel}
+                        className="btn-approve"
+                      >
+                        {confirming ? 'Processing...' : '✓ Confirm Override'}
+                      </button>
+                      <button
+                        onClick={() => { setShowOverrideForm(false); setOverrideLevel(''); }}
+                        disabled={confirming}
+                        className="btn-cancel"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {feature.complexity && (
+              <div className="feature-detail-row">
+                <span className="feature-detail-label">Final Complexity</span>
+                <span className={`feature-status-badge feature-badge-complexity-${feature.complexity}`}>
+                  {feature.complexity}
+                </span>
+              </div>
+            )}
 
             {(feature.currentStep === 'awaiting_approval' || feature.status === 'awaiting_approval') && (
               <div className="feature-approval-section">

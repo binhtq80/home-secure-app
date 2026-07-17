@@ -337,6 +337,12 @@ export class AppStack extends cdk.Stack {
       },
     });
 
+    const confirmFeatureRequestFn = new lambda.Function(this, 'ConfirmFeatureRequestFn', {
+      ...commonProps,
+      functionName: `${prefix}-confirm-feature-request`,
+      handler: 'functions/confirm-feature-request/index.handler',
+    });
+
     // Device manuals functions
     const uploadDeviceManualFn = new lambda.Function(this, 'UploadDeviceManualFn', {
       ...commonProps,
@@ -398,7 +404,7 @@ export class AppStack extends cdk.Stack {
     });
 
     // Grant permissions
-    const allFunctions = [signUpFn, confirmSignUpFn, signInFn, getUserFn, recognizeDeviceFn, createDeviceFn, listDevicesFn, deleteDeviceFn, getDeviceEnergyFn, getUserSettingsFn, updateUserSettingsFn, getEnergyReportFn, updateDeviceBudgetFn, getDeviceStatsFn, getDeviceImageFn, updateDeviceFn, getDeviceHistoryFn, getDeviceLastActiveFn, createFeatureRequestFn, listFeatureRequestsFn, getFeatureRequestFn, getFeatureRequestStatsFn, approveFeatureRequestFn, uploadDeviceManualFn, getDeviceManualsFn, deleteDeviceManualFn, deleteRoomFn, createDeviceNoteFn, listDeviceNotesFn, toggleDeviceFavoriteFn, listDeviceFavoritesFn, manageDeviceTagsFn];
+    const allFunctions = [signUpFn, confirmSignUpFn, signInFn, getUserFn, recognizeDeviceFn, createDeviceFn, listDevicesFn, deleteDeviceFn, getDeviceEnergyFn, getUserSettingsFn, updateUserSettingsFn, getEnergyReportFn, updateDeviceBudgetFn, getDeviceStatsFn, getDeviceImageFn, updateDeviceFn, getDeviceHistoryFn, getDeviceLastActiveFn, createFeatureRequestFn, listFeatureRequestsFn, getFeatureRequestFn, getFeatureRequestStatsFn, approveFeatureRequestFn, confirmFeatureRequestFn, uploadDeviceManualFn, getDeviceManualsFn, deleteDeviceManualFn, deleteRoomFn, createDeviceNoteFn, listDeviceNotesFn, toggleDeviceFavoriteFn, listDeviceFavoritesFn, manageDeviceTagsFn];
 
     for (const fn of allFunctions) {
       usersTable.grantReadWriteData(fn);
@@ -431,6 +437,12 @@ export class AppStack extends cdk.Stack {
 
     // Bedrock access for energy saving tips generation on device creation
     createDeviceFn.addToRolePolicy(new iam.PolicyStatement({
+      actions: ['bedrock:InvokeModel'],
+      resources: ['*'],
+    }));
+
+    // Bedrock access for feature request complexity classification
+    createFeatureRequestFn.addToRolePolicy(new iam.PolicyStatement({
       actions: ['bedrock:InvokeModel'],
       resources: ['*'],
     }));
@@ -522,6 +534,7 @@ export class AppStack extends cdk.Stack {
     const featureResource = featuresResource.addResource('{featureId}');
     featureResource.addMethod('GET', new apigateway.LambdaIntegration(getFeatureRequestFn));
     featureResource.addResource('approve').addMethod('POST', new apigateway.LambdaIntegration(approveFeatureRequestFn));
+    featureResource.addResource('confirm').addMethod('POST', new apigateway.LambdaIntegration(confirmFeatureRequestFn));
 
     // ─── Frontend Hosting ──────────────────────────────────────────────────────
 

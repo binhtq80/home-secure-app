@@ -2971,3 +2971,79 @@
   font-size: 0.85rem;
   white-space: nowrap;
 }
+
+/* ─── Complexity Classification Badges ──────────────────────────────────── */
+
+.feature-badge-complexity-simple {
+  background: #d1fae5;
+  color: #065f46;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.feature-badge-complexity-medium {
+  background: #fef3c7;
+  color: #92400e;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.feature-badge-complexity-complex {
+  background: #fed7aa;
+  color: #9a3412;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.feature-badge-complexity-highly-complex {
+  background: #fecaca;
+  color: #991b1b;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+[data-theme="dark"] .feature-badge-complexity-simple {
+  background: #064e3b;
+  color: #a7f3d0;
+}
+
+[data-theme="dark"] .feature-badge-complexity-medium {
+  background: #78350f;
+  color: #fde68a;
+}
+
+[data-theme="dark"] .feature-badge-complexity-complex {
+  background: #7c2d12;
+  color: #fed7aa;
+}
+
+[data-theme="dark"] .feature-badge-complexity-highly-complex {
+  background: #7f1d1d;
+  color: #fecaca;
+}
+
+.feature-override-select {
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--color-border, #d1d5db);
+  border-radius: 0.5rem;
+  font-size: 0.9rem;
+  background: var(--color-surface, #fff);
+  color: var(--color-text, #1f2937);
+  margin-bottom: 0.75rem;
+  cursor: pointer;
+}
+
+.feature-override-select:focus {
+  outline: none;
+  border-color: var(--color-primary, #6366f1);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
