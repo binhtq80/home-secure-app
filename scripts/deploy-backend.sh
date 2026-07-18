@@ -29,34 +29,21 @@ ALL_FUNCTIONS=(
   confirm-signup
   signin
   get-user
-  recognize-device
-  create-device
-  list-devices
-  delete-device
-  update-device
-  get-device-energy
   get-user-settings
   update-user-settings
-  get-energy-report
-  update-device-budget
-  get-device-image
-  get-device-stats
-  get-device-history
-  get-device-last-active
+  get-avatar
+  update-avatar
+  list-users
+  update-user-role
   create-feature-request
+  confirm-feature-request
+  admin-approve-feature
+  approve-feature-request
   list-feature-requests
   get-feature-request
-  approve-feature-request
   get-feature-request-stats
-  upload-device-manual
-  get-device-manuals
-  delete-device-manual
-  delete-room
-  create-device-note
-  list-device-notes
-  toggle-device-favorite
-  list-device-favorites
-  budget-alert
+  vote-feature-request
+  list-feature-votes
 )
 
 # If specific functions passed as args, only deploy those

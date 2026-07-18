@@ -1,4 +1,4 @@
-# MyApp Project Steering
+# MyApp Platform Steering
 
 ## Hard Rules (rarely change)
 
@@ -11,22 +11,24 @@
 - **Infrastructure is CDK v2 TypeScript** — single AppStack, environment-parameterized
 - **Environment config** lives in `scripts/env.sh` (supports `ENV_FILE=` override)
 - **Deploy validation** — always run `./scripts/simulate-pipeline.sh --quick` before pushing
+- **Lambda bundle** — all functions share one `Code.fromAsset()`. Add new Lambdas to app-stack.ts with handler: `functions/<name>/index.handler`
 
 ## Reference Files (read these for current patterns)
 
 ### Backend patterns
-- `backend/src/functions/list-devices/index.js` → GET handler with DynamoDB query + auth
-- `backend/src/functions/create-device/index.js` → POST handler with input validation
+- `backend/src/functions/get-user-settings/index.js` → GET handler with DynamoDB query + auth
+- `backend/src/functions/create-feature-request/index.js` → POST handler with input validation + Bedrock
 - `backend/src/functions/update-user-settings/index.js` → PUT handler pattern
-- `backend/src/functions/delete-device/index.js` → DELETE handler pattern
+- `backend/src/functions/update-user-role/index.js` → PUT with role-based access control
 - `backend/src/common/middleware.js` → withAuth wrapper + CORS headers export
 
 ### Frontend patterns
 - `frontend/src/pages/SettingsPage.tsx` → simple page with form, API call, loading/error states
-- `frontend/src/pages/DevicesPage.tsx` → list page with data fetching
+- `frontend/src/pages/SubmitFeaturePage.tsx` → list page with data fetching
 - `frontend/src/services/api.ts` → API client (add new endpoints here)
 - `frontend/src/contexts/AuthContext.tsx` → auth state management
 - `frontend/src/App.tsx` → router + layout (add new routes here)
+- `frontend/src/components/AppHeader.tsx` → navigation bar (add new nav links here)
 
 ### Infrastructure patterns
 - `infrastructure/lib/stacks/app-stack.ts` → all resources (Lambda, DynamoDB, API GW, S3, CloudFront)
@@ -36,53 +38,33 @@
 - `scripts/env.sh` → environment config system (source of truth for all env values)
 - `scripts/deploy-frontend.sh` → S3 sync + CloudFront invalidation
 - `scripts/deploy-backend.sh` → Lambda update-function-code
+- `scripts/env-switch.sh` → switch between environments
 
 ## Environment Variables Available to Lambdas
 
-- `USERS_TABLE`, `DEVICES_TABLE`, `DEVICE_ENERGY_TABLE`, `DEVICE_HISTORY_TABLE`, `DEVICE_NOTES_TABLE`, `DEVICE_FAVORITES_TABLE`, `DEVICE_TAGS_TABLE`
-- `DEVICE_IMAGES_BUCKET`
-- `USER_POOL_ID`, `USER_POOL_CLIENT_ID`
-- `BEDROCK_MODEL_ID`
-- `FEATURE_REQUESTS_TABLE`
-- `SENDER_EMAIL` (budget-alert Lambda only — SES verified sender address)
+- `USERS_TABLE` — DynamoDB users table name
+- `FEATURE_REQUESTS_TABLE` — DynamoDB feature requests table name
+- `USER_POOL_ID` — Cognito user pool ID
+- `USER_POOL_CLIENT_ID` — Cognito app client ID
+- `BEDROCK_MODEL_ID` — Bedrock model for AI classification
 
-## Project Structure (quick reference)
+## Adding New Features (what the orchestrator does)
 
-```
-myapp-infra/
-├── frontend/src/pages/         ← page components
-├── frontend/src/services/api.ts ← all API calls
-├── frontend/src/contexts/      ← AuthContext, ThemeContext
-├── backend/src/functions/*/    ← one dir per Lambda
-├── backend/src/common/         ← shared middleware
-├── infrastructure/lib/stacks/  ← CDK stacks
-└── scripts/                    ← deploy, orchestrator, env config
-```
+When implementing a new feature:
+1. Create backend Lambda in `backend/src/functions/<name>/index.js`
+2. Add the function to `infrastructure/lib/stacks/app-stack.ts` (use sharedCode, add to allFunctions array)
+3. Add API Gateway route in app-stack.ts
+4. Add frontend API method in `frontend/src/services/api.ts`
+5. Create frontend page in `frontend/src/pages/<Name>Page.tsx`
+6. Add route in `frontend/src/App.tsx`
+7. Add nav link in `frontend/src/components/AppHeader.tsx` (if needed)
+8. If new DynamoDB table needed: add to app-stack.ts, add env var to lambdaEnv, grant permissions
 
-## What NOT to do
+## RBAC Roles
 
-- Don't use ESM (`import`/`export`) in backend — Lambdas are packaged as CommonJS
-- Don't add new DynamoDB tables without updating `infrastructure/lib/stacks/app-stack.ts`
-- Don't hardcode AWS account IDs or resource names — use env vars from `scripts/env.sh`
-- Don't modify `scripts/env.sh` defaults — use `ENV_FILE=` for different accounts
-
-## Steering File Self-Maintenance
-
-This file must stay accurate. After implementing a feature, check if you need to update this file:
-
-### UPDATE this steering file when:
-- A new environment variable is added to Lambdas → add to "Environment Variables" section
-- A new major pattern is introduced (e.g. new middleware, new service layer) → add to "Reference Files"
-- A hard rule changes (e.g. switching module system, new auth pattern) → update "Hard Rules"
-- A new "What NOT to do" is discovered from a failed attempt → add it
-
-### DO NOT update this steering file when:
-- Adding a new Lambda that follows existing patterns (the reference files still apply)
-- Adding a new frontend page that follows existing patterns
-- Changing content/logic within existing patterns
-- Fixing bugs
-
-### How to update:
-- Keep it concise — point to files, don't duplicate code
-- Reference files section: pick ONE good example per pattern, prefer simple over complex
-- Hard rules: one line each, state the rule not the reason
+| Role | Permissions |
+|------|-------------|
+| user | Submit requests, basic app access |
+| technical | Accept/override AI complexity classifications |
+| product_manager | Approve/reject feature requests |
+| admin | Manage user roles via Admin panel |

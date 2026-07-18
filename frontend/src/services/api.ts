@@ -63,7 +63,7 @@ export const usersApi = {
 export const settingsApi = {
   get: () => request('/api/settings'),
 
-  update: (settings: { costPerKwh?: number; currency?: string }) =>
+  update: (settings: Record<string, unknown>) =>
     request('/api/settings', {
       method: 'PUT',
       body: JSON.stringify(settings),
@@ -78,124 +78,6 @@ export const avatarApi = {
       method: 'PUT',
       body: JSON.stringify({ image, mimeType }),
     }),
-};
-
-export const reportsApi = {
-  getEnergyReport: () => request('/api/reports/energy'),
-};
-
-export const devicesApi = {
-  recognize: (image: string, mimeType: string) =>
-    request('/api/devices/recognize', {
-      method: 'POST',
-      body: JSON.stringify({ image, mimeType }),
-    }),
-
-  create: (device: {
-    deviceType: string;
-    brand: string;
-    model?: string;
-    color?: string;
-    condition?: string;
-    description?: string;
-    features?: string[];
-    imageBase64?: string;
-    room?: string;
-  }) =>
-    request('/api/devices', {
-      method: 'POST',
-      body: JSON.stringify(device),
-    }),
-
-  list: () => request('/api/devices'),
-
-  getEnergy: (deviceId: string) => request(`/api/devices/${deviceId}/energy`),
-
-  getImage: (deviceId: string) => request(`/api/devices/${deviceId}/image`),
-
-  setBudget: (deviceId: string, monthlyBudgetKwh: number) =>
-    request(`/api/devices/${deviceId}/budget`, {
-      method: 'PUT',
-      body: JSON.stringify({ monthlyBudgetKwh }),
-    }),
-
-  delete: (deviceId: string) =>
-    request(`/api/devices/${deviceId}`, { method: 'DELETE' }),
-
-  update: (deviceId: string, fields: {
-    deviceType?: string;
-    brand?: string;
-    model?: string;
-    color?: string;
-    condition?: string;
-    description?: string;
-    status?: 'on' | 'off';
-    room?: string | null;
-  }) =>
-    request(`/api/devices/${deviceId}`, {
-      method: 'PUT',
-      body: JSON.stringify(fields),
-    }),
-
-  getHistory: (deviceId: string) =>
-    request(`/api/devices/${deviceId}/history`),
-
-  getLastActive: (deviceId: string) =>
-    request(`/api/devices/${deviceId}/last-active`),
-
-  getManuals: (deviceId: string) =>
-    request(`/api/devices/${deviceId}/manuals`),
-
-  getManualUrl: (deviceId: string, manualId: string) =>
-    request(`/api/devices/${deviceId}/manuals?manualId=${manualId}`),
-
-  uploadManual: (deviceId: string, fileName: string, fileBase64: string) =>
-    request(`/api/devices/${deviceId}/manuals`, {
-      method: 'POST',
-      body: JSON.stringify({ fileName, fileBase64 }),
-    }),
-
-  deleteManual: (deviceId: string, manualId: string) =>
-    request(`/api/devices/${deviceId}/manuals`, {
-      method: 'DELETE',
-      body: JSON.stringify({ manualId }),
-    }),
-
-  listNotes: (deviceId: string) =>
-    request(`/api/devices/${deviceId}/notes`),
-
-  createNote: (deviceId: string, text: string) =>
-    request(`/api/devices/${deviceId}/notes`, {
-      method: 'POST',
-      body: JSON.stringify({ text }),
-    }),
-
-  toggleFavorite: (deviceId: string) =>
-    request(`/api/devices/${deviceId}/favorite`, {
-      method: 'POST',
-    }),
-
-  listFavorites: () => request('/api/devices/favorites'),
-
-  getTags: (deviceId: string) =>
-    request(`/api/devices/${deviceId}/tags`),
-
-  addTag: (deviceId: string, tag: string) =>
-    request(`/api/devices/${deviceId}/tags`, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'add', tag }),
-    }),
-
-  removeTag: (deviceId: string, tag: string) =>
-    request(`/api/devices/${deviceId}/tags`, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'remove', tag }),
-    }),
-};
-
-export const roomsApi = {
-  delete: (roomName: string) =>
-    request(`/api/rooms/${encodeURIComponent(roomName)}`, { method: 'DELETE' }),
 };
 
 export const featuresApi = {

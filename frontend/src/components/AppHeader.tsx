@@ -69,8 +69,6 @@ export function AppHeader() {
       </button>
       <nav className={`header-nav ${menuOpen ? 'nav-open' : ''}`}>
         <button onClick={() => handleNav('/dashboard')} className={`btn-nav ${isActive('/dashboard') ? 'active' : ''}`}>Dashboard</button>
-        <button onClick={() => handleNav('/devices')} className={`btn-nav ${isActive('/devices') ? 'active' : ''}`}>Devices</button>
-        <button onClick={() => handleNav('/reports')} className={`btn-nav ${isActive('/reports') ? 'active' : ''}`}>Reports</button>
         <button onClick={() => handleNav('/settings')} className={`btn-nav ${isActive('/settings') ? 'active' : ''}`}>Settings</button>
         <span className="nav-divider" />
         <button onClick={() => handleNav('/submit-feature')} className={`btn-nav ${isActive('/submit-feature') ? 'active' : ''}`}>Request Feature</button>

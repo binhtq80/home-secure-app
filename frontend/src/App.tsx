@@ -5,10 +5,7 @@ import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { ConfirmPage } from './pages/ConfirmPage';
 import { DashboardPage } from './pages/DashboardPage';
-import { DevicesPage } from './pages/DevicesPage';
-import { DeviceDetailPage } from './pages/DeviceDetailPage';
 import { SettingsPage } from './pages/SettingsPage';
-import { ReportsPage } from './pages/ReportsPage';
 import { SubmitFeaturePage } from './pages/SubmitFeaturePage';
 import { FeatureDetailPage } from './pages/FeatureDetailPage';
 import { FeatureRequestSummaryPage } from './pages/FeatureRequestSummaryPage';
@@ -33,11 +30,8 @@ function AppRoutes() {
       <Route path="/register" element={<PublicRoute><RegisterPage /></PublicRoute>} />
       <Route path="/confirm" element={<PublicRoute><ConfirmPage /></PublicRoute>} />
       <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
-      <Route path="/devices" element={<ProtectedRoute><DevicesPage /></ProtectedRoute>} />
-      <Route path="/devices/:deviceId" element={<ProtectedRoute><DeviceDetailPage /></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
       <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-      <Route path="/reports" element={<ProtectedRoute><ReportsPage /></ProtectedRoute>} />
       <Route path="/submit-feature" element={<ProtectedRoute><SubmitFeaturePage /></ProtectedRoute>} />
       <Route path="/submit-feature/:featureId" element={<ProtectedRoute><FeatureDetailPage /></ProtectedRoute>} />
       <Route path="/feature-summary" element={<ProtectedRoute><FeatureRequestSummaryPage /></ProtectedRoute>} />
@@ -55,7 +49,7 @@ export default function App() {
           <div className="app">
             <AppRoutes />
             <footer className="app-footer">
-              Open Home Energy Management &copy; {new Date().getFullYear()}
+              MyApp Platform &copy; {new Date().getFullYear()}
             </footer>
           </div>
         </BrowserRouter>

@@ -7,31 +7,24 @@ export interface EnvironmentConfig {
   readonly tags: Record<string, string>;
 }
 
-export const TEST_ENV: EnvironmentConfig = {
-  name: 'test',
+export const TEMPLATE_ENV: EnvironmentConfig = {
+  name: 'template',
   env: {
-    account: '626963115365',
+    account: '210447604234',
     region: 'ap-southeast-2',
   },
   isProd: false,
   tags: {
-    Environment: 'test',
+    Environment: 'template',
     ManagedBy: 'cdk',
     Project: 'myapp',
   },
 };
 
-// Uncomment and fill in when you have your prod account
-export const PROD_ENV: EnvironmentConfig = {
-  name: 'prod',
-  env: {
-    account: '325503637661',
-    region: 'ap-southeast-2',
-  },
-  isProd: true,
-  tags: {
-    Environment: 'production',
-    ManagedBy: 'cdk',
-    Project: 'myapp',
-  },
-};
+// Add more environments as needed:
+// export const PROD_ENV: EnvironmentConfig = {
+//   name: 'prod',
+//   env: { account: 'YOUR_ACCOUNT_ID', region: 'ap-southeast-2' },
+//   isProd: true,
+//   tags: { Environment: 'production', ManagedBy: 'cdk', Project: 'myapp' },
+// };
