@@ -1,9 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
 import { devicesApi } from '../services/api';
-import { DarkModeToggle } from '../components/DarkModeToggle';
-import { RoleBadge } from '../components/RoleBadge';
+import { AppHeader } from '../components/AppHeader';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 
 interface MonthlyEnergy {
@@ -61,7 +59,6 @@ interface DeviceNote {
 
 export function DeviceDetailPage() {
   const { deviceId } = useParams<{ deviceId: string }>();
-  const { user, logout } = useAuth();
   const navigate = useNavigate();
 
   const [device, setDevice] = useState<DeviceInfo | null>(null);
@@ -406,11 +403,6 @@ export function DeviceDetailPage() {
     setShowToggleConfirm(false);
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
-
   if (loading) {
     return (
       <div className="dashboard-container">
@@ -440,23 +432,7 @@ export function DeviceDetailPage() {
 
   return (
     <div className="dashboard-container">
-      <header className="dashboard-header">
-        <h1>Open Home Energy Management</h1>
-        <nav className="header-nav">
-          <button onClick={() => navigate('/dashboard')} className="btn-nav">Dashboard</button>
-          <button onClick={() => navigate('/devices')} className="btn-nav">Devices</button>
-          <button onClick={() => navigate('/reports')} className="btn-nav">Reports</button>
-          <button onClick={() => navigate('/settings')} className="btn-nav">Settings</button>
-          <span className="nav-divider" />
-          <button onClick={() => navigate('/submit-feature')} className="btn-nav">Request Feature</button>
-          <button onClick={() => navigate('/feature-summary')} className="btn-nav">Feature Summary</button>
-          {user?.role === 'admin' && <button onClick={() => navigate('/admin')} className="btn-nav">Admin</button>}
-          <button onClick={() => navigate('/profile')} className="btn-nav">Profile</button>
-          <RoleBadge />
-          <DarkModeToggle />
-          <button onClick={handleLogout} className="btn-logout">Sign Out</button>
-        </nav>
-      </header>
+      <AppHeader />
 
       <main className="dashboard-main">
         <button className="btn-back" onClick={() => navigate('/devices')}>← Back to Devices</button>

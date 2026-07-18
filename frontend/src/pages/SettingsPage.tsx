@@ -1,15 +1,10 @@
 import { useState, useEffect, useRef, FormEvent, ChangeEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { settingsApi, avatarApi } from '../services/api';
-import { DarkModeToggle } from '../components/DarkModeToggle';
-import { RoleBadge } from '../components/RoleBadge';
+import { AppHeader } from '../components/AppHeader';
 
 export function SettingsPage() {
-  const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
-  const navigate = useNavigate();
 
   const [costPerKwh, setCostPerKwh] = useState('0.20');
   const [loading, setLoading] = useState(true);
@@ -116,11 +111,6 @@ export function SettingsPage() {
     });
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
-
   if (loading) {
     return (
       <div className="dashboard-container">
@@ -131,23 +121,7 @@ export function SettingsPage() {
 
   return (
     <div className="dashboard-container">
-      <header className="dashboard-header">
-        <h1>Open Home Energy Management</h1>
-        <nav className="header-nav">
-          <button onClick={() => navigate('/dashboard')} className="btn-nav">Dashboard</button>
-          <button onClick={() => navigate('/devices')} className="btn-nav">Devices</button>
-          <button onClick={() => navigate('/reports')} className="btn-nav">Reports</button>
-          <button onClick={() => navigate('/settings')} className="btn-nav active">Settings</button>
-          <span className="nav-divider" />
-          <button onClick={() => navigate('/submit-feature')} className="btn-nav">Request Feature</button>
-          <button onClick={() => navigate('/feature-summary')} className="btn-nav">Feature Summary</button>
-          {user?.role === 'admin' && <button onClick={() => navigate('/admin')} className="btn-nav">Admin</button>}
-          <button onClick={() => navigate('/profile')} className="btn-nav">Profile</button>
-          <RoleBadge />
-          <DarkModeToggle />
-          <button onClick={handleLogout} className="btn-logout">Sign Out</button>
-        </nav>
-      </header>
+      <AppHeader />
 
       <main className="dashboard-main">
         <h2>Settings</h2>

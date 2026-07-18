@@ -2,8 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { reportsApi } from '../services/api';
-import { DarkModeToggle } from '../components/DarkModeToggle';
-import { RoleBadge } from '../components/RoleBadge';
+import { AppHeader } from '../components/AppHeader';
 import { DashboardSkeleton } from '../components/DashboardSkeleton';
 
 interface EnergySummary {
@@ -36,7 +35,7 @@ interface TopDevice {
 }
 
 export function DashboardPage() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [energySummary, setEnergySummary] = useState<EnergySummary | null>(null);
   const [currentMonthCost, setCurrentMonthCost] = useState<number | null>(null);
@@ -69,11 +68,6 @@ export function DashboardPage() {
     }
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
-
   const getTimeSinceLastLogin = (dateStr: string | null) => {
     if (!dateStr) return null;
     const last = new Date(dateStr).getTime();
@@ -102,23 +96,7 @@ export function DashboardPage() {
 
   return (
     <div className="dashboard-container">
-      <header className="dashboard-header">
-        <h1>Open Home Energy Management</h1>
-        <nav className="header-nav">
-          <button onClick={() => navigate('/dashboard')} className="btn-nav active">Dashboard</button>
-          <button onClick={() => navigate('/devices')} className="btn-nav">Devices</button>
-          <button onClick={() => navigate('/reports')} className="btn-nav">Reports</button>
-          <button onClick={() => navigate('/settings')} className="btn-nav">Settings</button>
-          <span className="nav-divider" />
-          <button onClick={() => navigate('/submit-feature')} className="btn-nav">Request Feature</button>
-          <button onClick={() => navigate('/feature-summary')} className="btn-nav">Feature Summary</button>
-          {user?.role === 'admin' && <button onClick={() => navigate('/admin')} className="btn-nav">Admin</button>}
-          <button onClick={() => navigate('/profile')} className="btn-nav">Profile</button>
-          <RoleBadge />
-          <DarkModeToggle />
-          <button onClick={handleLogout} className="btn-logout">Sign Out</button>
-        </nav>
-      </header>
+      <AppHeader />
 
       <main className="dashboard-main">
         <div className="welcome-section">

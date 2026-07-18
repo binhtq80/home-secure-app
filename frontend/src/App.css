@@ -552,20 +552,6 @@
   padding: 2rem;
 }
 
-@media (max-width: 768px) {
-  .form-with-preview {
-    flex-direction: column;
-  }
-  .image-preview {
-    width: 100%;
-    max-width: 300px;
-  }
-  .form-row {
-    flex-direction: column;
-    gap: 0;
-  }
-}
-
 /* Device Detail Page */
 .btn-back {
   background: transparent;
@@ -1710,17 +1696,6 @@
 .history-new-value {
   color: #28a745;
   font-weight: 500;
-}
-
-@media (max-width: 768px) {
-  .edit-device-form {
-    grid-template-columns: 1fr;
-  }
-
-  .device-detail-title-row {
-    flex-direction: column;
-    align-items: flex-start;
-  }
 }
 
 /* ─── Feature Request Page ─────────────────────────────────────────────────── */
@@ -3389,12 +3364,6 @@
   grid-template-columns: 300px 1fr;
   gap: 1.5rem;
   margin-top: 1rem;
-}
-
-@media (max-width: 768px) {
-  .profile-layout {
-    grid-template-columns: 1fr;
-  }
 }
 
 .profile-avatar-card {

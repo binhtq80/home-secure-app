@@ -2,8 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useParams } from 'react-router-dom';
 import { featuresApi } from '../services/api';
-import { DarkModeToggle } from '../components/DarkModeToggle';
-import { RoleBadge } from '../components/RoleBadge';
+import { AppHeader } from '../components/AppHeader';
 
 interface FeatureStep {
   time: string;
@@ -36,7 +35,7 @@ function isTerminalStatus(feature: FeatureRequest | null): boolean {
 }
 
 export function FeatureDetailPage() {
-  const { logout, user } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const { featureId } = useParams<{ featureId: string }>();
   const [feature, setFeature] = useState<FeatureRequest | null>(null);
@@ -158,11 +157,6 @@ export function FeatureDetailPage() {
     }
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
-
   const handleApprove = async () => {
     if (!featureId) return;
     setApproving(true);
@@ -272,23 +266,7 @@ export function FeatureDetailPage() {
 
   return (
     <div className="dashboard-container">
-      <header className="dashboard-header">
-        <h1>Open Home Energy Management</h1>
-        <nav className="header-nav">
-          <button onClick={() => navigate('/dashboard')} className="btn-nav">Dashboard</button>
-          <button onClick={() => navigate('/devices')} className="btn-nav">Devices</button>
-          <button onClick={() => navigate('/reports')} className="btn-nav">Reports</button>
-          <button onClick={() => navigate('/settings')} className="btn-nav">Settings</button>
-          <span className="nav-divider" />
-          <button onClick={() => navigate('/submit-feature')} className="btn-nav">Request Feature</button>
-          <button onClick={() => navigate('/feature-summary')} className="btn-nav">Feature Summary</button>
-          {user?.role === 'admin' && <button onClick={() => navigate('/admin')} className="btn-nav">Admin</button>}
-          <button onClick={() => navigate('/profile')} className="btn-nav">Profile</button>
-          <RoleBadge />
-          <DarkModeToggle />
-          <button onClick={handleLogout} className="btn-logout">Sign Out</button>
-        </nav>
-      </header>
+      <AppHeader />
 
       <main className="dashboard-main">
         <div className="feature-detail-header">
