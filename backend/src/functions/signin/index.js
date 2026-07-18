@@ -6,10 +6,9 @@ const cognitoClient = new CognitoIdentityProviderClient({});
 const ddbClient = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 
 const USERS_TABLE = process.env.USERS_TABLE;
-const DEVICES_TABLE = process.env.DEVICES_TABLE;
 const USER_POOL_CLIENT_ID = process.env.USER_POOL_CLIENT_ID;
 
-if (!USERS_TABLE || !DEVICES_TABLE || !USER_POOL_CLIENT_ID) {
+if (!USERS_TABLE || !USER_POOL_CLIENT_ID) {
   throw new Error('Missing required environment variables');
 }
 
@@ -87,19 +86,6 @@ exports.handler = async (event) => {
       }));
     }
 
-    // Query devices table to get user's device count
-    let deviceCount = 0;
-    if (user) {
-      const devicesResult = await ddbClient.send(new QueryCommand({
-        TableName: DEVICES_TABLE,
-        IndexName: 'userId-index',
-        KeyConditionExpression: 'userId = :userId',
-        ExpressionAttributeValues: { ':userId': user.id },
-        Select: 'COUNT',
-      }));
-      deviceCount = devicesResult.Count || 0;
-    }
-
     return {
       statusCode: 200,
       headers,
@@ -119,9 +105,7 @@ exports.handler = async (event) => {
           lastLoginAt: previousLoginAt,
           loginCount: (user?.loginCount || 0) + 1,
           createdAt: user?.createdAt,
-          deviceCount,
           lastSeenAgo: formatLastSeenAgo(previousLoginAt),
-          role: user?.role || null,
         },
       }),
     };

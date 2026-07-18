@@ -7,14 +7,14 @@ const ddbClient = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 const s3Client = new S3Client({});
 
 const USERS_TABLE = process.env.USERS_TABLE;
-const DEVICE_IMAGES_BUCKET = process.env.DEVICE_IMAGES_BUCKET;
+const ASSETS_BUCKET = process.env.ASSETS_BUCKET;
 
 if (!USERS_TABLE) {
   throw new Error('Missing required environment variable: USERS_TABLE');
 }
 
-if (!DEVICE_IMAGES_BUCKET) {
-  throw new Error('Missing required environment variable: DEVICE_IMAGES_BUCKET');
+if (!ASSETS_BUCKET) {
+  throw new Error('Missing required environment variable: ASSETS_BUCKET');
 }
 
 exports.handler = withAuth(async (event) => {
@@ -55,7 +55,7 @@ exports.handler = withAuth(async (event) => {
 
     // Upload to S3
     await s3Client.send(new PutObjectCommand({
-      Bucket: DEVICE_IMAGES_BUCKET,
+      Bucket: ASSETS_BUCKET,
       Key: avatarKey,
       Body: imageBuffer,
       ContentType: resolvedMimeType,
