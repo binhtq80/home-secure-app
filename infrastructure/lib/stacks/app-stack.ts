@@ -84,6 +84,12 @@ export class AppStack extends cdk.Stack {
       sortKey: { name: 'createdAt', type: dynamodb.AttributeType.STRING },
     });
 
+    featureRequestsTable.addGlobalSecondaryIndex({
+      indexName: 'status-createdAt-index',
+      partitionKey: { name: 'status', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'createdAt', type: dynamodb.AttributeType.STRING },
+    });
+
     // ─── Lambda Functions ──────────────────────────────────────────────────────
     // Single shared bundle: all functions share one asset to minimize CDK Pipeline
     // Assets stage CodeBuild tasks.
