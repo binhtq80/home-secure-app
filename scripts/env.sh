@@ -50,8 +50,6 @@ export APP_PIPELINE_NAME="${APP_PIPELINE_NAME:-myapp-test-pipeline}"
 
 # DynamoDB Tables
 export APP_FEATURE_REQUESTS_TABLE="${APP_FEATURE_REQUESTS_TABLE:-myapp-test-feature-requests}"
-export APP_DEVICES_TABLE="${APP_DEVICES_TABLE:-myapp-test-devices}"
-export APP_ENERGY_TABLE="${APP_ENERGY_TABLE:-myapp-test-device-energy}"
 
 # GitHub
 export APP_GITHUB_OWNER="${APP_GITHUB_OWNER:-binhtq80}"

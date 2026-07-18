@@ -54,7 +54,7 @@ export function AppHeader() {
 
   return (
     <header className="dashboard-header" ref={menuRef}>
-      <h1>Open Home Energy Management</h1>
+      <h1>MyApp Platform</h1>
       <button
         className="btn-hamburger"
         onClick={() => setMenuOpen(!menuOpen)}
