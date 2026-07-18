@@ -5,16 +5,11 @@ import { DarkModeToggle } from './DarkModeToggle';
 import { RoleBadge } from './RoleBadge';
 
 export function AppHeader() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
 
   const handleNav = (path: string) => {
     navigate(path);
@@ -75,9 +70,9 @@ export function AppHeader() {
         <button onClick={() => handleNav('/feature-summary')} className={`btn-nav ${isActive('/feature-summary') ? 'active' : ''}`}>Feature Summary</button>
         {user?.role === 'admin' && <button onClick={() => handleNav('/admin')} className={`btn-nav ${isActive('/admin') ? 'active' : ''}`}>Admin</button>}
         <button onClick={() => handleNav('/profile')} className={`btn-nav ${isActive('/profile') ? 'active' : ''}`}>Profile</button>
+        <button onClick={() => handleNav('/account')} className={`btn-nav ${isActive('/account') ? 'active' : ''}`}>Account</button>
         <RoleBadge />
         <DarkModeToggle />
-        <button onClick={handleLogout} className="btn-logout">Sign Out</button>
       </nav>
     </header>
   );
