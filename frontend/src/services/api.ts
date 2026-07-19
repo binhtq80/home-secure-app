@@ -119,7 +119,7 @@ export const featuresApi = {
     }),
 
   vote: (id: string, rating: number, comment?: string) =>
-    request(`/api/features/${id}/votes`, {
+    request(`/api/features/${id}/vote`, {
       method: 'POST',
       body: JSON.stringify({ rating, comment }),
     }),
