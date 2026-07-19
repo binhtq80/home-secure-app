@@ -9,7 +9,6 @@ import { SettingsPage } from './pages/SettingsPage';
 import { SubmitFeaturePage } from './pages/SubmitFeaturePage';
 import { FeatureDetailPage } from './pages/FeatureDetailPage';
 import { FeatureRequestSummaryPage } from './pages/FeatureRequestSummaryPage';
-import { ProfilePage } from './pages/ProfilePage';
 import { AccountPage } from './pages/AccountPage';
 import { AdminPage } from './pages/AdminPage';
 import './App.css';
@@ -32,12 +31,12 @@ function AppRoutes() {
       <Route path="/confirm" element={<PublicRoute><ConfirmPage /></PublicRoute>} />
       <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
-      <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
       <Route path="/submit-feature" element={<ProtectedRoute><SubmitFeaturePage /></ProtectedRoute>} />
       <Route path="/submit-feature/:featureId" element={<ProtectedRoute><FeatureDetailPage /></ProtectedRoute>} />
       <Route path="/feature-summary" element={<ProtectedRoute><FeatureRequestSummaryPage /></ProtectedRoute>} />
       <Route path="/admin" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
       <Route path="/account" element={<ProtectedRoute><AccountPage /></ProtectedRoute>} />
+      <Route path="/profile" element={<Navigate to="/account" />} />
       <Route path="*" element={<Navigate to="/dashboard" />} />
     </Routes>
   );

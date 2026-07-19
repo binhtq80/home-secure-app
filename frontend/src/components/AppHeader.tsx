@@ -69,7 +69,6 @@ export function AppHeader() {
         <button onClick={() => handleNav('/submit-feature')} className={`btn-nav ${isActive('/submit-feature') ? 'active' : ''}`}>Request Feature</button>
         <button onClick={() => handleNav('/feature-summary')} className={`btn-nav ${isActive('/feature-summary') ? 'active' : ''}`}>Feature Summary</button>
         {user?.role === 'admin' && <button onClick={() => handleNav('/admin')} className={`btn-nav ${isActive('/admin') ? 'active' : ''}`}>Admin</button>}
-        <button onClick={() => handleNav('/profile')} className={`btn-nav ${isActive('/profile') ? 'active' : ''}`}>Profile</button>
         <button onClick={() => handleNav('/account')} className={`btn-nav ${isActive('/account') ? 'active' : ''}`}>Account</button>
         <RoleBadge />
         <DarkModeToggle />
