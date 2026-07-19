@@ -98,23 +98,12 @@ export class AppStack extends cdk.Stack {
     const bundleDir = path.join(__dirname, '../../../backend/dist/bundle');
     const sharedCode = lambda.Code.fromAsset(bundleDir);
 
-    // ─── S3 Bucket for User Assets (avatars, uploads) ─────────────────────────
-
-    const assetsBucket = new s3.Bucket(this, 'AssetsBucket', {
-      bucketName: `${prefix}-assets${accountSuffix}`,
-      removalPolicy: envConfig.isProd ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,
-      autoDeleteObjects: !envConfig.isProd,
-      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
-      encryption: s3.BucketEncryption.S3_MANAGED,
-    });
-
     const lambdaEnv: Record<string, string> = {
       USERS_TABLE: usersTable.tableName,
       FEATURE_REQUESTS_TABLE: featureRequestsTable.tableName,
       USER_POOL_ID: userPool.userPoolId,
       USER_POOL_CLIENT_ID: userPoolClient.userPoolClientId,
       BEDROCK_MODEL_ID: 'au.anthropic.claude-haiku-4-5-20251001-v1:0',
-      ASSETS_BUCKET: assetsBucket.bucketName,
     };
 
     const commonProps = {
@@ -283,10 +272,6 @@ export class AppStack extends cdk.Stack {
       actions: ['bedrock:InvokeModel'],
       resources: ['*'],
     }));
-
-    // S3 access for avatars and user assets
-    assetsBucket.grantReadWrite(getAvatarFn);
-    assetsBucket.grantReadWrite(updateAvatarFn);
 
     // CodePipeline access for feature approval
     approveFeatureRequestFn.addToRolePolicy(new iam.PolicyStatement({

@@ -1,85 +1,64 @@
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient, UpdateCommand } = require('@aws-sdk/lib-dynamodb');
-const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
 const { withAuth, headers } = require('./common/middleware');
 
 const ddbClient = DynamoDBDocumentClient.from(new DynamoDBClient({}));
-const s3Client = new S3Client({});
 
 const USERS_TABLE = process.env.USERS_TABLE;
-const ASSETS_BUCKET = process.env.ASSETS_BUCKET;
 
 if (!USERS_TABLE) {
   throw new Error('Missing required environment variable: USERS_TABLE');
 }
 
-if (!ASSETS_BUCKET) {
-  throw new Error('Missing required environment variable: ASSETS_BUCKET');
-}
+// Max avatar size: 400KB base64 (DynamoDB item limit is 400KB total)
+const MAX_AVATAR_SIZE = 400 * 1024;
 
 exports.handler = withAuth(async (event) => {
   try {
-    const { image, mimeType } = JSON.parse(event.body);
+    const { image, mimeType } = JSON.parse(event.body || '{}');
 
-    if (!image) {
+    if (!image || !mimeType) {
       return {
         statusCode: 400,
         headers,
-        body: JSON.stringify({ message: 'image (base64) is required' }),
+        body: JSON.stringify({ message: 'image (base64) and mimeType are required' }),
       };
     }
 
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
-    const resolvedMimeType = mimeType || 'image/jpeg';
-
-    if (!allowedTypes.includes(resolvedMimeType)) {
+    // Validate mime type
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!validTypes.includes(mimeType)) {
       return {
         statusCode: 400,
         headers,
-        body: JSON.stringify({ message: 'Unsupported image type. Allowed: jpeg, png, webp' }),
+        body: JSON.stringify({ message: `Invalid mimeType. Accepted: ${validTypes.join(', ')}` }),
       };
     }
 
-    // Validate image size (max 2MB base64 ≈ ~1.5MB actual)
-    const imageBuffer = Buffer.from(image, 'base64');
-    if (imageBuffer.length > 2 * 1024 * 1024) {
+    // Validate size
+    if (image.length > MAX_AVATAR_SIZE) {
       return {
         statusCode: 400,
         headers,
-        body: JSON.stringify({ message: 'Image too large. Maximum size is 2MB' }),
+        body: JSON.stringify({ message: 'Avatar image too large. Max 400KB.' }),
       };
     }
 
-    const ext = resolvedMimeType.split('/')[1] === 'jpeg' ? 'jpg' : resolvedMimeType.split('/')[1];
-    const avatarKey = `avatars/${event.user.id}/avatar.${ext}`;
-
-    // Upload to S3
-    await s3Client.send(new PutObjectCommand({
-      Bucket: ASSETS_BUCKET,
-      Key: avatarKey,
-      Body: imageBuffer,
-      ContentType: resolvedMimeType,
-    }));
-
-    // Update user record with avatar key
     await ddbClient.send(new UpdateCommand({
       TableName: USERS_TABLE,
       Key: { id: event.user.id },
-      UpdateExpression: 'SET #avatarKey = :avatarKey, #updatedAt = :updatedAt',
-      ExpressionAttributeNames: {
-        '#avatarKey': 'avatarKey',
-        '#updatedAt': 'updatedAt',
-      },
+      UpdateExpression: 'SET avatarData = :data, avatarMimeType = :mime, avatarUpdatedAt = :now',
       ExpressionAttributeValues: {
-        ':avatarKey': avatarKey,
-        ':updatedAt': new Date().toISOString(),
+        ':data': image,
+        ':mime': mimeType,
+        ':now': new Date().toISOString(),
       },
     }));
 
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify({ message: 'Avatar updated successfully', avatarKey }),
+      body: JSON.stringify({ message: 'Avatar updated successfully' }),
     };
   } catch (error) {
     console.error('Update avatar error:', error);
