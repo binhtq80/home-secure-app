@@ -109,47 +109,66 @@ if [ "$START_STEP" -le 4 ]; then
   echo ""
 fi
 
-# ─── Step 5: Discover deployed resource IDs ───────────────────────────────────
+# ─── Step 5: Wait for pipeline & discover resources ───────────────────────────
 if [ "$START_STEP" -le 5 ]; then
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  echo "🔍 Step 5/7: Discovering deployed resource IDs..."
+  echo "⏳ Step 5/8: Waiting for pipeline to deploy App stack..."
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-  # Find CloudFront distribution
-  CF_DIST=$(aws cloudfront list-distributions \
-    --profile "$APP_AWS_PROFILE" \
-    --query "DistributionList.Items[?Comment=='${APP_PREFIX}-distribution' || contains(Origins.Items[].DomainName, '${APP_PREFIX}')].{Id:Id,Domain:DomainName}" \
-    --output json 2>/dev/null | python3 -c "
-import json, sys
-dists = json.load(sys.stdin)
-if dists:
-    print(f\"{dists[0]['Id']} {dists[0]['Domain']}\")
-else:
-    print('NOT_FOUND NOT_FOUND')
-" 2>/dev/null)
-  CF_ID=$(echo "$CF_DIST" | cut -d' ' -f1)
-  CF_DOMAIN=$(echo "$CF_DIST" | cut -d' ' -f2)
+  # Wait for pipeline DeployTest stage to complete (max 10 min)
+  WAIT_COUNT=0
+  MAX_WAIT=20
+  while [ $WAIT_COUNT -lt $MAX_WAIT ]; do
+    DEPLOY_STATUS=$(aws codepipeline get-pipeline-state \
+      --name "$APP_PIPELINE_NAME" \
+      --profile "$APP_AWS_PROFILE" --region "$APP_AWS_REGION" \
+      --query "stageStates[?stageName=='DeployTest'].latestExecution.status" \
+      --output text 2>/dev/null || echo "Unknown")
 
-  # Find S3 bucket
-  S3_BUCKET=$(aws s3api list-buckets \
-    --profile "$APP_AWS_PROFILE" \
-    --query "Buckets[?contains(Name, '${APP_PREFIX}-website') || contains(Name, '${APP_ENV_NAME}website')].Name" \
-    --output text 2>/dev/null | head -1)
+    if [ "$DEPLOY_STATUS" = "Succeeded" ]; then
+      echo "   ✓ Pipeline DeployTest succeeded"
+      break
+    elif [ "$DEPLOY_STATUS" = "Failed" ]; then
+      echo "   ⚠️ Pipeline DeployTest failed — check AWS Console"
+      break
+    fi
 
-  echo "   CloudFront Distribution: $CF_ID"
-  echo "   CloudFront Domain:       $CF_DOMAIN"
-  echo "   S3 Website Bucket:       $S3_BUCKET"
-  echo ""
+    WAIT_COUNT=$((WAIT_COUNT + 1))
+    echo "   Waiting... ($WAIT_COUNT/$MAX_WAIT) status: $DEPLOY_STATUS"
+    sleep 30
+  done
 
-  if [ "$CF_ID" != "NOT_FOUND" ] && [ -n "$CF_ID" ]; then
-    echo "   📝 Update your scripts/env.${ENV}.sh with:"
-    echo ""
-    echo "   APP_CLOUDFRONT_DISTRIBUTION_ID=\"$CF_ID\""
-    echo "   APP_CLOUDFRONT_DOMAIN=\"$CF_DOMAIN\""
-    echo "   APP_S3_WEBSITE_BUCKET=\"$S3_BUCKET\""
-    echo "   APP_URL=\"https://$CF_DOMAIN\""
-    echo ""
+  if [ $WAIT_COUNT -ge $MAX_WAIT ]; then
+    echo "   ⚠️ Timed out waiting for pipeline. Continuing..."
   fi
+
+  # Discover CloudFront
+  echo ""
+  echo "🔍 Discovering deployed resources..."
+  CF_DOMAIN=$(aws cloudfront list-distributions \
+    --profile "$APP_AWS_PROFILE" \
+    --query "DistributionList.Items[0].DomainName" \
+    --output text 2>/dev/null)
+  CF_ID=$(aws cloudfront list-distributions \
+    --profile "$APP_AWS_PROFILE" \
+    --query "DistributionList.Items[0].Id" \
+    --output text 2>/dev/null)
+  S3_BUCKET=$(aws s3 ls --profile "$APP_AWS_PROFILE" --region "$APP_AWS_REGION" 2>/dev/null | grep "${APP_PREFIX}.*website" | awk '{print $3}')
+
+  echo "   CloudFront Domain: $CF_DOMAIN"
+  echo "   CloudFront ID:     $CF_ID"
+  echo "   S3 Bucket:         $S3_BUCKET"
+
+  # Auto-update env file if ENV_FILE is set
+  if [ -n "${ENV_FILE:-}" ] && [ -f "$ENV_FILE" ] && [ -n "$CF_DOMAIN" ] && [ "$CF_DOMAIN" != "None" ]; then
+    sed -i "s|export APP_CLOUDFRONT_DOMAIN=.*|export APP_CLOUDFRONT_DOMAIN=\"$CF_DOMAIN\"|" "$ENV_FILE"
+    sed -i "s|export APP_CLOUDFRONT_DISTRIBUTION_ID=.*|export APP_CLOUDFRONT_DISTRIBUTION_ID=\"$CF_ID\"|" "$ENV_FILE"
+    sed -i "s|export APP_URL=.*|export APP_URL=\"https://$CF_DOMAIN\"|" "$ENV_FILE"
+    [ -n "$S3_BUCKET" ] && sed -i "s|export APP_S3_WEBSITE_BUCKET=.*|export APP_S3_WEBSITE_BUCKET=\"$S3_BUCKET\"|" "$ENV_FILE"
+    echo ""
+    echo "   ✓ Env file updated automatically: $ENV_FILE"
+  fi
+  echo ""
 fi
 
 # ─── Step 6: Deploy frontend to S3 ───────────────────────────────────────────

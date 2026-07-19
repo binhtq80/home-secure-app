@@ -23,6 +23,29 @@ AWS_REGION="${APP_AWS_REGION}"
 S3_BUCKET="${APP_S3_WEBSITE_BUCKET}"
 DISTRIBUTION_ID="${APP_CLOUDFRONT_DISTRIBUTION_ID}"
 
+# Auto-discover CloudFront distribution if not set
+if [ -z "$DISTRIBUTION_ID" ] || [ "$DISTRIBUTION_ID" = "REPLACE_ME" ]; then
+  DISTRIBUTION_ID=$(aws cloudfront list-distributions \
+    --profile "$AWS_PROFILE" \
+    --query "DistributionList.Items[0].Id" \
+    --output text 2>/dev/null)
+  if [ -n "$DISTRIBUTION_ID" ] && [ "$DISTRIBUTION_ID" != "None" ]; then
+    CF_DOMAIN=$(aws cloudfront list-distributions \
+      --profile "$AWS_PROFILE" \
+      --query "DistributionList.Items[0].DomainName" \
+      --output text 2>/dev/null)
+    echo "   Auto-discovered CloudFront: $CF_DOMAIN ($DISTRIBUTION_ID)"
+  fi
+fi
+
+# Auto-discover S3 bucket if not set
+if [ -z "$S3_BUCKET" ] || [ "$S3_BUCKET" = "REPLACE_ME" ]; then
+  S3_BUCKET=$(aws s3 ls --profile "$AWS_PROFILE" --region "$AWS_REGION" 2>/dev/null | grep "${APP_PREFIX}.*website" | awk '{print $3}')
+  if [ -n "$S3_BUCKET" ]; then
+    echo "   Auto-discovered S3 bucket: $S3_BUCKET"
+  fi
+fi
+
 SKIP_BUILD=false
 if [ "$1" == "--skip-build" ]; then
   SKIP_BUILD=true
