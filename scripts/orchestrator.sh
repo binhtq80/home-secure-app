@@ -436,20 +436,24 @@ DO THE FOLLOWING (no questions, just execute):
       update_status "MONITORING PIPELINE: $task (attempt $retries/$MAX_RETRIES)"
       update_feature_status "$task_id" "deploying" "Deploying via CDK Pipeline (infrastructure change)"
 
-      local current_pipeline_status
-      current_pipeline_status=$(get_pipeline_status)
-      if [ "$current_pipeline_status" = "InProgress" ]; then
-        log "   ⏳ Pipeline already running — waiting for it"
+      # Always start a NEW pipeline execution and track its ID
+      local execution_id
+      execution_id=$(aws codepipeline start-pipeline-execution \
+        --name "$PIPELINE_NAME" \
+        --profile "$AWS_PROFILE" \
+        --region "$AWS_REGION" \
+        --query 'pipelineExecutionId' \
+        --output text 2>/dev/null)
+
+      if [ -n "$execution_id" ] && [ "$execution_id" != "None" ]; then
+        log "   🚀 Pipeline triggered (execution: ${execution_id:0:8}...)"
       else
-        aws codepipeline start-pipeline-execution \
-          --name "$PIPELINE_NAME" \
-          --profile "$AWS_PROFILE" \
-          --region "$AWS_REGION" > /dev/null 2>&1
-        log "   🚀 Pipeline triggered"
+        log "   ⚠️ Failed to start pipeline — checking if already running"
+        execution_id=""
       fi
 
       log "📡 Monitoring pipeline..."
-      sleep 30
+      sleep 60  # Wait for execution to register
 
       local pipeline_done=false
       local poll_count=0
@@ -468,7 +472,18 @@ DO THE FOLLOWING (no questions, just execute):
         poll_count=$((poll_count + 1))
 
         local status
-        status=$(get_pipeline_status)
+        # If we have an execution ID, check THAT specific execution
+        if [ -n "$execution_id" ]; then
+          status=$(aws codepipeline get-pipeline-execution \
+            --pipeline-name "$PIPELINE_NAME" \
+            --pipeline-execution-id "$execution_id" \
+            --profile "$AWS_PROFILE" \
+            --region "$AWS_REGION" \
+            --query 'pipelineExecution.status' \
+            --output text 2>/dev/null || echo "Unknown")
+        else
+          status=$(get_pipeline_status)
+        fi
         log "   Poll $poll_count: $status"
 
         # Detect approval gate
