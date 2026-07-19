@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { settingsApi } from '../services/api';
 
 type Theme = 'light' | 'dark';
 
@@ -17,15 +18,54 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     if (saved === 'dark' || saved === 'light') return saved;
     return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   });
+  const [hasSyncedFromBackend, setHasSyncedFromBackend] = useState(false);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, theme);
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
 
-  const toggleTheme = () => {
-    setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
-  };
+  // Load theme from backend when user is authenticated
+  useEffect(() => {
+    const token = localStorage.getItem('accessToken');
+    if (!token || hasSyncedFromBackend) return;
+
+    settingsApi.get()
+      .then((data) => {
+        if (data.settings?.theme === 'dark' || data.settings?.theme === 'light') {
+          setTheme(data.settings.theme);
+        }
+        setHasSyncedFromBackend(true);
+      })
+      .catch(() => {
+        // Ignore errors — use local theme
+        setHasSyncedFromBackend(true);
+      });
+  }, [hasSyncedFromBackend]);
+
+  const persistThemeToBackend = useCallback(async (newTheme: Theme) => {
+    try {
+      const data = await settingsApi.get();
+      const merged = { ...(data.settings || {}), theme: newTheme };
+      await settingsApi.update(merged);
+    } catch {
+      // Silently ignore — localStorage is the fallback
+    }
+  }, []);
+
+  const toggleTheme = useCallback(() => {
+    setTheme((prev) => {
+      const next: Theme = prev === 'light' ? 'dark' : 'light';
+
+      // Persist to backend if authenticated (merge with existing settings)
+      const token = localStorage.getItem('accessToken');
+      if (token) {
+        persistThemeToBackend(next);
+      }
+
+      return next;
+    });
+  }, [persistThemeToBackend]);
 
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme }}>
