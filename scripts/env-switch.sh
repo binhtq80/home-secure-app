@@ -81,8 +81,11 @@ stop_orchestrator() {
   if [ -f "$workspace_dir/scripts/feature.sh" ]; then
     (cd "$workspace_dir" && ./scripts/feature.sh stop 2>/dev/null) || true
   fi
-  # Also kill any orphaned orchestrator processes
-  pkill -f "orchestrator.sh" 2>/dev/null || true
+  # Force kill any orchestrator processes (they hold a CWD reference to the old workspace)
+  pkill -9 -f "orchestrator.sh" 2>/dev/null || true
+  sleep 1
+  # Clean up stale state files
+  rm -f "$HOME/.feature-stop"
 }
 
 # ─── Main ─────────────────────────────────────────────────────────────────────
