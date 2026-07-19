@@ -131,7 +131,7 @@ export function SubmitFeaturePage() {
 
       <main className="dashboard-main">
         <h2>Request a Feature</h2>
-        <p className="settings-subtitle">Submit your ideas to improve Open Home Energy Management.</p>
+        <p className="settings-subtitle">Submit your ideas to improve App Template.</p>
 
         {error && <div className="error-message">{error}</div>}
         {successTicket && (
