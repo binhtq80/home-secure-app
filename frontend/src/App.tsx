@@ -5,7 +5,6 @@ import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { ConfirmPage } from './pages/ConfirmPage';
 import { DashboardPage } from './pages/DashboardPage';
-import { SettingsPage } from './pages/SettingsPage';
 import { SubmitFeaturePage } from './pages/SubmitFeaturePage';
 import { FeatureDetailPage } from './pages/FeatureDetailPage';
 import { FeatureRequestSummaryPage } from './pages/FeatureRequestSummaryPage';
@@ -30,7 +29,6 @@ function AppRoutes() {
       <Route path="/register" element={<PublicRoute><RegisterPage /></PublicRoute>} />
       <Route path="/confirm" element={<PublicRoute><ConfirmPage /></PublicRoute>} />
       <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
-      <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
       <Route path="/submit-feature" element={<ProtectedRoute><SubmitFeaturePage /></ProtectedRoute>} />
       <Route path="/submit-feature/:featureId" element={<ProtectedRoute><FeatureDetailPage /></ProtectedRoute>} />
       <Route path="/feature-summary" element={<ProtectedRoute><FeatureRequestSummaryPage /></ProtectedRoute>} />

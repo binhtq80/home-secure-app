@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, ChangeEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 import { usersApi, avatarApi } from '../services/api';
 import { AppHeader } from '../components/AppHeader';
 
@@ -18,6 +19,7 @@ interface UserProfile {
 
 export function AccountPage() {
   const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -189,6 +191,30 @@ export function AccountPage() {
             </div>
           </div>
         )}
+
+        <div className="settings-card">
+          <h3>Appearance</h3>
+          <div className="settings-appearance">
+            <div className="settings-toggle-row">
+              <div className="settings-toggle-info">
+                <label htmlFor="darkModeToggle">Dark Mode</label>
+                <p className="form-help">
+                  Switch between light and dark theme.
+                </p>
+              </div>
+              <button
+                id="darkModeToggle"
+                onClick={toggleTheme}
+                className={`settings-toggle-switch ${theme === 'dark' ? 'active' : ''}`}
+                role="switch"
+                aria-checked={theme === 'dark'}
+                aria-label="Toggle dark mode"
+              >
+                <span className="settings-toggle-knob" />
+              </button>
+            </div>
+          </div>
+        </div>
 
         <div className="settings-card">
           <h3>Session</h3>
