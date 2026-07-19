@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { settingsApi } from '../services/api';
+import { useAuth } from './AuthContext';
 
 type Theme = 'light' | 'dark';
 
@@ -10,25 +11,53 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-const STORAGE_KEY = 'myapp-theme';
+const STORAGE_KEY_PREFIX = 'myapp-theme';
+
+function getStorageKey(userId: string | undefined): string {
+  return userId ? `${STORAGE_KEY_PREFIX}-${userId}` : STORAGE_KEY_PREFIX;
+}
+
+function getSystemTheme(): Theme {
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
+function getInitialTheme(userId: string | undefined): Theme {
+  const key = getStorageKey(userId);
+  const saved = localStorage.getItem(key);
+  if (saved === 'dark' || saved === 'light') return saved;
+  return getSystemTheme();
+}
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setTheme] = useState<Theme>(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved === 'dark' || saved === 'light') return saved;
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-  });
+  const { user } = useAuth();
+  const [theme, setTheme] = useState<Theme>(() => getInitialTheme(user?.id));
   const [hasSyncedFromBackend, setHasSyncedFromBackend] = useState(false);
 
+  // When user changes (login/logout), reset theme to user-specific preference
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, theme);
+    if (user?.id) {
+      // User logged in — load their saved theme from localStorage
+      const userTheme = getInitialTheme(user.id);
+      setTheme(userTheme);
+      setHasSyncedFromBackend(false); // trigger backend sync
+    } else {
+      // User logged out — fall back to system preference
+      setTheme(getSystemTheme());
+      setHasSyncedFromBackend(true); // no backend sync needed
+    }
+  }, [user?.id]);
+
+  // Apply theme to DOM and persist to user-specific localStorage
+  useEffect(() => {
+    const key = getStorageKey(user?.id);
+    localStorage.setItem(key, theme);
     document.documentElement.setAttribute('data-theme', theme);
-  }, [theme]);
+  }, [theme, user?.id]);
 
   // Load theme from backend when user is authenticated
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
-    if (!token || hasSyncedFromBackend) return;
+    if (!token || hasSyncedFromBackend || !user?.id) return;
 
     settingsApi.get()
       .then((data) => {
@@ -41,7 +70,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         // Ignore errors — use local theme
         setHasSyncedFromBackend(true);
       });
-  }, [hasSyncedFromBackend]);
+  }, [hasSyncedFromBackend, user?.id]);
 
   const persistThemeToBackend = useCallback(async (newTheme: Theme) => {
     try {
