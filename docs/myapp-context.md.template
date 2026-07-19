@@ -4,90 +4,77 @@
 <DATE> (Session: DevSpace <DEVSPACE_ID>)
 
 ## Project Location
-/workspace/myapp-infra (git clone https://github.com/binhtq80/myapp-infra.git)
+/workspace/active (via env-switch.sh)
 
-## New Space Setup
-When starting a fresh DevSpace, the agent should:
-1. Point AWS CLI to persisted credentials:
-   ```bash
-   export AWS_CONFIG_FILE=~/shared/.aws/config
-   export AWS_SHARED_CREDENTIALS_FILE=~/shared/.aws/credentials
-   ```
-2. Clone the repo (requires GitHub token from user):
-   ```bash
-   git clone https://<TOKEN>@github.com/binhtq80/myapp-infra.git /workspace/myapp-infra
-   ```
-3. Run setup:
-   ```bash
-   ENV_FILE=~/shared/myapp-envs/<env>.sh ./scripts/setup-devspace.sh
-   ```
+## New DevSpace Setup
+When starting a fresh DevSpace with this project:
+
+```bash
+# 1. Credentials already in ~/shared/.aws/ (persists across DevSpaces)
+# 2. Env file already in ~/shared/myapp-envs/<env>.sh
+
+# 3. Switch to environment (clones repo, installs deps, starts orchestrator)
+./scripts/env-switch.sh <env-name>
+
+# 4. If first time on this account:
+ENV_FILE=~/shared/myapp-envs/<env>.sh ./scripts/setup-new-account.sh
+```
 
 ### Persisted in ~/shared/ (survives DevSpace restarts)
 - `~/shared/.aws/config` — AWS CLI config (profile names + regions)
 - `~/shared/.aws/credentials` — AWS access keys
-- `~/shared/myapp-envs/*.sh` — per-account environment configs
+- `~/shared/myapp-envs/*.sh` — per-environment configs
 - `~/shared/myapp-context.md` — this file
 
-## Environments
+## Environment
 
-| Env | Account | Profile | App URL |
-|-----|---------|---------|---------|
-| <ENV_NAME> | <ACCOUNT_ID> | <PROFILE> | https://<CLOUDFRONT_DOMAIN> |
-
-### Environment Config Files (persist across DevSpaces)
-```
-~/shared/myapp-envs/
-├── <env>.sh    ← copy from scripts/env.custom.sh.template
-└── *.sh        ← add more accounts as needed
-```
-
-### Targeting a specific account
-```bash
-ENV_FILE=~/shared/myapp-envs/<env>.sh ./scripts/feature.sh start
-ENV_FILE=~/shared/myapp-envs/<env>.sh ./scripts/deploy-frontend.sh
-```
-
-## Key Files to Read First
-- `/workspace/myapp-infra/README.md` — full architecture, conventions, commands
-- `/workspace/myapp-infra/AGENT_PROTOCOL.md` — autonomous implementation loop spec
-- `/workspace/myapp-infra/scripts/env.sh` — centralized config (source of truth for env values)
+| Env | Account | Profile | Repo | App URL |
+|-----|---------|---------|------|---------|
+| <ENV_NAME> | <ACCOUNT_ID> | <PROFILE> | <OWNER>/<REPO> | https://<CLOUDFRONT_DOMAIN> |
 
 ## Architecture Summary
-Full-stack home device management app:
+Platform starter with:
 - Frontend: React 18 + Vite + TypeScript
 - Backend: Node.js Lambda (CommonJS), single bundle packaging
-- Infrastructure: CDK v2 TypeScript
-- AI: Bedrock Claude Haiku (device recognition + energy tips + complexity classification)
-- Auth: Cognito
-- DB: DynamoDB (users, devices, device-energy, device-history, device-notes, device-favorites, feature-requests)
+- Infrastructure: CDK v2 TypeScript (fully parameterized, zero hardcoded values)
+- AI: Bedrock Claude Haiku (complexity classification)
+- Auth: Cognito + RBAC (user, technical, product_manager, admin)
+- DB: DynamoDB (users, feature-requests)
+- CI/CD: CDK Pipeline (self-mutating)
 
 ## RBAC Roles
 | Role | Permissions |
 |------|-------------|
-| user | Submit requests, view devices, basic access |
-| technical | Accept/override AI complexity classifications |
-| product_manager | Approve/reject feature requests |
-| admin | Manage user roles via Admin panel |
-
-Bootstrap: `ENV_FILE=~/shared/myapp-envs/<env>.sh ./scripts/assign-role.sh <username> <role>`
+| user | Submit requests, vote, basic access |
+| technical | Accept/override AI complexity |
+| product_manager | Approve/reject requests |
+| admin | Manage roles, full access |
 
 ## Automation Loop
-- `./scripts/feature.sh` — CLI for submitting features and managing orchestrator
-- `./scripts/orchestrator.sh` — background daemon that implements features via kiro-cli
-- DynamoDB `claimedBy` field enables multi-DevSpace parallel processing
-- Deploy routing: frontend-only → S3 sync (~30s), backend → Lambda update (~2min), infra → CDK Pipeline
+- `./scripts/feature.sh start` — starts orchestrator daemon
+- Orchestrator polls DynamoDB for approved requests
+- Invokes kiro-cli to implement features automatically
+- Deploys via: frontend → S3 sync, backend → Lambda update, infra → CDK Pipeline
+- Multi-DevSpace: parallel processing via DynamoDB atomic claims
 
 ## How to Resume Work
 ```bash
-# 1. Read this file and README.md for context
-cd /workspace/myapp-infra && ./scripts/feature.sh status
-git log --oneline -10
+# Check if orchestrator is alive
+cd /workspace/active && ./scripts/feature.sh status
 
-# 2. Start orchestrator targeting your account
+# If dead (DevSpace hibernated), restart:
 ENV_FILE=~/shared/myapp-envs/<env>.sh ./scripts/feature.sh start
+
+# Check recent activity
+git log --oneline -5
+
+# Switch environments
+./scripts/env-switch.sh --list
+./scripts/env-switch.sh <env-name>
 ```
 
-## User Preferences
-- Prefers using the orchestrator loop for changes when possible
-- Comfortable with direct pushes to main
-- Values fast iteration over ceremony
+## Key Files
+- `README.md` — full architecture, API docs, commands
+- `.kiro/steering.md` — orchestrator conventions (how to add features)
+- `AGENT_PROTOCOL.md` — autonomous implementation spec
+- `scripts/env.custom.sh.template` — env file template

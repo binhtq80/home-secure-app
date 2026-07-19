@@ -9,22 +9,53 @@ A full-stack platform for building applications via AI-powered feature requests.
 - GitHub personal access token
 - AWS account with Bedrock model access enabled
 
-## Quick Start (New Account)
+## Quick Start (New Environment from Template)
+
+### Prerequisites (one-time, in AWS Console)
+1. Create a new AWS account (or use existing)
+2. Create IAM user with admin access → get access key + secret
+3. **Developer Tools → Connections** → Create GitHub connection → authorize → copy ARN
+4. **Bedrock → Model access** → Enable Claude Haiku
+
+### Setup (in DevSpace)
 
 ```bash
-# 1. Copy env template and fill in your values
-cp scripts/env.custom.sh.template ~/shared/myapp-envs/myenv.sh
-vim ~/shared/myapp-envs/myenv.sh
+# 1. Clone this template to your new repo
+#    (Create empty repo on GitHub first: github.com/new)
+git clone https://<TOKEN>@github.com/binhtq80/myapp-infra-template.git my-app
+cd my-app
+git remote set-url origin https://<TOKEN>@github.com/<owner>/<new-repo>.git
+git push -u origin main
 
-# 2. Run setup (bootstraps CDK, deploys everything)
-ENV_FILE=~/shared/myapp-envs/myenv.sh ./scripts/setup-new-account.sh
+# 2. Add AWS credentials to shared storage
+cat >> ~/shared/.aws/credentials << EOF
+[my-app-admin]
+aws_access_key_id = <YOUR_KEY>
+aws_secret_access_key = <YOUR_SECRET>
+EOF
 
-# 3. Create first user, assign admin role
-ENV_FILE=~/shared/myapp-envs/myenv.sh ./scripts/assign-role.sh <username> admin
+cat >> ~/shared/.aws/config << EOF
+[profile my-app-admin]
+region = ap-southeast-2
+output = json
+EOF
 
-# 4. Start orchestrator
-ENV_FILE=~/shared/myapp-envs/myenv.sh ./scripts/feature.sh start
+# 3. Create env file from template
+cp scripts/env.custom.sh.template ~/shared/myapp-envs/my-app.sh
+# Edit: APP_AWS_ACCOUNT, APP_AWS_PROFILE, APP_ENV_NAME, APP_GITHUB_REPO,
+#       APP_CONNECTION_ARN, APP_GITHUB_CLONE_URL, APP_ADMIN_*
+
+# 4. Switch to the environment
+./scripts/env-switch.sh my-app
+
+# 5. Deploy everything (build → bootstrap → pipeline → admin user)
+ENV_FILE=~/shared/myapp-envs/my-app.sh ./scripts/setup-new-account.sh
+
+# 6. Start orchestrator (begins processing feature requests)
+ENV_FILE=~/shared/myapp-envs/my-app.sh ./scripts/feature.sh start
 ```
+
+After deploy, log in as the admin user at the CloudFront URL and start submitting features!
 
 ## Architecture
 
