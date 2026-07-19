@@ -181,10 +181,65 @@ if [ "$START_STEP" -le 6 ]; then
   echo ""
 fi
 
-# ─── Step 7: Smoke test ──────────────────────────────────────────────────────
+# ─── Step 7: Create admin user ────────────────────────────────────────────────
 if [ "$START_STEP" -le 7 ]; then
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  echo "🧪 Step 7/7: Running smoke tests..."
+  echo "👤 Step 7/8: Creating admin user..."
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+  ADMIN_USER="${APP_ADMIN_USERNAME:-admin}"
+  ADMIN_EMAIL="${APP_ADMIN_EMAIL:-admin@example.com}"
+  ADMIN_PASS="${APP_ADMIN_PASSWORD:-Admin12345!}"
+
+  # Find the User Pool
+  POOL_ID=$(aws cognito-idp list-user-pools --max-results 20 \
+    --profile "$APP_AWS_PROFILE" --region "$APP_AWS_REGION" \
+    --query "UserPools[?contains(Name,'${APP_PREFIX}')].Id" --output text 2>/dev/null)
+
+  if [ -n "$POOL_ID" ] && [ "$POOL_ID" != "None" ]; then
+    # Create Cognito user
+    SUB=$(aws cognito-idp admin-create-user --user-pool-id "$POOL_ID" --username "$ADMIN_USER" \
+      --user-attributes Name=email,Value="$ADMIN_EMAIL" Name=email_verified,Value=true \
+      --message-action SUPPRESS \
+      --profile "$APP_AWS_PROFILE" --region "$APP_AWS_REGION" \
+      --query 'User.Attributes[?Name==`sub`].Value' --output text 2>&1)
+
+    if echo "$SUB" | grep -q "UsernameExistsException"; then
+      echo "   ⚠️ User '$ADMIN_USER' already exists — skipping"
+    else
+      # Set password
+      aws cognito-idp admin-set-user-password --user-pool-id "$POOL_ID" \
+        --username "$ADMIN_USER" --password "$ADMIN_PASS" --permanent \
+        --profile "$APP_AWS_PROFILE" --region "$APP_AWS_REGION" 2>/dev/null
+
+      # Create DynamoDB record with admin role
+      USERS_TABLE="${APP_PREFIX}-users"
+      NOW=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+      aws dynamodb put-item --table-name "$USERS_TABLE" --item "{
+        \"id\": {\"S\": \"$SUB\"},
+        \"username\": {\"S\": \"$ADMIN_USER\"},
+        \"email\": {\"S\": \"$ADMIN_EMAIL\"},
+        \"createdAt\": {\"S\": \"$NOW\"},
+        \"loginCount\": {\"N\": \"0\"},
+        \"role\": {\"S\": \"admin\"}
+      }" --profile "$APP_AWS_PROFILE" --region "$APP_AWS_REGION" 2>/dev/null
+
+      echo "   ✓ Admin user created"
+      echo "     Username: $ADMIN_USER"
+      echo "     Password: $ADMIN_PASS"
+      echo "     Role:     admin"
+    fi
+  else
+    echo "   ⚠️ Could not find User Pool — skipping admin creation"
+    echo "   Create manually later: ENV_FILE=... ./scripts/assign-role.sh <username> admin"
+  fi
+  echo ""
+fi
+
+# ─── Step 8: Smoke test ──────────────────────────────────────────────────────
+if [ "$START_STEP" -le 8 ]; then
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo "🧪 Step 8/8: Running smoke tests..."
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
   TEST_URL="https://${CF_DOMAIN:-$APP_CLOUDFRONT_DOMAIN}"
@@ -204,9 +259,8 @@ echo ""
 echo "📋 Next steps:"
 echo "   1. Enable Bedrock model access in AWS Console (if not done)"
 echo "   2. Update ~/shared/myapp-envs/${APP_ENV_NAME}.sh with discovered resource IDs above"
-echo "   3. Create your first user via the app signup page"
-echo "   4. Assign admin role: ENV_FILE=~/shared/myapp-envs/${APP_ENV_NAME}.sh ./scripts/assign-role.sh <username> admin"
-echo "   6. Start orchestrator: ENV_FILE=~/shared/myapp-envs/${APP_ENV_NAME}.sh ./scripts/feature.sh start"
+echo "   3. Log in as '${APP_ADMIN_USERNAME:-admin}' at your app URL"
+echo "   4. Start orchestrator: ENV_FILE=~/shared/myapp-envs/${APP_ENV_NAME}.sh ./scripts/feature.sh start"
 echo ""
 echo "🔗 Your app: https://${CF_DOMAIN:-$APP_CLOUDFRONT_DOMAIN}"
 echo ""
