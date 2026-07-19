@@ -156,19 +156,14 @@ fi
 if [ ! -d "$TARGET_WORKSPACE" ]; then
   echo "📦 Cloning repo..."
   
-  # Check if git credentials work for this repo
-  if ! git ls-remote "$CLONE_URL" HEAD &>/dev/null; then
-    echo "   ⚠️  Cannot access $CLONE_URL"
-    echo "   If you need a token, set up the clone URL in your env file:"
+  # Use token URL directly if available (avoids slow git ls-remote on public URL)
+  if [ -n "${APP_GITHUB_CLONE_URL:-}" ]; then
+    CLONE_URL="$APP_GITHUB_CLONE_URL"
+  elif ! git ls-remote "$CLONE_URL" HEAD &>/dev/null; then
+    echo "   ❌ Cannot access $CLONE_URL"
+    echo "   Set APP_GITHUB_CLONE_URL in your env file:"
     echo "   export APP_GITHUB_CLONE_URL=\"https://<TOKEN>@github.com/${APP_GITHUB_OWNER}/${APP_GITHUB_REPO}.git\""
-    echo ""
-    # Try with APP_GITHUB_CLONE_URL if set
-    if [ -n "${APP_GITHUB_CLONE_URL:-}" ]; then
-      CLONE_URL="$APP_GITHUB_CLONE_URL"
-    else
-      echo "❌ Cannot clone. Please provide GitHub access."
-      exit 1
-    fi
+    exit 1
   fi
   
   git clone --branch "$APP_GITHUB_BRANCH" "$CLONE_URL" "$TARGET_WORKSPACE"
@@ -195,11 +190,30 @@ git checkout "$APP_GITHUB_BRANCH" 2>/dev/null || true
 git pull --rebase 2>&1 | tail -3
 echo "   ✓ Up to date"
 
-# Step 5: Install dependencies
-echo "📦 Installing dependencies..."
-(cd "$TARGET_WORKSPACE/infrastructure" && npm install --silent) && echo "   ✓ infrastructure/"
-(cd "$TARGET_WORKSPACE/frontend" && npm install --silent) && echo "   ✓ frontend/"
-(cd "$TARGET_WORKSPACE/backend" && npm install --silent) && echo "   ✓ backend/"
+# Step 5: Install dependencies (only if package-lock.json changed)
+needs_install() {
+  local dir="$1"
+  [ ! -d "$dir/node_modules" ] && return 0
+  [ "$dir/package-lock.json" -nt "$dir/node_modules" ] && return 0
+  return 1
+}
+
+echo "📦 Checking dependencies..."
+if needs_install "$TARGET_WORKSPACE/infrastructure"; then
+  (cd "$TARGET_WORKSPACE/infrastructure" && npm install --silent) && echo "   ✓ infrastructure/ (updated)"
+else
+  echo "   ✓ infrastructure/ (up to date)"
+fi
+if needs_install "$TARGET_WORKSPACE/frontend"; then
+  (cd "$TARGET_WORKSPACE/frontend" && npm install --silent) && echo "   ✓ frontend/ (updated)"
+else
+  echo "   ✓ frontend/ (up to date)"
+fi
+if needs_install "$TARGET_WORKSPACE/backend"; then
+  (cd "$TARGET_WORKSPACE/backend" && npm install --silent) && echo "   ✓ backend/ (updated)"
+else
+  echo "   ✓ backend/ (up to date)"
+fi
 
 # Step 6: Build backend bundle
 echo "🔨 Building backend bundle..."
