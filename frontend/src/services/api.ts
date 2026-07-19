@@ -126,3 +126,18 @@ export const featuresApi = {
 
   listVotes: (id: string) => request(`/api/features/${id}/votes`),
 };
+
+export const camerasApi = {
+  register: (camera: { name: string; location: string; model?: string; resolution?: string }) =>
+    request('/api/cameras', {
+      method: 'POST',
+      body: JSON.stringify(camera),
+    }),
+
+  list: () => request('/api/cameras'),
+
+  delete: (cameraId: string) =>
+    request(`/api/cameras/${cameraId}`, {
+      method: 'DELETE',
+    }),
+};

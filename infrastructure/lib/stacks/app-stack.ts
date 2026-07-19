@@ -70,6 +70,20 @@ export class AppStack extends cdk.Stack {
       partitionKey: { name: 'email', type: dynamodb.AttributeType.STRING },
     });
 
+    // Cameras table
+    const camerasTable = new dynamodb.Table(this, 'CamerasTable', {
+      tableName: `${prefix}-cameras`,
+      partitionKey: { name: 'id', type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: envConfig.isProd ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,
+    });
+
+    camerasTable.addGlobalSecondaryIndex({
+      indexName: 'userId-index',
+      partitionKey: { name: 'userId', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'createdAt', type: dynamodb.AttributeType.STRING },
+    });
+
     // Feature requests table
     const featureRequestsTable = new dynamodb.Table(this, 'FeatureRequestsTable', {
       tableName: `${prefix}-feature-requests`,
@@ -101,6 +115,7 @@ export class AppStack extends cdk.Stack {
     const lambdaEnv: Record<string, string> = {
       USERS_TABLE: usersTable.tableName,
       FEATURE_REQUESTS_TABLE: featureRequestsTable.tableName,
+      CAMERAS_TABLE: camerasTable.tableName,
       USER_POOL_ID: userPool.userPoolId,
       USER_POOL_CLIENT_ID: userPoolClient.userPoolClientId,
       BEDROCK_MODEL_ID: 'au.anthropic.claude-haiku-4-5-20251001-v1:0',
@@ -245,6 +260,26 @@ export class AppStack extends cdk.Stack {
       handler: 'functions/list-feature-votes/index.handler',
     });
 
+    // ─── Camera Functions ──────────────────────────────────────────────────────
+
+    const registerCameraFn = new lambda.Function(this, 'RegisterCameraFn', {
+      ...commonProps,
+      functionName: `${prefix}-register-camera`,
+      handler: 'functions/register-camera/index.handler',
+    });
+
+    const listCamerasFn = new lambda.Function(this, 'ListCamerasFn', {
+      ...commonProps,
+      functionName: `${prefix}-list-cameras`,
+      handler: 'functions/list-cameras/index.handler',
+    });
+
+    const deleteCameraFn = new lambda.Function(this, 'DeleteCameraFn', {
+      ...commonProps,
+      functionName: `${prefix}-delete-camera`,
+      handler: 'functions/delete-camera/index.handler',
+    });
+
     // ─── Permissions ───────────────────────────────────────────────────────────
 
     const allFunctions = [
@@ -254,11 +289,13 @@ export class AppStack extends cdk.Stack {
       createFeatureRequestFn, confirmFeatureRequestFn, adminApproveFeatureFn,
       approveFeatureRequestFn, listFeatureRequestsFn, getFeatureRequestFn,
       getFeatureRequestStatsFn, voteFeatureRequestFn, listFeatureVotesFn,
+      registerCameraFn, listCamerasFn, deleteCameraFn,
     ];
 
     for (const fn of allFunctions) {
       usersTable.grantReadWriteData(fn);
       featureRequestsTable.grantReadWriteData(fn);
+      camerasTable.grantReadWriteData(fn);
       fn.addToRolePolicy(new iam.PolicyStatement({
         actions: [
           'cognito-idp:AdminInitiateAuth',
@@ -334,6 +371,13 @@ export class AppStack extends cdk.Stack {
     featureResource.addResource('approve').addMethod('POST', new apigateway.LambdaIntegration(approveFeatureRequestFn));
     featureResource.addResource('vote').addMethod('POST', new apigateway.LambdaIntegration(voteFeatureRequestFn));
     featureResource.addResource('votes').addMethod('GET', new apigateway.LambdaIntegration(listFeatureVotesFn));
+
+    // Camera routes
+    const camerasResource = apiResource.addResource('cameras');
+    camerasResource.addMethod('POST', new apigateway.LambdaIntegration(registerCameraFn));
+    camerasResource.addMethod('GET', new apigateway.LambdaIntegration(listCamerasFn));
+    const cameraResource = camerasResource.addResource('{cameraId}');
+    cameraResource.addMethod('DELETE', new apigateway.LambdaIntegration(deleteCameraFn));
 
     // ─── Frontend Hosting ──────────────────────────────────────────────────────
 

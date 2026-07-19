@@ -44,6 +44,7 @@
 
 - `USERS_TABLE` — DynamoDB users table name
 - `FEATURE_REQUESTS_TABLE` — DynamoDB feature requests table name
+- `CAMERAS_TABLE` — DynamoDB cameras table name
 - `USER_POOL_ID` — Cognito user pool ID
 - `USER_POOL_CLIENT_ID` — Cognito app client ID
 - `BEDROCK_MODEL_ID` — Bedrock model for AI classification
