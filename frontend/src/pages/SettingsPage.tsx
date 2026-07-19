@@ -21,7 +21,7 @@ export function SettingsPage() {
   const loadAvatar = async () => {
     try {
       const data = await avatarApi.get();
-      setAvatarUrl(data.url);
+      setAvatarUrl(`data:${data.mimeType};base64,${data.image}`);
     } catch {
       // No avatar yet — that's fine
     }
@@ -63,7 +63,7 @@ export function SettingsPage() {
       const base64 = await fileToBase64(file);
       await avatarApi.update(base64, file.type);
       const data = await avatarApi.get();
-      setAvatarUrl(data.url);
+      setAvatarUrl(`data:${data.mimeType};base64,${data.image}`);
       setSuccess('Avatar updated successfully!');
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to upload avatar');
