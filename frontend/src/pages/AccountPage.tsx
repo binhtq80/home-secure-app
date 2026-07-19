@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, ChangeEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { usersApi, avatarApi } from '../services/api';
@@ -19,11 +19,14 @@ interface UserProfile {
 export function AccountPage() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [avatarUrl, setAvatarUrl] = useState('');
+  const [avatarUploading, setAvatarUploading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
   useEffect(() => {
     loadProfile();
@@ -45,10 +48,43 @@ export function AccountPage() {
   const loadAvatar = async () => {
     try {
       const data = await avatarApi.get();
-      setAvatarUrl(data.url);
+      setAvatarUrl(`data:${data.mimeType};base64,${data.image}`);
     } catch {
       // No avatar yet
     }
+  };
+
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleAvatarChange = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      setError('Image must be less than 2MB');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const base64 = (reader.result as string).split(',')[1];
+      setAvatarUploading(true);
+      setError('');
+      setSuccess('');
+      try {
+        await avatarApi.update(base64, file.type);
+        const data = await avatarApi.get();
+        setAvatarUrl(`data:${data.mimeType};base64,${data.image}`);
+        setSuccess('Avatar updated successfully!');
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : 'Failed to upload avatar');
+      } finally {
+        setAvatarUploading(false);
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   const formatDate = (dateStr: string | null) => {
@@ -81,29 +117,36 @@ export function AccountPage() {
 
       <main className="dashboard-main">
         <h2>Account</h2>
-        <p className="settings-subtitle">Your profile, login details, and session information.</p>
+        <p className="settings-subtitle">Your profile, avatar, and session information.</p>
 
         {error && <div className="error-message">{error}</div>}
+        {success && <div className="success-message">{success}</div>}
 
         {profile && (
           <div className="profile-layout">
             <div className="settings-card profile-avatar-card">
               <div className="profile-avatar-section">
-                {avatarUrl ? (
-                  <img src={avatarUrl} alt="User avatar" className="profile-avatar-large" />
-                ) : (
-                  <div className="profile-avatar-placeholder">
-                    <span>{profile.username.charAt(0).toUpperCase()}</span>
-                  </div>
-                )}
+                <div className="avatar-preview" onClick={handleAvatarClick} role="button" tabIndex={0} aria-label="Change avatar" onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleAvatarClick(); }}>
+                  {avatarUrl ? (
+                    <img src={avatarUrl} alt="User avatar" className="profile-avatar-large" />
+                  ) : (
+                    <div className="profile-avatar-placeholder">
+                      <span>{profile.username.charAt(0).toUpperCase()}</span>
+                    </div>
+                  )}
+                  {avatarUploading && <div className="avatar-uploading">Uploading...</div>}
+                </div>
                 <h3 className="profile-username">{profile.username}</h3>
                 <p className="profile-email">{profile.email}</p>
-                <button
-                  onClick={() => navigate('/settings')}
-                  className="btn-secondary profile-edit-btn"
-                >
-                  Edit Avatar
-                </button>
+                <p className="form-help">Click avatar to change. JPEG, PNG, WebP. Max 2MB.</p>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={handleAvatarChange}
+                  style={{ display: 'none' }}
+                  aria-hidden="true"
+                />
               </div>
             </div>
 
