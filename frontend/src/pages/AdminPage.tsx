@@ -27,8 +27,10 @@ export function AdminPage() {
   const [newUsername, setNewUsername] = useState('');
   const [newEmail, setNewEmail] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  const [newConfirmPassword, setNewConfirmPassword] = useState('');
   const [newRole, setNewRole] = useState('user');
   const [creating, setCreating] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
 
   useEffect(() => {
     if (user?.role !== 'admin') {
@@ -69,6 +71,13 @@ export function AdminPage() {
     e.preventDefault();
     setError('');
     setSuccess('');
+    setPasswordError('');
+
+    if (newPassword !== newConfirmPassword) {
+      setPasswordError('Passwords do not match');
+      return;
+    }
+
     setCreating(true);
 
     try {
@@ -78,6 +87,7 @@ export function AdminPage() {
       setNewUsername('');
       setNewEmail('');
       setNewPassword('');
+      setNewConfirmPassword('');
       setNewRole('user');
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to create user');
@@ -104,7 +114,7 @@ export function AdminPage() {
         <div className="admin-create-user-section">
           <h3>Create User</h3>
           <form onSubmit={handleCreateUser} className="admin-create-user-form">
-            <div className="form-row">
+            <div className="form-group">
               <label htmlFor="new-username">Username</label>
               <input
                 id="new-username"
@@ -116,7 +126,7 @@ export function AdminPage() {
                 disabled={creating}
               />
             </div>
-            <div className="form-row">
+            <div className="form-group">
               <label htmlFor="new-email">Email</label>
               <input
                 id="new-email"
@@ -128,7 +138,7 @@ export function AdminPage() {
                 disabled={creating}
               />
             </div>
-            <div className="form-row">
+            <div className="form-group">
               <label htmlFor="new-password">Password</label>
               <input
                 id="new-password"
@@ -141,7 +151,21 @@ export function AdminPage() {
                 disabled={creating}
               />
             </div>
-            <div className="form-row">
+            <div className="form-group">
+              <label htmlFor="new-confirm-password">Confirm Password</label>
+              <input
+                id="new-confirm-password"
+                type="password"
+                value={newConfirmPassword}
+                onChange={(e) => setNewConfirmPassword(e.target.value)}
+                required
+                placeholder="Re-enter password"
+                minLength={8}
+                disabled={creating}
+              />
+              {passwordError && <div className="error-message">{passwordError}</div>}
+            </div>
+            <div className="form-group">
               <label htmlFor="new-role">Role</label>
               <select
                 id="new-role"
