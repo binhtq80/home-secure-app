@@ -63,6 +63,9 @@ if [ "$START_STEP" -le 1 ]; then
   echo ""
 fi
 
+# CDK context flags (used by all cdk commands)
+CDK_CONTEXT="-c envName=$APP_ENV_NAME -c account=$APP_AWS_ACCOUNT -c region=$APP_AWS_REGION -c githubOwner=$APP_GITHUB_OWNER -c githubRepo=$APP_GITHUB_REPO -c githubBranch=$APP_GITHUB_BRANCH -c connectionArn=$APP_CONNECTION_ARN"
+
 # ─── Step 2: Bootstrap CDK ────────────────────────────────────────────────────
 if [ "$START_STEP" -le 2 ]; then
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -71,13 +74,11 @@ if [ "$START_STEP" -le 2 ]; then
   cd "$ROOT_DIR/infrastructure"
   npx cdk bootstrap "aws://$APP_AWS_ACCOUNT/$APP_AWS_REGION" \
     --profile "$APP_AWS_PROFILE" \
-    --cloudformation-execution-policies "arn:aws:iam::aws:policy/AdministratorAccess"
+    --cloudformation-execution-policies "arn:aws:iam::aws:policy/AdministratorAccess" \
+    $CDK_CONTEXT
   echo "   ✓ CDK bootstrapped"
   echo ""
 fi
-
-# CDK context flags (used by all cdk commands)
-CDK_CONTEXT="-c envName=$APP_ENV_NAME -c account=$APP_AWS_ACCOUNT -c region=$APP_AWS_REGION -c githubOwner=$APP_GITHUB_OWNER -c githubRepo=$APP_GITHUB_REPO -c githubBranch=$APP_GITHUB_BRANCH -c connectionArn=$APP_CONNECTION_ARN"
 
 # ─── Step 3: Deploy OIDC Stack ────────────────────────────────────────────────
 if [ "$START_STEP" -le 3 ]; then
