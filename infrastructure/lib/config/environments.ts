@@ -7,24 +7,19 @@ export interface EnvironmentConfig {
   readonly tags: Record<string, string>;
 }
 
-export const TEMPLATE_ENV: EnvironmentConfig = {
-  name: 'template',
-  env: {
-    account: '210447604234',
-    region: 'ap-southeast-2',
-  },
-  isProd: false,
-  tags: {
-    Environment: 'template',
-    ManagedBy: 'cdk',
-    Project: 'myapp',
-  },
-};
-
-// Add more environments as needed:
-// export const PROD_ENV: EnvironmentConfig = {
-//   name: 'prod',
-//   env: { account: 'YOUR_ACCOUNT_ID', region: 'ap-southeast-2' },
-//   isProd: true,
-//   tags: { Environment: 'production', ManagedBy: 'cdk', Project: 'myapp' },
-// };
+/**
+ * Creates an EnvironmentConfig from CDK context values.
+ * No hardcoded accounts or env names — everything comes from context.
+ */
+export function createEnvironmentConfig(envName: string, account: string, region: string): EnvironmentConfig {
+  return {
+    name: envName,
+    env: { account, region },
+    isProd: envName === 'prod',
+    tags: {
+      Environment: envName,
+      ManagedBy: 'cdk',
+      Project: 'myapp',
+    },
+  };
+}

@@ -184,6 +184,10 @@ echo "   ✓ /workspace/active → $TARGET_WORKSPACE"
 # Step 4: Pull latest
 echo "⬇️  Pulling latest code..."
 cd "$TARGET_WORKSPACE"
+# Ensure remote uses token URL for push access
+if [ -n "${APP_GITHUB_CLONE_URL:-}" ]; then
+  git remote set-url origin "$APP_GITHUB_CLONE_URL" 2>/dev/null || true
+fi
 git checkout "$APP_GITHUB_BRANCH" 2>/dev/null || true
 git pull --rebase 2>&1 | tail -3
 echo "   ✓ Up to date"

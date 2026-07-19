@@ -54,7 +54,19 @@ echo ""
 # ─── Step 1: Bootstrap CDK ────────────────────────────────────────────────────
 if [ "$START_STEP" -le 1 ]; then
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  echo "📦 Step 1/7: Bootstrapping CDK..."
+  echo "📦 Step 1/7: Building all packages..."
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  cd "$ROOT_DIR/backend" && npm install --silent && node scripts/build-bundle.js
+  cd "$ROOT_DIR/frontend" && npm install --silent && npm run build --silent
+  cd "$ROOT_DIR/infrastructure" && npm install --silent && npm run build --silent
+  echo "   ✓ All packages built"
+  echo ""
+fi
+
+# ─── Step 2: Bootstrap CDK ────────────────────────────────────────────────────
+if [ "$START_STEP" -le 2 ]; then
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo "🔧 Step 2/7: Bootstrapping CDK..."
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
   cd "$ROOT_DIR/infrastructure"
   npx cdk bootstrap "aws://$APP_AWS_ACCOUNT/$APP_AWS_REGION" \
@@ -64,17 +76,8 @@ if [ "$START_STEP" -le 1 ]; then
   echo ""
 fi
 
-# ─── Step 2: Build everything ─────────────────────────────────────────────────
-if [ "$START_STEP" -le 2 ]; then
-  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  echo "🔨 Step 2/7: Building all packages..."
-  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  cd "$ROOT_DIR/backend" && npm install --silent && node scripts/build-bundle.js
-  cd "$ROOT_DIR/frontend" && npm install --silent && npm run build --silent
-  cd "$ROOT_DIR/infrastructure" && npm install --silent && npm run build --silent
-  echo "   ✓ All packages built"
-  echo ""
-fi
+# CDK context flags (used by all cdk commands)
+CDK_CONTEXT="-c envName=$APP_ENV_NAME -c account=$APP_AWS_ACCOUNT -c region=$APP_AWS_REGION -c githubOwner=$APP_GITHUB_OWNER -c githubRepo=$APP_GITHUB_REPO -c githubBranch=$APP_GITHUB_BRANCH -c connectionArn=$APP_CONNECTION_ARN"
 
 # ─── Step 3: Deploy OIDC Stack ────────────────────────────────────────────────
 if [ "$START_STEP" -le 3 ]; then
@@ -85,9 +88,7 @@ if [ "$START_STEP" -le 3 ]; then
   npx cdk deploy MyappGithubOidcStack \
     --profile "$APP_AWS_PROFILE" \
     --require-approval never \
-    -c envName="$APP_ENV_NAME" \
-    -c githubOwner="$APP_GITHUB_OWNER" \
-    -c githubRepo="$APP_GITHUB_REPO"
+    $CDK_CONTEXT
   echo "   ✓ OIDC stack deployed"
   echo "   Note: GitHub Actions role ARN = arn:aws:iam::${APP_AWS_ACCOUNT}:role/myapp-github-actions-role"
   echo ""
@@ -102,11 +103,7 @@ if [ "$START_STEP" -le 4 ]; then
   npx cdk deploy --all \
     --profile "$APP_AWS_PROFILE" \
     --require-approval never \
-    -c envName="$APP_ENV_NAME" \
-    -c githubOwner="$APP_GITHUB_OWNER" \
-    -c githubRepo="$APP_GITHUB_REPO" \
-    -c githubBranch="$APP_GITHUB_BRANCH" \
-    -c connectionArn="$APP_CONNECTION_ARN"
+    $CDK_CONTEXT
   echo "   ✓ All stacks deployed"
   echo ""
 fi

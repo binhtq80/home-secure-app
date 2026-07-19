@@ -61,7 +61,7 @@ export class PipelineStack extends cdk.Stack {
           'cd frontend && npm run build && cd ..',
 
           // Synth CDK
-          `cd infrastructure && npm run build && npx cdk synth -c envName=${envConfig.name} -c connectionArn=${connectionArn} && cd ..`,
+          `cd infrastructure && npm run build && npx cdk synth -c envName=${envConfig.name} -c account=${props.env?.account} -c region=${props.env?.region || 'ap-southeast-2'} -c githubOwner=${githubOwner} -c githubRepo=${githubRepo} -c githubBranch=${githubBranch} -c connectionArn=${connectionArn} && cd ..`,
         ],
         primaryOutputDirectory: 'infrastructure/cdk.out',
       }),
