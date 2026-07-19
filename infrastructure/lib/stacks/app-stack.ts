@@ -178,6 +178,12 @@ export class AppStack extends cdk.Stack {
       handler: 'functions/update-user-role/index.handler',
     });
 
+    const createUserFn = new lambda.Function(this, 'CreateUserFn', {
+      ...commonProps,
+      functionName: `${prefix}-create-user`,
+      handler: 'functions/create-user/index.handler',
+    });
+
     // ─── Feature Request Functions ─────────────────────────────────────────────
 
     const createFeatureRequestFn = new lambda.Function(this, 'CreateFeatureRequestFn', {
@@ -244,7 +250,7 @@ export class AppStack extends cdk.Stack {
     const allFunctions = [
       signUpFn, confirmSignUpFn, signInFn, getUserFn,
       getUserSettingsFn, updateUserSettingsFn, getAvatarFn, updateAvatarFn,
-      listUsersFn, updateUserRoleFn,
+      listUsersFn, updateUserRoleFn, createUserFn,
       createFeatureRequestFn, confirmFeatureRequestFn, adminApproveFeatureFn,
       approveFeatureRequestFn, listFeatureRequestsFn, getFeatureRequestFn,
       getFeatureRequestStatsFn, voteFeatureRequestFn, listFeatureVotesFn,
@@ -301,6 +307,7 @@ export class AppStack extends cdk.Stack {
     // User routes
     const usersResource = apiResource.addResource('users');
     usersResource.addMethod('GET', new apigateway.LambdaIntegration(listUsersFn));
+    usersResource.addMethod('POST', new apigateway.LambdaIntegration(createUserFn));
     const userResource = usersResource.addResource('{userId}');
     userResource.addMethod('GET', new apigateway.LambdaIntegration(getUserFn));
     userResource.addResource('role').addMethod('PUT', new apigateway.LambdaIntegration(updateUserRoleFn));

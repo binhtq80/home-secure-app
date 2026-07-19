@@ -23,6 +23,13 @@ export function AdminPage() {
   const [success, setSuccess] = useState('');
   const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
 
+  // Create User form state
+  const [newUsername, setNewUsername] = useState('');
+  const [newEmail, setNewEmail] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [newRole, setNewRole] = useState('user');
+  const [creating, setCreating] = useState(false);
+
   useEffect(() => {
     if (user?.role !== 'admin') {
       navigate('/dashboard');
@@ -58,6 +65,27 @@ export function AdminPage() {
     }
   };
 
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+    setCreating(true);
+
+    try {
+      const data = await usersApi.create(newUsername, newEmail, newPassword, newRole);
+      setSuccess(`User "${newUsername}" created successfully`);
+      setUsers([...users, data.user]);
+      setNewUsername('');
+      setNewEmail('');
+      setNewPassword('');
+      setNewRole('user');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to create user');
+    } finally {
+      setCreating(false);
+    }
+  };
+
   if (user?.role !== 'admin') {
     return null;
   }
@@ -72,6 +100,67 @@ export function AdminPage() {
 
         {error && <div className="error-message">{error}</div>}
         {success && <div className="success-message">{success}</div>}
+
+        <div className="admin-create-user-section">
+          <h3>Create User</h3>
+          <form onSubmit={handleCreateUser} className="admin-create-user-form">
+            <div className="form-row">
+              <label htmlFor="new-username">Username</label>
+              <input
+                id="new-username"
+                type="text"
+                value={newUsername}
+                onChange={(e) => setNewUsername(e.target.value)}
+                required
+                placeholder="Enter username"
+                disabled={creating}
+              />
+            </div>
+            <div className="form-row">
+              <label htmlFor="new-email">Email</label>
+              <input
+                id="new-email"
+                type="email"
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+                required
+                placeholder="Enter email"
+                disabled={creating}
+              />
+            </div>
+            <div className="form-row">
+              <label htmlFor="new-password">Password</label>
+              <input
+                id="new-password"
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                required
+                placeholder="Enter password"
+                minLength={8}
+                disabled={creating}
+              />
+            </div>
+            <div className="form-row">
+              <label htmlFor="new-role">Role</label>
+              <select
+                id="new-role"
+                value={newRole}
+                onChange={(e) => setNewRole(e.target.value)}
+                disabled={creating}
+              >
+                {VALID_ROLES.map((role) => (
+                  <option key={role} value={role}>
+                    {role.replace(/_/g, ' ')}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <button type="submit" className="btn-primary" disabled={creating}>
+              {creating ? 'Creating...' : 'Create User'}
+            </button>
+          </form>
+        </div>
 
         {loading ? (
           <p className="loading-text">Loading users...</p>

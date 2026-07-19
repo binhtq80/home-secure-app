@@ -58,6 +58,12 @@ export const usersApi = {
       method: 'PUT',
       body: JSON.stringify({ role }),
     }),
+
+  create: (username: string, email: string, password: string, role: string) =>
+    request('/api/users', {
+      method: 'POST',
+      body: JSON.stringify({ username, email, password, role }),
+    }),
 };
 
 export const settingsApi = {
